@@ -12,6 +12,9 @@
 
 import fc from 'fast-check';
 
+// Now import the service after mocks are set up
+import intelligentNotificationService from '../../services/intelligentNotificationService';
+
 // Mock dependencies BEFORE importing the service
 jest.mock('../../utils/apiClient', () => ({
   __esModule: true,
@@ -39,15 +42,11 @@ jest.mock('../../utils/logger', () => {
   };
 });
 
-// Now import the service after mocks are set up
-import intelligentNotificationService from '../../services/intelligentNotificationService';
-
 const nonEmptyText = (minLength, maxLength) =>
   fc.string({ minLength, maxLength }).filter((value) => value.trim().length > 0);
 
 describe('Property 4: Notification Delivery Consistency', () => {
   let mockApiClient;
-  let mockLogger;
   
   beforeEach(() => {
     // Reset mocks
@@ -60,7 +59,7 @@ describe('Property 4: Notification Delivery Consistency', () => {
     
     // Get mocked modules
     mockApiClient = require('../../utils/apiClient').default;
-    mockLogger = require('../../utils/logger').default;
+    require('../../utils/logger').default;
     
     // Reset service state
     intelligentNotificationService.clearCache();

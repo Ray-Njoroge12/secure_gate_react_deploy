@@ -1,5 +1,6 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
+const shared = require('../playwright.shared.cjs');
 
 module.exports = defineConfig({
   testDir: './e2e',
@@ -12,15 +13,13 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [
     ['list'],
-    ['json', { outputFile: 'playwright-results.resident-smoke.json' }]
+    ['json', { outputFile: 'test-results/playwright-results.resident-smoke.json' }]
   ],
-  use: {
+  use: shared.makeUseDefaults({
     baseURL: 'http://127.0.0.1:3000',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     actionTimeout: 15_000
-  },
+  }),
   projects: [
     {
       name: 'resident-desktop-light',

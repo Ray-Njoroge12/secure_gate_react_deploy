@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+
 import SearchContext from '../contexts/SearchContext';
 
 export const useSearch = () => {
@@ -12,9 +13,7 @@ export const useSearch = () => {
 // Hook for search with specific data
 export const useSearchData = (data, searchFields, filterFields, options = {}) => {
   const {
-    enablePagination = true,
-    enableSorting = true,
-    enableFiltering = true
+    enablePagination = true
   } = options;
 
   const {

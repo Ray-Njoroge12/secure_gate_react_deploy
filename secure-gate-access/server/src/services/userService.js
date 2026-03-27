@@ -11,7 +11,29 @@ import * as crypto from 'crypto';
 
 class UserService {
   constructor() {
-    this.db = db;
+    this._db = null;
+  }
+
+  get db() {
+    if (this._db) {
+      return this._db;
+    }
+
+    try {
+      if (db && typeof db.query === 'function') {
+        this._db = db;
+      }
+    } catch (error) {
+      if (!(error instanceof ReferenceError)) {
+        throw error;
+      }
+    }
+
+    return this._db;
+  }
+
+  set db(value) {
+    this._db = value;
   }
 
   redactEmail(email) {

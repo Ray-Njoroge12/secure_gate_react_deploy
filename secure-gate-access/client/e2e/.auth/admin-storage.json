@@ -1,4 +1,61 @@
 {
-  "cookies": [],
-  "origins": []
+  "cookies": [
+    {
+      "name": "refreshToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNjMiLCJpYXQiOjE3NzQ1OTE2NDcsImp0aSI6Ijk2YWY1OWJhLWJjMjgtNDNiYi1hYWYyLTAyZjJhYzNjODg4MSIsImVtYWlsIjoiYWRtaW5Ac2VjdXJlZ2F0ZS5jb20iLCJlc3RhdGVfaWQiOjQ2LCJhY2Nlc3NKdGkiOiI1ZTQyNzVhNy01ODQzLTQyOTMtOTA1Mi0wYjAwYzIwYTAxNzgiLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NTE5NjQ0NywiYXVkIjoic2VjdXJlLWdhdGUtY2xpZW50IiwiaXNzIjoic2VjdXJlLWdhdGUtYXBpIn0.TatlaKXf9d8JLU7p5nY_8puMQs1nfupj_g-kerDSljg",
+      "domain": "127.0.0.1",
+      "path": "/api/auth/refresh",
+      "expires": 1775196447,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "secure.sid",
+      "value": "s%3AFUr-KgYvouTQXwJj0WC5yvp7ZPrC2Z2C.9iHIbH%2F9%2BlqEzho9rcWTEXsFU0%2BM0OV8CFY7j4amf9M",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1774678048.163385,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "accessToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNjMiLCJpYXQiOjE3NzQ1OTE2NDcsImp0aSI6IjVlNDI3NWE3LTU4NDMtNDI5My05MDUyLTBiMDBjMjBhMDE3OCIsImlkIjoxNjMsImVtYWlsIjoiYWRtaW5Ac2VjdXJlZ2F0ZS5jb20iLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXN0YXRlX2lkIjo0NiwidmVyaWZpZWQiOnRydWUsInR5cGUiOiJhY2Nlc3MiLCJleHAiOjE3NzQ1OTI1NDcsImF1ZCI6InNlY3VyZS1nYXRlLWNsaWVudCIsImlzcyI6InNlY3VyZS1nYXRlLWFwaSJ9.AIEVdKQBO-ljBVvMOu2TWFybscRAOTgmaGtqN1nl99w",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1774592547,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:3000",
+      "localStorage": [
+        {
+          "name": "searchState",
+          "value": "{\"searchTerm\":\"\",\"filters\":{},\"sortField\":\"\",\"sortDirection\":\"asc\",\"currentPage\":1,\"pageSize\":10,\"search\":\"\",\"sort\":\"\",\"page\":1}"
+        },
+        {
+          "name": "securegate-theme-density",
+          "value": "comfortable"
+        },
+        {
+          "name": "securegate-theme",
+          "value": "system"
+        },
+        {
+          "name": "app_language",
+          "value": "en"
+        },
+        {
+          "name": "accessibility-settings",
+          "value": "{\"highContrast\":false,\"reducedMotion\":false,\"textScaling\":100,\"keyboardNavigation\":true,\"skipLinks\":true,\"focusIndicators\":true,\"screenReaderSupport\":true,\"announcements\":true,\"liveRegions\":true,\"extendedTimeouts\":false,\"alternativeInputs\":false,\"voiceCommands\":false,\"dwellClickingEnabled\":false,\"dwellClickingTime\":1000,\"switchInputEnabled\":false,\"switchScanningSpeed\":1500,\"headTrackingEnabled\":false,\"timeoutExtensionLevel\":\"moderate\",\"simplifiedUI\":false,\"descriptiveText\":true,\"errorDescriptions\":true}"
+        }
+      ]
+    }
+  ]
 }

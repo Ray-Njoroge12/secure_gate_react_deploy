@@ -14,19 +14,18 @@
  * - Mobile-optimized
  */
 
+import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
+
+import Button from '../../components/ui/Button';
 import SavePassModal from '../../components/visitor/SavePassModal';
 import VisitorDirections from '../../components/visitor/VisitorDirections';
-import './VisitorInvitePage.css';
-
-// Custom hook import
 import { useVisitorInvite } from '../../hooks/useVisitorInvite';
-import Button from '../../components/ui/Button';
 import { useI18n } from '../../i18n/index.js';
 import offlineService from '../../services/offlineService';
 import api from '../../utils/apiClient';
+import './VisitorInvitePage.css';
 
 const VisitorInvitePage = () => {
   const { token } = useParams();
@@ -141,7 +140,7 @@ const VisitorInvitePage = () => {
     }
 
     try {
-      const response = await api.post(`/api/public/visitors/${token}/confirm`, {
+      await api.post(`/api/public/visitors/${token}/confirm`, {
         consent: {
           dataProcessing: true,
           privacyPolicy: true,
@@ -153,7 +152,6 @@ const VisitorInvitePage = () => {
           idNumber: additionalInfo.idNumber
         }
       });
-      const data = response.data;
 
       // Refresh visitor details to get updated status and QR code
       await fetchVisitorDetails();

@@ -9,9 +9,10 @@
  * and responsibilities defined for that specific role.
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import * as fc from 'fast-check';
+import React from 'react';
+
 import { AdaptiveComponent, RoleBasedComponent } from '../../components/ui/AdaptiveComponent';
 import { THEMES, THEME_DENSITY } from '../../contexts/ThemeContext';
 import { 
@@ -19,7 +20,6 @@ import {
   accessibilityScenarios,
   verifyAccessibilityMockCalls 
 } from '../utils/mockAccessibility';
-import TestErrorBoundary from '../utils/ErrorBoundary';
 
 // Mock the entire ThemeContext module
 jest.mock('../../contexts/ThemeContext', () => {

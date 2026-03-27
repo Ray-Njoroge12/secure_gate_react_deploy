@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+
+import { useConfirmation } from '../components/common/ConfirmationDialog';
+import Button from '../components/ui/Button';
 import api from '../utils/apiClient';
 import logger from '../utils/logger';
-import Button from '../components/ui/Button';
-import { useConfirmation } from '../components/common/ConfirmationDialog';
 
 /**
  * Privacy Dashboard Component

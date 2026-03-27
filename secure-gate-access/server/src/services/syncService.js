@@ -8,6 +8,7 @@
 
 import db from '../database/db.enhanced.js';
 import * as crypto from 'crypto';
+import logger from '../config/logger.js';
 
 const pool = db;
 
@@ -45,7 +46,7 @@ class SyncService {
 
       return offlineData;
     } catch (error) {
-      console.error('Error generating offline package:', error);
+      logger.error('Error generating offline package:', error);
       throw error;
     }
   }
@@ -57,7 +58,7 @@ class SyncService {
   async getGuardOfflineData(guardId, estateId) {
     // SECURITY: Require estate context
     if (!estateId) {
-      console.warn('[SyncService] Guard offline package requested without estate_id');
+      logger.warn('[SyncService] Guard offline package requested without estate_id');
       return {
         expectedVisitors: [],
         activeEmergencies: [],
@@ -248,7 +249,7 @@ class SyncService {
 
       return results;
     } catch (error) {
-      console.error('Error processing offline changes:', error);
+      logger.error('Error processing offline changes:', error);
       throw error;
     }
   }
@@ -274,7 +275,7 @@ class SyncService {
         [userId, change.idempotencyKey, change.entity, change.action]
       );
     } catch (error) {
-      console.warn('Failed to log sync change idempotency:', error);
+      logger.warn('Failed to log sync change idempotency:', error);
     }
   }
 
@@ -372,7 +373,7 @@ class SyncService {
       );
     } catch (error) {
       // Log table might not exist yet, just log to console
-      console.log('Sync event:', { userId, eventType, packageId, metadata });
+      logger.debug('Sync event:', { userId, eventType, packageId, metadata });
     }
   }
 
@@ -412,10 +413,10 @@ class SyncService {
       const result = await pool.query(
         `DELETE FROM sync_logs WHERE created_at < NOW() - INTERVAL '7 days'`
       );
-      console.log(`Purged ${result.rowCount} expired sync logs`);
+      logger.info(`Purged ${result.rowCount} expired sync logs`);
       return result.rowCount;
     } catch (error) {
-      console.error('Error purging sync data:', error);
+      logger.error('Error purging sync data:', error);
       return 0;
     }
   }

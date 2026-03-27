@@ -2,9 +2,11 @@
 // React context for comprehensive preference management with real-time updates
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+
+import { preferenceService, DEFAULT_PREFERENCES } from '../services/preferenceService.js';
+
 import { useAuth } from './AuthContext.js';
 import { useTheme } from './ThemeContext.jsx';
-import { preferenceService, DEFAULT_PREFERENCES } from '../services/preferenceService.js';
 
 const PreferenceContext = createContext(undefined);
 

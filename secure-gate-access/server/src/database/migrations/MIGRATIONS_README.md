@@ -2,6 +2,8 @@
 
 This folder keeps historical SQL migrations applied in filename sort order.
 
+Authoritative policy for migration-history exceptions is recorded in `MIGRATION_INTENT_LEDGER.md`.
+
 ## Known historical numbering gaps
 
 The following missing numeric prefixes are currently expected:
@@ -11,14 +13,19 @@ The following missing numeric prefixes are currently expected:
 
 These gaps are historical and intentionally preserved to avoid renumbering already-applied migrations.
 
-## Removed disabled artifact
+Current highest active migration prefix: `092`.
 
-`033_02_add_estates_and_tenant_scoping.sql.disabled` was a leftover disabled migration file and is removed.
-Its schema changes are already covered by active migrations such as:
+## Disabled artifact policy
 
-- `033_00_add_estates_table.sql`
-- `033_01_add_estate_id_to_users_visitors.sql`
-- later estate-related migrations (`034+`)
+`.disabled` files are retained for history/reference and are not executed.
+
+Current disabled artifact in this folder:
+
+- `add-performance-indexes.sql.disabled`
+
+Historical note:
+
+- `033_02_add_estates_and_tenant_scoping.sql.disabled` is no longer present.
 
 ## Ongoing CI protection
 
@@ -28,4 +35,9 @@ CI now runs:
 npm run migrations:check-sequence
 ```
 
-The check warns if new unexpected numeric gaps are introduced.
+Additional recommended checks:
+
+```bash
+npm run migrations:check-format
+npm run migrations:test-semantics
+```

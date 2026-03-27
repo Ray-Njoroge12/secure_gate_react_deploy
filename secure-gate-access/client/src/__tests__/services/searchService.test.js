@@ -3,6 +3,9 @@
  * Tests search functionality, caching, and performance optimization
  */
 
+import { searchService, FilterBuilder } from '../../services/searchService';
+import api from '../../utils/apiClient';
+
 jest.mock('../../utils/apiClient', () => ({
   __esModule: true,
   default: {
@@ -20,9 +23,6 @@ jest.mock('../../utils/logger', () => ({
     info: jest.fn(),
   },
 }));
-
-import { searchService, FilterBuilder } from '../../services/searchService';
-import api from '../../utils/apiClient';
 
 // Mock localStorage
 const localStorageMock = {
@@ -587,7 +587,7 @@ describe('FilterBuilder', () => {
   });
 
   test('validates nested groups', () => {
-    const group = builder.addGroup();
+    builder.addGroup();
     // Empty group should have validation errors
 
     const errors = builder.validate();

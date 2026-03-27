@@ -63,6 +63,19 @@ const STORAGE_KEY = 'app_language';
 // Create context
 const I18nContext = createContext(null);
 
+const getNestedTranslation = (source, key) => {
+  if (!source || !key) {
+    return undefined;
+  }
+
+  return key.split('.').reduce((current, segment) => {
+    if (current && typeof current === 'object' && Object.prototype.hasOwnProperty.call(current, segment)) {
+      return current[segment];
+    }
+    return undefined;
+  }, source);
+};
+
 /**
  * Hook to access i18n functionality
  */
@@ -105,6 +118,7 @@ export const I18nProvider = ({ children, defaultLanguage = DEFAULT_LANGUAGE }) =
   });
   
   const [translations, setTranslations] = useState({});
+  const [fallbackTranslations, setFallbackTranslations] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [direction, setDirection] = useState('ltr');
 
@@ -113,12 +127,17 @@ export const I18nProvider = ({ children, defaultLanguage = DEFAULT_LANGUAGE }) =
     const loadLang = async () => {
       setIsLoading(true);
       try {
-        const trans = await loadTranslations(language);
+        const [trans, fallback] = await Promise.all([
+          loadTranslations(language),
+          loadTranslations(DEFAULT_LANGUAGE)
+        ]);
         setTranslations(trans);
+        setFallbackTranslations(fallback || {});
       } catch (error) {
         console.error('Failed to load translations:', error);
         // Fall back to inline translations if loading fails
         setTranslations({});
+        setFallbackTranslations({});
       } finally {
         setIsLoading(false);
       }
@@ -160,7 +179,17 @@ export const I18nProvider = ({ children, defaultLanguage = DEFAULT_LANGUAGE }) =
 
   // Translation function
   const t = useCallback((key, params = {}) => {
-    let translation = translations[key];
+    let translation = getNestedTranslation(translations, key);
+    if (translation === undefined) {
+      translation = translations[key];
+    }
+
+    if (translation === undefined) {
+      translation = getNestedTranslation(fallbackTranslations, key);
+      if (translation === undefined) {
+        translation = fallbackTranslations[key];
+      }
+    }
     
     // If translation not found, return key
     if (!translation) {
@@ -187,11 +216,10 @@ export const I18nProvider = ({ children, defaultLanguage = DEFAULT_LANGUAGE }) =
     }
     
     return translation || key;
-  }, [translations]);
+  }, [translations, fallbackTranslations]);
 
   // Format date according to locale
   const formatDate = useCallback((date, options = {}) => {
-    const langConfig = SUPPORTED_LANGUAGES[language];
     const locale = language === 'ar' ? 'ar-SA' : language;
     
     try {

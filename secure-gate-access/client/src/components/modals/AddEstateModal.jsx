@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import Modal from '../ui/Modal';
+
+import api from '../../utils/apiClient';
+import Button from '../ui/Button';
 import GradientButton from '../ui/GradientButton';
 import Icon from '../ui/Icon';
-import { handleApiError } from '../../utils/errorMapper';
-import Button from '../ui/Button';
-import api from '../../utils/apiClient';
+import Modal from '../ui/Modal';
 
 // Password validation helper
 const validatePassword = (password) => {

@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import useAdvancedValidation, { RULE_TYPES, VALIDATION_STATES } from '../../hooks/useAdvancedValidation';
+
 import { VALIDATION_MESSAGES } from '../../constants/validation';
+import useAdvancedValidation, { RULE_TYPES, VALIDATION_STATES } from '../../hooks/useAdvancedValidation';
 
 jest.mock('utils/logger', () => ({
   __esModule: true,

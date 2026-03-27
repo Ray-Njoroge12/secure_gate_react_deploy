@@ -9,7 +9,7 @@
  * Configuration:
  * - Development: .env file (gitignored, contains secrets)
  * - Production: Environment variables set via Render dashboard
- * - Template: .env.example (committed, documentation only)
+ * - Template: server/.env.example (committed, documentation only)
  */
 
 import dotenv from 'dotenv';
@@ -48,7 +48,7 @@ for (const path of paths) {
 }
 
 if (!found && process.env.NODE_ENV !== 'production') {
-  console.warn('⚠️  No environment file found (.env or .env.staging). Check .env.example in root.');
+  console.warn('⚠️  No environment file found (.env or .env.staging). Check secure-gate-access/server/.env.example.');
 }
 
 console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);

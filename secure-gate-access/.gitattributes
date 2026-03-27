@@ -50,8 +50,6 @@
 .editorconfig text eol=lf
 .eslintrc* text eol=lf
 .prettierrc* text eol=lf
-Dockerfile text eol=lf
-docker-compose*.yml text eol=lf
 
 # =============================================================================
 # BINARY FILES - No conversion

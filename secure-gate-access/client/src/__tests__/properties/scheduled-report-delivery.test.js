@@ -75,7 +75,7 @@ class MockScheduledReportService {
     const now = new Date(this.currentTime);
     const dueReports = [];
 
-    for (const [reportId, report] of this.scheduledReports) {
+    for (const [, report] of this.scheduledReports) {
       if (report.status === 'scheduled' && new Date(report.nextRun) <= now) {
         dueReports.push(report);
       }
@@ -648,7 +648,7 @@ describe('Scheduled Report Utility Functions', () => {
       }
     ];
 
-    testCases.forEach(({ schedule, description }) => {
+    testCases.forEach(({ schedule, description: _description }) => {
       const nextRun = reportService.calculateNextRun(schedule);
       const nextRunDate = new Date(nextRun);
       const now = new Date(reportService.currentTime);

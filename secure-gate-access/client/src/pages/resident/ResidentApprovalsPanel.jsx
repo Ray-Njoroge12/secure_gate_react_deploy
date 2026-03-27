@@ -11,9 +11,9 @@ import Modal from '../../components/ui/Modal.jsx';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import useWebSocket from '../../hooks/useWebSocket';
-import { handleApiError } from '../../utils/errorMapper';
 import pushNotificationService from '../../services/pushNotificationService.js';
 import api from '../../utils/apiClient';
+import { handleApiError } from '../../utils/errorMapper';
 
 const ResidentApprovalsPanel = () => {
   const { user } = useAuth();

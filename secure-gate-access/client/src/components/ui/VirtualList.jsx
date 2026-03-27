@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+
 import LoadingStates from './LoadingStates';
 
 const VirtualList = memo(({
@@ -13,7 +14,7 @@ const VirtualList = memo(({
   ...props
 }) => {
   const [scrollTop, setScrollTop] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [, setContainerWidth] = useState(0);
   const containerRef = useRef(null);
   const scrollElementRef = useRef(null);
 
@@ -45,7 +46,7 @@ const VirtualList = memo(({
     if (containerRef.current) {
       setContainerWidth(containerRef.current.offsetWidth);
     }
-  }, []);
+  }, [setContainerWidth]);
 
   // Set up resize observer
   useEffect(() => {

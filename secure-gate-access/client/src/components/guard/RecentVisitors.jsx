@@ -9,10 +9,11 @@
  * - Respects resident opt-out preference
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import apiClient from '../../utils/apiClient';
+import React, { useState, useEffect, useCallback } from 'react';
+
 import notificationService from '../../services/notificationService';
+import apiClient from '../../utils/apiClient';
 import logger from '../../utils/logger';
 import Button from '../ui/Button';
 

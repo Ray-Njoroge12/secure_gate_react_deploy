@@ -961,7 +961,7 @@ class OfflineService {
   }
 
   async executeAction(action) {
-    const { type, data, url, method, headers } = action;
+    const { data, url, method, headers } = action;
     
     const response = await fetch(url, {
       method: method || 'POST',

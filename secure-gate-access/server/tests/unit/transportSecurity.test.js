@@ -19,10 +19,9 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 // Mock audit logger before imports
 const mockLogSecurityEvent = jest.fn();
 
-jest.unstable_mockModule('../../src/services/auditLogger.js', () => ({
-  default: {
-    logSecurityEvent: mockLogSecurityEvent
-  }
+jest.unstable_mockModule('../../src/services/auditService.js', () => ({
+  auditLog: jest.fn().mockResolvedValue(undefined),
+  default: { auditLog: jest.fn().mockResolvedValue(undefined) }
 }));
 
 const {

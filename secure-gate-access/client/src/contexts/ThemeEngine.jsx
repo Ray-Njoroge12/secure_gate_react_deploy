@@ -10,9 +10,11 @@
  */
 
 import React, { createContext, useContext, useEffect, useCallback } from 'react';
-import { useTheme } from './ThemeContext.jsx';
-import { useAuth } from './AuthContext.js';
+
 import { tokens } from '../design-system/tokens.js';
+
+import { useAuth } from './AuthContext.js';
+import { useTheme } from './ThemeContext.jsx';
 
 const ThemeEngineContext = createContext(undefined);
 
@@ -319,7 +321,7 @@ export const ThemeEngineProvider = ({ children }) => {
   }, [themeContext]);
 
   // Create theme-aware component props
-  const createThemeProps = useCallback((componentType = 'default') => {
+  const createThemeProps = useCallback((_componentType = 'default') => {
     const { resolvedTheme, density, isHighContrast } = themeContext;
     
     return {

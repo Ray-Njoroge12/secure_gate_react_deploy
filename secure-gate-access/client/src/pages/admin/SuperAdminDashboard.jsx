@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
 import AddEstateModal from '../../components/modals/AddEstateModal';
 import DecommissionEstateModal from '../../components/modals/DecommissionEstateModal';
 import { GradientCard } from '../../components/ui';
@@ -8,11 +9,10 @@ import Button from '../../components/ui/Button';
 import GradientButton from '../../components/ui/GradientButton';
 import Icon from '../../components/ui/Icon';
 import { useAuth } from '../../contexts/AuthContext';
-import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
 import notificationService from '../../services/notificationService';
+import api from '../../utils/apiClient';
 import { handleApiError } from '../../utils/errorMapper';
 import logger from '../../utils/logger.js';
-import api from '../../utils/apiClient';
 
 // Mock service for now, will implement real service calls
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -146,13 +146,13 @@ export default function SuperAdminDashboard() {
         } finally {
             setLoading(false);
         }
-    }, [logout, navigate, showApiErrorToast]);
+    }, [logout, showApiErrorToast]);
 
     useEffect(() => {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
-    const fetchSystemMetrics = async () => {
+    const fetchSystemMetrics = useCallback(async () => {
         try {
             const res = await api.get(`${API_BASE_URL}/api/admin/super-admin/system/metrics`);
             setSystemMetrics(res.data.data);
@@ -160,7 +160,7 @@ export default function SuperAdminDashboard() {
             logger.error('SuperAdmin: Failed to fetch system metrics:', err);
             showApiErrorToast('Metrics Refresh Failed', 'Failed to refresh system metrics.');
         }
-    };
+    }, [showApiErrorToast]);
 
     useEffect(() => {
         if (activeTab === 'health' && !errorMessage && !mfaGateMessage) {
@@ -168,7 +168,7 @@ export default function SuperAdminDashboard() {
             const interval = setInterval(fetchSystemMetrics, 30000); // Poll every 30s
             return () => clearInterval(interval);
         }
-    }, [activeTab, errorMessage, mfaGateMessage]);
+    }, [activeTab, errorMessage, mfaGateMessage, fetchSystemMetrics]);
 
 
 

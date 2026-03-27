@@ -15,7 +15,7 @@ export const browserCompatibility = {
     const browser = Object.keys(browsers).find(key => browsers[key]) || 'unknown';
     
     // Get version
-    const versionMatch = userAgent.match(/(?:Chrome|Firefox|Safari|Edg|MSIE|Opera)[\/\s](\d+(?:\.\d+)*)/);
+    const versionMatch = userAgent.match(/(?:Chrome|Firefox|Safari|Edg|MSIE|Opera)[/\s](\d+(?:\.\d+)*)/);
     const version = versionMatch ? versionMatch[1] : 'unknown';
 
     return { browser, version, userAgent };
@@ -223,7 +223,7 @@ export const browserCompatibility = {
 
   // Apply browser-specific fixes
   applyBrowserFixes() {
-    const { browser, version } = this.getBrowserInfo();
+    const { browser } = this.getBrowserInfo();
     const fixes = [];
 
     // Safari fixes
@@ -333,7 +333,6 @@ export const browserCompatibility = {
 
   // Get browser-specific recommendations
   getRecommendations() {
-    const { browser, version } = this.getBrowserInfo();
     const recommendations = [];
 
     // Performance recommendations

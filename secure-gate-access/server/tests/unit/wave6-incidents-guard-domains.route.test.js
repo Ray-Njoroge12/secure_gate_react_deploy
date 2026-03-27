@@ -21,7 +21,7 @@ jest.unstable_mockModule('../../src/services/tokenService.js', () => ({
   tokenService: { verifyAccessToken: mockVerifyAccessToken }
 }));
 
-jest.unstable_mockModule('../../src/middleware/auditLogger.js', () => ({
+jest.unstable_mockModule('../../src/middleware/auditLogging.js', () => ({
   default: (...args) => {
     if (args.length >= 3) {
       args[0].audit = mockAudit;

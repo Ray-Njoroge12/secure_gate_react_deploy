@@ -51,7 +51,6 @@ class ErrorReporter {
       type,
       severity,
       context: errorContext,
-      originalError,
       message,
       technical
     } = errorInfo;

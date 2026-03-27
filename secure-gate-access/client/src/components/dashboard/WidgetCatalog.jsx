@@ -33,8 +33,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 // } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.js';
 import { useAccessibility } from '../../hooks/useAccessibility.js';
-import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button';
+import Icon from '../ui/Icon.jsx';
 
 /**
  * Icon mapping for widget catalog

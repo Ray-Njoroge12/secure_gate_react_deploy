@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/apiClient';
-import logger from '../../utils/logger';
+
 
 import QRScanner from '../../components/QRScanner';
 import { Card, Button, PageHeader, Icon } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import offlineService from '../../services/offlineService';
+import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
 import { extractQrTokenFromQrData, extractVisitorIdFromQrData } from '../../utils/guardScanUtils';
+import logger from '../../utils/logger';
 
 const ScanQR = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -154,14 +155,6 @@ const ScanQR = () => {
       setScannedData({ status: 'error', message: err.message });
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const readJsonSafely = async (response) => {
-    try {
-      return await response.json();
-    } catch {
-      return {};
     }
   };
 

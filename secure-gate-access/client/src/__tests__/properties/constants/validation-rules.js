@@ -6,6 +6,9 @@
  */
 
 // Field validation patterns
+// Import deep freeze utility
+import { deepFreeze } from './immutable-utils.js';
+
 const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PHONE_INTERNATIONAL: /^\+?[\d\s\-\(\)]+$/,
@@ -20,9 +23,6 @@ const VALIDATION_PATTERNS = {
   INVITE_CODE: /^[A-Z0-9]{6,12}$/,
   QR_CODE_DATA: /^[A-Za-z0-9+/]+=*$/
 };
-
-// Import deep freeze utility
-import { deepFreeze } from './immutable-utils.js';
 
 // Data validation rules for different entity types
 export const VALIDATION_RULES = deepFreeze({

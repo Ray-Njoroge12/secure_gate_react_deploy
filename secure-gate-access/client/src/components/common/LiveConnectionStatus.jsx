@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
-import Icon from '../ui/Icon';
+
 import Button from '../ui/Button';
+import Icon from '../ui/Icon';
 
 /**
  * LiveConnectionStatus - Displays connection status with icon and text

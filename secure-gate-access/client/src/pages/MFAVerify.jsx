@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../utils/apiClient';
+
+import Button from '../components/ui/Button';
 import { useAuth } from '../contexts/AuthContext';
-import logger from '../utils/logger';
+import api from '../utils/apiClient';
 import { getRoleBasedRedirect } from '../utils/navigationFlow';
 import { decodeSession } from '../utils/sessionCrypto';
-import Button from '../components/ui/Button';
 
 /**
  * MFA Verification Component
@@ -21,6 +21,13 @@ const MFAVerify = () => {
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
 
+  const getSafeDestination = (candidate, fallback) => {
+    if (!candidate || typeof candidate !== 'string') return fallback;
+    if (!candidate.startsWith('/') || candidate.startsWith('//')) return fallback;
+    if (candidate.startsWith('/mfa/setup') || candidate.startsWith('/mfa/verify')) return fallback;
+    return candidate;
+  };
+
   // Get mfaSessionId from location state or session storage (persistence fix)
   const getStoredAuth = () => {
     const state = location.state;
@@ -35,7 +42,7 @@ const MFAVerify = () => {
     return {};
   };
 
-  const { mfaSessionId, userId, expiresIn = 300, username = 'your account' } = getStoredAuth();
+  const { mfaSessionId, username = 'your account', returnUrl } = getStoredAuth();
 
   // Redirect if no mfaSessionId
   React.useEffect(() => {
@@ -72,8 +79,9 @@ const MFAVerify = () => {
         const user = response.data.data?.user;
         if (user) {
           completeMfa(user);
-          // Redirect based on role
-          navigate(getRoleBasedRedirect(user.role));
+          const roleDefault = getRoleBasedRedirect(user.role);
+          const destination = getSafeDestination(returnUrl, roleDefault);
+          navigate(destination);
         } else {
           navigate('/dashboard');
         }

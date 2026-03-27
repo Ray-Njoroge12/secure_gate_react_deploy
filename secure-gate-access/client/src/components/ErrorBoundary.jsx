@@ -11,10 +11,12 @@
  * </ErrorBoundary>
  */
 
-import React from 'react';
 import * as Sentry from '@sentry/react';
+import React from 'react';
+
 import { captureException, showReportDialog } from '../config/sentry';
 import { navigateTo } from '../utils/appNavigation';
+
 import Button from './ui/Button';
 
 class ErrorBoundary extends React.Component {
@@ -28,7 +30,7 @@ class ErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true };
   }

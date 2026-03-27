@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import logger from 'utils/logger';
+
 import { useLoading } from '../contexts/LoadingContext';
 
 // Loading state types
@@ -108,7 +109,7 @@ export const useLoadingStates = (options = {}) => {
     onCancel = null,
   } = options;
 
-  const { isLoading, setLoading, clearLoading } = useLoading();
+  const { isLoading, setLoading } = useLoading();
   const [loadingState, setLoadingState] = useState({
     isActive: false,
     type,
@@ -124,7 +125,6 @@ export const useLoadingStates = (options = {}) => {
     cancelled: false,
   });
 
-  const loadingRef = useRef(null);
   const progressIntervalRef = useRef(null);
   const retryTimeoutRef = useRef(null);
 

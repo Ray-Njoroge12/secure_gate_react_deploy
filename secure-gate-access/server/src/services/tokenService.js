@@ -40,14 +40,33 @@ class TokenService {
     this.redisInitialized = false;
     this.initializeRedis();
 
-    // Database-backed refresh token store
-    this.db = dbManager;
+    // Database-backed refresh token store (resolved lazily to avoid import-cycle TDZ)
+    this.db = null;
 
     // Fallback in-memory storage if Redis unavailable (not recommended for production)
     this.revokedTokens = new Set(); // Fallback only
 
     // Add support for secret rotation
     this.previousSecret = process.env.JWT_PREVIOUS_SECRET; // For graceful rotation
+  }
+
+  getDatabaseManager() {
+    if (this.db) {
+      return this.db;
+    }
+
+    try {
+      if (dbManager && typeof dbManager.query === 'function') {
+        this.db = dbManager;
+      }
+    } catch (error) {
+      if (!(error instanceof ReferenceError)) {
+        throw error;
+      }
+      return null;
+    }
+
+    return this.db;
   }
 
   /**
@@ -359,11 +378,12 @@ class TokenService {
    * Store refresh token in database (for production persistence)
    */
   async storeRefreshToken(jti, userId, token, expiresAt, metadata = {}) {
-    if (!this.db) return;
+    const db = this.getDatabaseManager();
+    if (!db) return;
 
     try {
       const tokenHash = this.hashToken(token);
-      await this.db.query(
+      await db.query(
         `INSERT INTO refresh_tokens (user_id, token, expires_at, user_agent, ip_address)
          VALUES ($1, $2, $3, $4, $5)`,
         [userId, tokenHash, expiresAt, metadata.userAgent || null, metadata.ipAddress || null]
@@ -377,9 +397,10 @@ class TokenService {
    * Revoke token in database
    */
   async revokeTokenInDatabase(jti) {
-    if (this.db) {
+    const db = this.getDatabaseManager();
+    if (db) {
       try {
-        await this.db.query(
+        await db.query(
           'INSERT INTO revoked_tokens (jti, revoked_at) VALUES ($1, NOW()) ON CONFLICT (jti) DO NOTHING',
           [jti]
         );
@@ -393,9 +414,10 @@ class TokenService {
    * Check if token is revoked in database
    */
   async isTokenRevokedInDatabase(jti) {
-    if (this.db) {
+    const db = this.getDatabaseManager();
+    if (db) {
       try {
-        const result = await this.db.query(
+        const result = await db.query(
           'SELECT 1 FROM revoked_tokens WHERE jti = $1',
           [jti]
         );
@@ -412,11 +434,12 @@ class TokenService {
    * Retrieve refresh token record from database
    */
   async getRefreshTokenRecord(token) {
-    if (!this.db) return null;
+    const db = this.getDatabaseManager();
+    if (!db) return null;
 
     try {
       const tokenHash = this.hashToken(token);
-      const result = await this.db.query(
+      const result = await db.query(
         `SELECT id, user_id, token, expires_at, is_revoked, revoked_at, last_used_at
          FROM refresh_tokens
          WHERE token = $1`,
@@ -432,11 +455,12 @@ class TokenService {
    * Mark refresh token as used
    */
   async markRefreshTokenUsed(token) {
-    if (!this.db) return;
+    const db = this.getDatabaseManager();
+    if (!db) return;
 
     try {
       const tokenHash = this.hashToken(token);
-      await this.db.query(
+      await db.query(
         'UPDATE refresh_tokens SET last_used_at = NOW() WHERE token = $1',
         [tokenHash]
       );
@@ -449,11 +473,12 @@ class TokenService {
    * Revoke refresh token (database-backed)
    */
   async revokeRefreshToken(token) {
-    if (!this.db) return;
+    const db = this.getDatabaseManager();
+    if (!db) return;
 
     try {
       const tokenHash = this.hashToken(token);
-      await this.db.query(
+      await db.query(
         `UPDATE refresh_tokens
          SET is_revoked = TRUE, revoked_at = NOW()
          WHERE token = $1`,
@@ -468,10 +493,11 @@ class TokenService {
    * Revoke all user tokens
    */
   async revokeUserTokens(userId) {
-    if (this.db) {
+    const db = this.getDatabaseManager();
+    if (db) {
       try {
         // Move all user's refresh tokens to revoked list
-        await this.db.query(`
+        await db.query(`
           INSERT INTO revoked_tokens (jti, revoked_at) 
           SELECT jti, NOW() FROM refresh_tokens 
           WHERE user_id = $1 AND expires_at > NOW()
@@ -479,7 +505,7 @@ class TokenService {
         `, [userId]);
 
         // Delete refresh tokens for user
-        await this.db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
+        await db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
 
         // Security: Tokens revoked for user - audit logged only
       } catch (error) {

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { Button, Card, PageHeader, Icon } from "../../components/ui";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
-import { Button, Card, PageHeader, Icon } from "../../components/ui";
 import api from '../../utils/apiClient';
 import logger from '../../utils/logger';
 
@@ -23,7 +24,6 @@ const BulkInvite = () => {
   });
 
   const [generatedLink, setGeneratedLink] = useState(null);
-  const [generatedCode, setGeneratedCode] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -54,7 +54,6 @@ const BulkInvite = () => {
 
       if (res.data.success) {
         setGeneratedLink(res.data.data.inviteLink);
-        setGeneratedCode(res.data.data.inviteCode);
         setCurrentStep(2);
       }
     } catch (err) {

@@ -12,11 +12,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import useModalAccessibility from '../../hooks/useModalAccessibility';
+
 import Button from '../../components/ui/Button';
-import api from '../../utils/apiClient';
-import logger from '../../utils/logger';
 import { useToast } from '../../contexts/ToastContext';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
+import api from '../../utils/apiClient';
 import './RoleManagement.css';
 
 const RoleManagement = () => {

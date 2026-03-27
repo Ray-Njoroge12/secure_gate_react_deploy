@@ -6,9 +6,12 @@
  */
 
 import React, { useState } from 'react';
-import { useAccessibilityContext } from './AccessibilityProvider.jsx';
-import './AccessibilitySettings.css';
+
 import Button from '../ui/Button';
+
+import { useAccessibilityContext } from './AccessibilityProvider.jsx';
+
+import './AccessibilitySettings.css';
 
 /**
  * Accessibility Settings Panel

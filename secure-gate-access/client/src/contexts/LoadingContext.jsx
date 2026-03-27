@@ -1,5 +1,6 @@
 // Loading context for managing global loading states
 import React, { createContext, useContext, useState, useCallback } from 'react';
+
 import Loading from '../components/ui/LoadingStates';
 
 const LoadingContext = createContext();

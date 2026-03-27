@@ -12,10 +12,10 @@ module.exports = defineConfig({
   fullyParallel: false, // Run tests serially for better reliability
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : 1,
+  workers: 1,
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'playwright-results.json' }],
+    ['json', { outputFile: 'test-results/playwright-results.json' }],
     ['list']
   ],
   globalSetup: require.resolve('./e2e/global-setup.js'),

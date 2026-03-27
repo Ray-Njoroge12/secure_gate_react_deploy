@@ -4,6 +4,8 @@
 import apiClient from '../utils/apiClient.js';
 import logger from '../utils/logger';
 
+const PREFERENCES_API_BASE = '/api/preferences';
+
 /**
  * Default preference structure matching backend
  */
@@ -100,7 +102,7 @@ class PreferenceService {
    */
   async getUserPreferences() {
     try {
-      const response = await apiClient.get('/preferences');
+      const response = await apiClient.get(PREFERENCES_API_BASE);
       
       if (response.data?.success) {
         const preferences = response.data.data.preferences;
@@ -134,7 +136,7 @@ class PreferenceService {
       // Optimistic update - notify listeners immediately
       this.notifyListeners({ preferences, version, isDefault: false });
       
-      const response = await apiClient.put('/preferences', {
+      const response = await apiClient.put(PREFERENCES_API_BASE, {
         preferences,
         version
       });
@@ -176,7 +178,7 @@ class PreferenceService {
    */
   async getAllUserPreferences() {
     try {
-      const response = await apiClient.get('/preferences/all');
+      const response = await apiClient.get(`${PREFERENCES_API_BASE}/all`);
       
       if (response.data?.success) {
         return response.data.data.preferences;
@@ -194,7 +196,7 @@ class PreferenceService {
    */
   async createPreferenceBackup(backupName) {
     try {
-      const response = await apiClient.post('/preferences/backup', {
+      const response = await apiClient.post(`${PREFERENCES_API_BASE}/backup`, {
         backupName
       });
       
@@ -214,7 +216,7 @@ class PreferenceService {
    */
   async restorePreferenceBackup(backupName) {
     try {
-      const response = await apiClient.post(`/preferences/backup/${backupName}/restore`);
+      const response = await apiClient.post(`${PREFERENCES_API_BASE}/backup/${backupName}/restore`);
       
       if (response.data?.success) {
         const preferences = response.data.data.preferences;
@@ -241,7 +243,7 @@ class PreferenceService {
    */
   async listPreferenceBackups() {
     try {
-      const response = await apiClient.get('/preferences/backups');
+      const response = await apiClient.get(`${PREFERENCES_API_BASE}/backups`);
       
       if (response.data?.success) {
         return response.data.data.backups;
@@ -259,7 +261,7 @@ class PreferenceService {
    */
   async resetToDefaults() {
     try {
-      const response = await apiClient.post('/preferences/reset');
+      const response = await apiClient.post(`${PREFERENCES_API_BASE}/reset`);
       
       if (response.data?.success) {
         const preferences = response.data.data.preferences;

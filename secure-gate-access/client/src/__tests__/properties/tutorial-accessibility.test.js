@@ -5,22 +5,20 @@
  * screen reader support, and inclusive design patterns.
  */
 
-import fc from 'fast-check';
 import { jest } from '@jest/globals';
+import fc from 'fast-check';
+
 import { 
   TEST_CONFIG, 
-  SELECTORS,
-  ERROR_MESSAGES 
+  SELECTORS
 } from './constants/tutorial-test-config.js';
 import { 
   userGenerator, 
-  onboardingContextGenerator,
   createAccessibilityContext,
   PropertyGenerators
 } from './factories/tutorial-test-factories.js';
 import { 
   renderWelcomeFlow, 
-  checkAccessibilityCompliance,
   AssertionHelpers
 } from './utils/tutorial-test-utils.js';
 
@@ -123,7 +121,7 @@ describe('Property Tests: Tutorial Accessibility', () => {
           
           // Check heading hierarchy (h1 should come before h2, etc.)
           let lastLevel = 0;
-          Array.from(headings).forEach((heading, index) => {
+          Array.from(headings).forEach((heading, _index) => {
             const level = parseInt(heading.tagName.charAt(1));
             
             // Should not skip heading levels

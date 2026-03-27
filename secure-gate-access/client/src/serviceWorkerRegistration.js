@@ -1,4 +1,6 @@
 // Service Worker Registration for Create React App
+import logger from './utils/logger';
+
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
   window.location.hostname === '[::1]' ||
@@ -20,7 +22,7 @@ export function register(config) {
       if (isLocalhost) {
         checkValidServiceWorker(swUrl, config);
         navigator.serviceWorker.ready.then(() => {
-          console.log('Service worker registered');
+          logger.info('Service worker registered');
         });
       } else {
         registerValidSW(swUrl, config);
@@ -41,12 +43,12 @@ function registerValidSW(swUrl, config) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              console.log('New content is available; please refresh.');
+              logger.info('New content is available; please refresh.');
               if (config && config.onUpdate) {
                 config.onUpdate(registration);
               }
             } else {
-              console.log('Content is cached for offline use.');
+              logger.info('Content is cached for offline use.');
               if (config && config.onSuccess) {
                 config.onSuccess(registration);
               }
@@ -56,7 +58,7 @@ function registerValidSW(swUrl, config) {
       };
     })
     .catch(error => {
-      console.error('Error during service worker registration:', error);
+      logger.error('Error during service worker registration:', error);
     });
 }
 
@@ -80,7 +82,7 @@ function checkValidServiceWorker(swUrl, config) {
       }
     })
     .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.');
+      logger.info('No internet connection found. App is running in offline mode.');
     });
 }
 
@@ -91,7 +93,7 @@ export function unregister() {
         registration.unregister();
       })
       .catch(error => {
-        console.error(error.message);
+        logger.error(error.message);
       });
   }
 }
@@ -113,6 +115,6 @@ export const offlineManager = {
   },
   syncWhenOnline: () => {
     // Simple sync when online
-    console.log('Syncing when online...');
+    logger.info('Syncing when online...');
   }
 };

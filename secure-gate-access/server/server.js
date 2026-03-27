@@ -52,6 +52,21 @@ import { startDataRetentionScheduler, stopDataRetentionScheduler } from './src/s
 import webSocketService from './src/services/websocketService.js';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
+const SERVER_STARTUP_MARKER_PREFIX = 'SERVER_STARTUP';
+
+function emitServerStartupMarker(status, details = {}) {
+  const fields = Object.entries(details)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${String(value).replace(/\s+/g, ' ').trim()}`)
+    .join('|');
+
+  const marker = fields
+    ? `${SERVER_STARTUP_MARKER_PREFIX}|${String(status).toUpperCase()}|${fields}`
+    : `${SERVER_STARTUP_MARKER_PREFIX}|${String(status).toUpperCase()}`;
+
+  console.log(marker);
+}
 
 // Enhanced error handling for unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
@@ -262,9 +277,18 @@ async function validateDatabaseConnection() {
 // Graceful startup with validation
 async function startServer() {
   try {
+    emitServerStartupMarker('STARTING', {
+      nodeEnv: process.env.NODE_ENV || 'development',
+      port: PORT
+    });
+
     // Check if port is available
     const portAvailable = await checkPortAvailability(PORT);
     if (!portAvailable) {
+      emitServerStartupMarker('FAILED', {
+        port: PORT,
+        reason: 'port_in_use'
+      });
       console.error(`🚨 Server startup blocked - port ${PORT} is already in use`);
       console.error('💡 Try running: taskkill /f /im node.exe');
       process.exit(1);
@@ -283,6 +307,10 @@ async function startServer() {
       if (!migrationResult.success) {
         console.error('❌ Database migration failed:', migrationResult.error);
         if (process.env.NODE_ENV === 'production') {
+          emitServerStartupMarker('FAILED', {
+            reason: 'migration_failed',
+            error: migrationResult.error || 'unknown'
+          });
           console.error('🚨 Server startup blocked - migrations required in production');
           process.exit(1);
         }
@@ -300,6 +328,10 @@ async function startServer() {
 
       // Allow server to start without DB for health checks in some cases
       if (process.env.ALLOW_DB_FAILURE !== 'true') {
+        emitServerStartupMarker('FAILED', {
+          reason: 'database_initialization_failed',
+          error: dbError.message
+        });
         console.error('� Server startup blocked - database connection required');
         console.error('💡 Set ALLOW_DB_FAILURE=true to start without database');
         process.exit(1);
@@ -326,6 +358,11 @@ async function startServer() {
 
     // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
+      emitServerStartupMarker('PORT_BOUND', {
+        host: '0.0.0.0',
+        port: PORT
+      });
+
       getStartupConsoleMessages({ port: PORT, nodeEnv: process.env.NODE_ENV })
         .forEach((message) => console.log(message));
 
@@ -341,6 +378,11 @@ async function startServer() {
     console.log('🔌 Initializing WebSocket service for real-time features...');
     await webSocketService.initialize(server);
     console.log('✅ WebSocket service initialized successfully');
+
+    emitServerStartupMarker('READY', {
+      nodeEnv: process.env.NODE_ENV || 'development',
+      port: PORT
+    });
 
     // Initialize data retention scheduler for GDPR compliance
     if (process.env.ENABLE_DATA_RETENTION === 'true') {
@@ -423,6 +465,10 @@ async function startServer() {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
+    emitServerStartupMarker('FAILED', {
+      reason: 'startup_exception',
+      error: error?.message || 'unknown_error'
+    });
     console.error('🚨 Server startup failed:', error);
     process.exit(1);
   }

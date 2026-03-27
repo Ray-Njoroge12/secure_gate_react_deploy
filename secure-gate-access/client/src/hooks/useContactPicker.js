@@ -9,7 +9,7 @@
 import { useState, useCallback } from 'react';
 
 const useContactPicker = () => {
-  const [isSupported, setIsSupported] = useState(() => {
+  const [isSupported] = useState(() => {
     return 'contacts' in navigator && 'ContactsManager' in window;
   });
   const [loading, setLoading] = useState(false);

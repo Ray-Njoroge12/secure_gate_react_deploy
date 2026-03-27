@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom';
 import { toHaveNoViolations } from 'jest-axe';
 
+// MSW Setup
+import { server } from './mocks/server';
+
 expect.extend(toHaveNoViolations);
 
 // Set global test timeout to prevent hanging tests
@@ -182,9 +185,6 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 });
-
-// MSW Setup
-import { server } from './mocks/server';
 
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());

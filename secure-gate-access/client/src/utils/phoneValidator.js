@@ -3,7 +3,7 @@
  * Provides consistent phone number validation and formatting
  */
 
-import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
+import { parsePhoneNumber } from 'libphonenumber-js';
 
 class PhoneValidator {
   constructor() {
@@ -168,4 +168,6 @@ class PhoneValidator {
   }
 }
 
-export default new PhoneValidator();
+const phoneValidator = new PhoneValidator();
+
+export default phoneValidator;

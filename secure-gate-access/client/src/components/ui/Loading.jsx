@@ -1,5 +1,6 @@
 // client/src/components/ui/Loading.jsx
 import React, { useEffect, useRef } from 'react';
+
 import Icon from './Icon';
 
 const Loading = ({ 

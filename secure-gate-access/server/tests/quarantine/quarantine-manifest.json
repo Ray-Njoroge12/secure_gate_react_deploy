@@ -133,6 +133,17 @@
       "gating_impact": "Blocking security audit lane coverage restored.",
       "introduced_on": "2026-03-21",
       "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-MOD-004",
+      "path": "tests/quarantine/legacy-missing-modules/securityHeadersMiddleware.legacy.quarantined.js",
+      "status": "quarantined",
+      "reason": "Imports removed module src/middleware/securityHeadersMiddleware.js; its exports (requestSizeLimit, securityResponseMiddleware, securityEventLogger, securityMiddlewareStack) have no equivalent in current middleware.",
+      "owner": "backend-security",
+      "exit_criteria": "Security headers middleware consolidated and suite updated to match current export contracts.",
+      "gating_impact": "Excluded from blocking unit/security lanes; critical integration lane unchanged.",
+      "introduced_on": "2026-03-24",
+      "last_reviewed_on": "2026-03-24"
     }
   ]
 }

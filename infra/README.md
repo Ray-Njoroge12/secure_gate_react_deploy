@@ -63,6 +63,7 @@ terraform apply -var-file="production.tfvars" \
 - Update the `container_image`, secrets payloads, and health check path as needed.
 - CloudFront uses the provided ACM certificate to terminate TLS and forwards traffic to the ALB over HTTPS.
 - WAF and HTTPS enforcement are provisioned via CloudFormation templates in `secure-gate-access/infrastructure/aws`.
+- Source of truth: core infrastructure (networking, security groups, ECS, RDS, Redis, CloudFront) is defined in Terraform under `infra/`. Keep only supplemental reusable security templates under `secure-gate-access/infrastructure/aws`.
 
 ## Scaling Targets & Policies
 

@@ -13,10 +13,6 @@
  */
 
 class Logger {
-  constructor() {
-    // Check environment at runtime
-  }
-
   get isDevelopment() {
     return process.env.NODE_ENV === 'development';
   }

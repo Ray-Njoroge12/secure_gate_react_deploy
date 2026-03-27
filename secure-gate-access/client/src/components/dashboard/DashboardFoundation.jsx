@@ -12,16 +12,18 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+
 import { useAuth } from '../../contexts/AuthContext.js';
 import { useThemeEngine } from '../../contexts/ThemeEngine.jsx';
-import { useEnhancedResponsive } from '../../hooks/useEnhancedResponsive.js';
 import { useAccessibility } from '../../hooks/useAccessibility.js';
+import { useEnhancedResponsive } from '../../hooks/useEnhancedResponsive.js';
 import { AdaptiveComponent } from '../ui/AdaptiveComponent.jsx';
+import Button from '../ui/Button';
 import { LayoutManager, useLayoutPersistence } from '../ui/LayoutManager.jsx';
+
+import { DashboardControls } from './DashboardControls.jsx';
 import { DashboardWidget, StatWidget, ChartWidget, ListWidget } from './DashboardWidget.jsx';
 import { WidgetCatalog, WidgetConfigModal } from './WidgetCatalog.jsx';
-import { DashboardControls } from './DashboardControls.jsx';
-import Button from '../ui/Button';
 
 /**
  * Default dashboard layouts for each role
@@ -312,7 +314,7 @@ const WIDGET_COMPONENTS = {
       </div>
     </DashboardWidget>
   ),
-  'qr-display': ({ data }) => (
+  'qr-display': ({ data: _data }) => (
     <DashboardWidget title="Access Pass" icon="qr-code">
       <div className="flex flex-col items-center justify-center space-y-4">
         <div className="w-32 h-32 bg-gray-100 dark:bg-slate-700 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex items-center justify-center">
@@ -338,7 +340,7 @@ export const DashboardFoundation = ({
 }) => {
   const { user } = useAuth();
   const themeEngine = useThemeEngine();
-  const responsive = useEnhancedResponsive({ enableContainerQueries: true });
+  useEnhancedResponsive({ enableContainerQueries: true });
   const { accessibilityState, announce } = useAccessibility();
 
   const role = user?.role || 'visitor';

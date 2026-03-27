@@ -11,7 +11,7 @@ const mockSendDeliveryNotification = jest.fn(() => Promise.resolve());
 
 jest.unstable_mockModule('../../src/services/tokenService.js', () => ({ tokenService: { verifyAccessToken: mockVerifyAccessToken } }));
 jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({ dbManager: { query: mockQuery }, default: { query: mockQuery } }));
-jest.unstable_mockModule('../../src/middleware/auditLogger.js', () => ({ default: () => (req, res, next) => next() }));
+jest.unstable_mockModule('../../src/middleware/auditLogging.js', () => ({ default: () => (req, res, next) => next() }));
 jest.unstable_mockModule('../../src/services/loggingService.js', () => ({ default: { warn: jest.fn(), info: jest.fn(), error: jest.fn(), debug: jest.fn(), logSecurity: jest.fn() } }));
 jest.unstable_mockModule('../../src/services/notificationService.js', () => ({ sendDeliveryNotification: mockSendDeliveryNotification, sendHandoffDecisionNotification: jest.fn(() => Promise.resolve()) }));
 jest.unstable_mockModule('../../src/services/deliveryService.js', () => ({

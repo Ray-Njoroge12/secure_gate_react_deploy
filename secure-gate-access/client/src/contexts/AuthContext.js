@@ -1,8 +1,9 @@
 import { createContext, useState, useEffect, useContext, useMemo } from "react";
 import logger from 'utils/logger';
-import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
-import api from '../utils/apiClient.js';
+
 import { disconnectAllSockets } from '../hooks/useWebSocket';
+import api from '../utils/apiClient.js';
+import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
 
 export const AuthContext = createContext();
 
@@ -55,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // login(email, password, remember=false)
-  const login = async (email, password, remember = false) => {
+  const login = async (email, password, _remember = false) => {
     const response = await api.post('/api/auth/login', {
       username: email,
       password

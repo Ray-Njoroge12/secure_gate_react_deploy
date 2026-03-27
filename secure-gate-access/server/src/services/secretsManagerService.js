@@ -13,6 +13,7 @@
  */
 
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import logger from '../config/logger.js';
 
 class SecretsManagerService {
   constructor() {
@@ -51,12 +52,12 @@ class SecretsManagerService {
     const cached = this.cache.get(secretName);
     if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
       this.metrics.hits++;
-      console.log(`[SecretsManager] Cache hit for secret: ${secretName}`);
+      logger.debug(`[SecretsManager] Cache hit for secret: ${secretName}`);
       return cached.value;
     }
 
     this.metrics.misses++;
-    console.log(`[SecretsManager] Cache miss for secret: ${secretName}, fetching from AWS...`);
+    logger.debug(`[SecretsManager] Cache miss for secret: ${secretName}, fetching from AWS...`);
 
     try {
       // Fetch from AWS Secrets Manager
@@ -74,18 +75,18 @@ class SecretsManagerService {
         timestamp: Date.now(),
       });
 
-      console.log(`[SecretsManager] Successfully retrieved secret: ${secretName}`);
+      logger.info(`[SecretsManager] Successfully retrieved secret: ${secretName}`);
       return secretValue;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`[SecretsManager] Error retrieving secret ${secretName}:`, error.message);
+      logger.error(`[SecretsManager] Error retrieving secret ${secretName}:`, error.message);
 
       // Fallback to environment variable
       const envKey = this.convertToEnvKey(secretName);
       const fallback = process.env[envKey];
 
       if (fallback) {
-        console.warn(`[SecretsManager] Using fallback environment variable: ${envKey}`);
+        logger.warn(`[SecretsManager] Using fallback environment variable: ${envKey}`);
         return fallback;
       }
 
@@ -99,20 +100,20 @@ class SecretsManagerService {
    * @returns {Promise<Object>} - Object with secret names as keys and values
    */
   async getSecrets(secretNames) {
-    console.log(`[SecretsManager] Retrieving ${secretNames.length} secrets...`);
+    logger.info(`[SecretsManager] Retrieving ${secretNames.length} secrets...`);
     
     const secrets = {};
     const promises = secretNames.map(async (name) => {
       try {
         secrets[name] = await this.getSecret(name);
       } catch (error) {
-        console.error(`[SecretsManager] Failed to retrieve secret: ${name}`);
+        logger.error(`[SecretsManager] Failed to retrieve secret: ${name}`);
         throw error;
       }
     });
 
     await Promise.all(promises);
-    console.log(`[SecretsManager] Successfully retrieved all ${secretNames.length} secrets`);
+    logger.info(`[SecretsManager] Successfully retrieved all ${secretNames.length} secrets`);
     
     return secrets;
   }
@@ -131,7 +132,7 @@ class SecretsManagerService {
    * Useful for forcing a refresh of secrets
    */
   clearCache() {
-    console.log('[SecretsManager] Clearing secrets cache');
+    logger.info('[SecretsManager] Clearing secrets cache');
     this.cache.clear();
   }
 
@@ -140,7 +141,7 @@ class SecretsManagerService {
    * @param {string} secretName - Name of the secret to clear
    */
   clearSecretCache(secretName) {
-    console.log(`[SecretsManager] Clearing cache for secret: ${secretName}`);
+    logger.debug(`[SecretsManager] Clearing cache for secret: ${secretName}`);
     this.cache.delete(secretName);
   }
 
@@ -166,15 +167,15 @@ class SecretsManagerService {
    */
   async testConnection() {
     try {
-      console.log('[SecretsManager] Testing connection to AWS Secrets Manager...');
+      logger.info('[SecretsManager] Testing connection to AWS Secrets Manager...');
       
       // Try to list secrets (this validates credentials and connectivity)
       const testSecret = await this.getSecret('jwt-secret');
       
-      console.log('[SecretsManager] ✅ Connection test successful');
+      logger.info('[SecretsManager] Connection test successful');
       return true;
     } catch (error) {
-      console.error('[SecretsManager] ❌ Connection test failed:', error.message);
+      logger.error('[SecretsManager] Connection test failed:', error.message);
       return false;
     }
   }
@@ -185,7 +186,7 @@ class SecretsManagerService {
    * @returns {Promise<boolean>} - True if rotation initiated
    */
   async rotateSecret(secretName) {
-    console.log(`[SecretsManager] Initiating rotation for secret: ${secretName}`);
+    logger.info(`[SecretsManager] Initiating rotation for secret: ${secretName}`);
     
     try {
       // Clear from cache immediately
@@ -193,12 +194,12 @@ class SecretsManagerService {
       
       // Note: Actual rotation setup requires Lambda function configuration
       // This is a placeholder for manual rotation trigger
-      console.log(`[SecretsManager] Secret ${secretName} marked for rotation`);
-      console.log('[SecretsManager] Automatic rotation requires AWS Lambda configuration');
+      logger.info(`[SecretsManager] Secret ${secretName} marked for rotation`);
+      logger.info('[SecretsManager] Automatic rotation requires AWS Lambda configuration');
       
       return true;
     } catch (error) {
-      console.error(`[SecretsManager] Rotation failed for ${secretName}:`, error.message);
+      logger.error(`[SecretsManager] Rotation failed for ${secretName}:`, error.message);
       return false;
     }
   }

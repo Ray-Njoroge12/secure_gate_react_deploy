@@ -1,7 +1,8 @@
 // client/src/components/ui/Toast.jsx
 import React, { useEffect, memo, useRef } from 'react';
-import Icon from './Icon';
+
 import Button from './Button';
+import Icon from './Icon';
 
 const Toast = memo(({ 
   message, 

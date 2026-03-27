@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Card } from './ui';
+
 import Button from './ui/Button';
 
 const Toast = ({ toast, onClose }) => {

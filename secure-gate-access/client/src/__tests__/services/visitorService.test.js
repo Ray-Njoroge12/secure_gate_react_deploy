@@ -1,3 +1,6 @@
+import { http } from '../../services/_http';
+import * as visitorService from '../../services/visitorService';
+
 jest.mock('../../services/_http.js', () => ({
   http: {
     get: jest.fn(),
@@ -7,9 +10,6 @@ jest.mock('../../services/_http.js', () => ({
     delete: jest.fn()
   }
 }));
-
-import * as visitorService from '../../services/visitorService';
-import { http } from '../../services/_http';
 
 describe('visitorService', () => {
   beforeEach(() => {

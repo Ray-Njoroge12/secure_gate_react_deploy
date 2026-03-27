@@ -9,8 +9,9 @@
  * - Maintenance mode and connectivity handling
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import logger from 'utils/logger';
+import { v4 as uuidv4 } from 'uuid';
+
 import errorQueueService from './errorQueueService';
 
 // Error categories for classification
@@ -196,7 +197,7 @@ class ErrorManagementService {
   /**
    * Get error severity based on category and error details
    */
-  getErrorSeverity(category, error) {
+  getErrorSeverity(category, _error) {
     // Critical errors that prevent core functionality
     if (category === ERROR_CATEGORIES.AUTHENTICATION || 
         category === ERROR_CATEGORIES.SYSTEM) {

@@ -8,13 +8,13 @@
 
 import PropTypes from 'prop-types';
 import React, { useState, useEffect, useCallback } from 'react';
-import useWebSocket from '../../hooks/useWebSocket';
 
+import useWebSocket from '../../hooks/useWebSocket';
 import emergencyService from '../../services/emergencyService';
 import notificationService from '../../services/notificationService';
 import logger from '../../utils/logger';
-import Button from '../ui/Button';
 import { useConfirmation } from '../common/ConfirmationDialog';
+import Button from '../ui/Button';
 
 const EmergencyAlertBanner = ({ 
   userRole = 'guard',

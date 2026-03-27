@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useI18n } from "../../i18n/index.js";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
@@ -37,6 +37,7 @@ import Button from '../../components/ui/Button';
 export default function AdminDashboard({ initialTab = 'overview' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { tab: routeTab } = useParams();
   const { logout } = useAuth();
   const role = useCurrentRole();
   const { t } = useI18n();
@@ -97,10 +98,13 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
   // Sync internal state with URL prop
   useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
+    const validTabs = new Set(['overview', 'approvals', 'guards', 'residents', 'visitors', 'reports', 'audit', 'settings']);
+    const resolvedTab = (initialTab && initialTab !== 'overview')
+      ? initialTab
+      : (routeTab && validTabs.has(routeTab) ? routeTab : 'overview');
+
+    setActiveTab(resolvedTab);
+  }, [initialTab, routeTab]);
 
   const tabs = [
     { id: 'overview', label: t('dashboard.admin.overview') },

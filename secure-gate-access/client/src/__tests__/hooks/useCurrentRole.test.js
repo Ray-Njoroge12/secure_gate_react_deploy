@@ -1,7 +1,8 @@
 import { renderHook } from '@testing-library/react';
 import React from 'react';
-import { useCurrentRole } from '../../hooks/useCurrentRole';
+
 import { AuthContext } from '../../contexts/AuthContext';
+import { useCurrentRole } from '../../hooks/useCurrentRole';
 
 const createWrapper = (user) => {
   return ({ children }) => (

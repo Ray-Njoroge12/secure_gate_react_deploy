@@ -7,11 +7,12 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { Card, Button } from '../ui';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
-import logger from '../../utils/logger';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
+import { Card, Button } from '../ui';
 
 // Icons
 const ShieldIcon = () => (

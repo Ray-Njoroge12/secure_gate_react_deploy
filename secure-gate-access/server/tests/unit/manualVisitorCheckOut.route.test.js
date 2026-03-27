@@ -11,7 +11,7 @@ const mockEmitVisitorCheckOut = jest.fn();
 
 jest.unstable_mockModule('../../src/services/tokenService.js', () => ({ tokenService: { verifyAccessToken: mockVerifyAccessToken } }));
 jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({ dbManager: { query: mockQuery }, default: { query: mockQuery } }));
-jest.unstable_mockModule('../../src/middleware/auditLogger.js', () => ({ default: () => (req, res, next) => { req.audit = mockAudit; next(); } }));
+jest.unstable_mockModule('../../src/middleware/auditLogging.js', () => ({ default: () => (req, res, next) => { req.audit = mockAudit; next(); } }));
 jest.unstable_mockModule('../../src/routes/sseRoutes.js', () => ({ broadcastVisitorCheckIn: mockBroadcastVisitorCheckIn, broadcastVisitorUpdate: mockBroadcastVisitorUpdate }));
 jest.unstable_mockModule('../../src/services/websocketService.js', () => ({ default: { emitVisitorCheckOut: mockEmitVisitorCheckOut } }));
 jest.unstable_mockModule('../../src/services/whatsappService.js', () => ({ sendCheckInNotification: jest.fn(), sendCheckOutNotification: jest.fn() }));
@@ -30,7 +30,7 @@ describe('POST /api/visitors/:id/check-out', () => {
   beforeAll(async () => {
     const { authenticateToken } = await import('../../src/middleware/authMiddleware.js');
     const { requireRolePolicy } = await import('../../src/middleware/rolePolicy.js');
-    const attachRequestAudit = (await import('../../src/middleware/auditLogger.js')).default;
+    const attachRequestAudit = (await import('../../src/middleware/auditLogging.js')).default;
     const { checkOutVisitor } = await import('../../src/controllers/visitorCheckInController.js');
     const { errorHandler, notFoundHandler } = await import('../../src/middleware/standardizedErrorHandler.js');
     app = express();

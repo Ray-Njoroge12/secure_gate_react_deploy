@@ -1,7 +1,8 @@
+import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import logger from 'utils/logger';
-import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
+
 import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
 import './ErrorBoundary.css';
@@ -20,7 +21,7 @@ class ErrorBoundary extends Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Update state so the next render will show the fallback UI
     return {
       hasError: true,
@@ -192,7 +193,7 @@ class ErrorBoundary extends Component {
   }
 
   renderComponentError = () => {
-    const { error, errorId, isRetrying } = this.state;
+    const { error, isRetrying } = this.state;
 
     return (
       <div 

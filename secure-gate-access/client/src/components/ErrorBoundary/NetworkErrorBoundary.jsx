@@ -1,12 +1,14 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
+
+import Button from '../ui/Button';
+
 import ErrorBoundary from './ErrorBoundary';
 import './NetworkErrorBoundary.css';
-import Button from '../ui/Button';
 
 const NetworkErrorFallback = ({ 
   error, 
-  errorId, 
+  errorId: _errorId,
   retryCount, 
   onRetry, 
   onReload, 

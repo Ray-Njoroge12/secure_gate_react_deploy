@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+
 import announcementsService from '../../services/announcementsService';
 import Button from '../ui/Button';
 
@@ -47,7 +48,6 @@ const priorityStyles = {
 
 const AnnouncementsBanner = ({ 
   maxVisible = 3, 
-  autoHideDelay = 0,
   className = '' 
 }) => {
   const [announcements, setAnnouncements] = useState([]);

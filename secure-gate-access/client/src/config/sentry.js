@@ -15,6 +15,8 @@
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 
+import logger from '../utils/logger';
+
 /**
  * Initialize Sentry for React application
  *
@@ -25,8 +27,8 @@ export function initializeSentry(routerHistory = null) {
 
   // Skip initialization if no DSN is configured
   if (!dsn) {
-    console.warn('⚠️  Sentry DSN not configured - error tracking disabled');
-    console.warn('   Set REACT_APP_SENTRY_DSN environment variable to enable Sentry');
+    logger.warn('⚠️  Sentry DSN not configured - error tracking disabled');
+    logger.warn('   Set REACT_APP_SENTRY_DSN environment variable to enable Sentry');
     return null;
   }
 
@@ -67,7 +69,7 @@ export function initializeSentry(routerHistory = null) {
     tracesSampleRate, // 10% of transactions in production
 
     // Before sending events, filter out sensitive data
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // Remove sensitive data from breadcrumbs
       if (event.breadcrumbs) {
         event.breadcrumbs = event.breadcrumbs.map(breadcrumb => {
@@ -101,7 +103,7 @@ export function initializeSentry(routerHistory = null) {
 
       // Don't send events in development unless explicitly enabled
       if (environment === 'development' && !process.env.REACT_APP_SENTRY_DEBUG) {
-        console.error('Sentry Event (not sent in dev):', event);
+        logger.error('Sentry Event (not sent in dev):', event);
         return null;
       }
 
@@ -159,9 +161,9 @@ export function initializeSentry(routerHistory = null) {
     normalizeDepth: 5,
   });
 
-  console.log(`✅ Sentry initialized (${environment})`);
-  console.log(`   Release: ${release}`);
-  console.log(`   Traces Sample Rate: ${tracesSampleRate * 100}%`);
+  logger.info(`✅ Sentry initialized (${environment})`);
+  logger.info(`   Release: ${release}`);
+  logger.info(`   Traces Sample Rate: ${tracesSampleRate * 100}%`);
 
   return Sentry;
 }
@@ -175,7 +177,7 @@ export function initializeSentry(routerHistory = null) {
  */
 export function captureException(error, context = {}) {
   if (!process.env.REACT_APP_SENTRY_DSN) {
-    console.error('Sentry not configured, logging error:', error);
+    logger.error('Sentry not configured, logging error:', error);
     return null;
   }
 
@@ -198,7 +200,7 @@ export function captureException(error, context = {}) {
  */
 export function captureMessage(message, level = 'info', context = {}) {
   if (!process.env.REACT_APP_SENTRY_DSN) {
-    console.log(`Sentry not configured, logging message (${level}):`, message);
+    logger.info(`Sentry not configured, logging message (${level}):`, message);
     return null;
   }
 
@@ -315,7 +317,7 @@ export function showReportDialog(eventId) {
 // Export Sentry for direct access
 export { Sentry };
 
-export default {
+const sentryConfig = {
   initializeSentry,
   captureException,
   captureMessage,
@@ -328,3 +330,5 @@ export default {
   showReportDialog,
   Sentry,
 };
+
+export default sentryConfig;

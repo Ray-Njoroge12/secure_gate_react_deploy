@@ -193,7 +193,7 @@ export function getAvailableRoles() {
   return Object.keys(tourStepsMap);
 }
 
-export default {
+const tourService = {
   startTour,
   completeTour,
   markTourSkipped,
@@ -203,3 +203,5 @@ export default {
   destroyActiveTour,
   getAvailableRoles,
 };
+
+export default tourService;

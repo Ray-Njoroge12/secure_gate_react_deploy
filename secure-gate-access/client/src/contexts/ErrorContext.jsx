@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext } from 'react';
 import logger from 'utils/logger';
+
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import errorQueueService from '../services/errorQueueService';
 import { createApiErrorHandler, createErrorContext } from '../utils/apiErrorHandler';
@@ -25,7 +26,7 @@ export const ErrorProvider = ({ children, options = {} }) => {
       // Log error for debugging
       logger.error('API Error:', error, context);
     },
-    onRetry: (attempt, error, context) => {
+    onRetry: (attempt, _error, _context) => {
       // Show retry notification
       errorHandler.handleInfo(`Retrying... (Attempt ${attempt})`, {
         context: 'Retry',

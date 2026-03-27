@@ -5,8 +5,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Button, Icon } from '../ui';
 import io from 'socket.io-client';
+
+import { Button, Icon } from '../ui';
 
 const normalizeApprovalStatus = (status) => String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
 

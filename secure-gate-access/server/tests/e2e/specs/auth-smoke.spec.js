@@ -6,9 +6,11 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
 
 test.describe('Auth + CSRF smoke flow', () => {
   const apiBaseUrl = process.env.E2E_API_BASE_URL || 'http://localhost:3001';
+  const residentEmail = process.env.E2E_AUTH_EMAIL || 'resident1@securegate.com';
+  const residentPassword = process.env.E2E_AUTH_PASSWORD || 'ResidentPass123!';
   const testUser = {
-    email: 'resident@test.com',
-    password: 'TestPass123!'
+    email: residentEmail,
+    password: residentPassword
   };
 
   test('logs in, performs a mutation, refreshes, and logs out', async () => {

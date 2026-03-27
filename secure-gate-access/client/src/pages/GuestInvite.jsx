@@ -1,13 +1,13 @@
 // client/src/pages/GuestInvite.jsx
-import Icon from '../components/ui/Icon';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import QRCodeDisplay from '../components/QRCodeDisplay';
 import { Badge, Button, Card, Input, Loading, StatusAnnouncement } from '../components/ui';
+import Icon from '../components/ui/Icon';
+import { useI18n } from '../i18n/index.js';
 import { completeInvite, getPublicInvite } from '../services/visitorService';
 import { handleApiError, mapSuccessMessage } from '../utils/errorMapper';
-import { useI18n } from '../i18n/index.js';
 
 // Calendar generation utilities
 const generateICSFile = (eventData) => {

@@ -6,10 +6,11 @@
  */
 
 import { render } from '@testing-library/react';
+
+import WelcomeFlow from '../../../components/onboarding/WelcomeFlow';
 import { AuthContext } from '../../../contexts/AuthContext';
 import { ThemeProvider } from '../../../contexts/ThemeContext';
 import { ThemeEngineProvider } from '../../../contexts/ThemeEngine';
-import WelcomeFlow from '../../../components/onboarding/WelcomeFlow';
 import { 
   SELECTORS, 
   ROLE_TITLE_PATTERNS, 
@@ -355,14 +356,14 @@ export const AssertionHelpers = {
   /**
    * Assert feature coverage meets threshold
    */
-  assertFeatureCoverage: (coverage, threshold, role) => {
+  assertFeatureCoverage: (coverage, threshold, _role) => {
     expect(coverage).toBeGreaterThanOrEqual(threshold);
   },
 
   /**
    * Assert action coverage meets threshold
    */
-  assertActionCoverage: (coverage, threshold, role) => {
+  assertActionCoverage: (coverage, threshold, _role) => {
     expect(coverage).toBeGreaterThanOrEqual(threshold);
   },
 

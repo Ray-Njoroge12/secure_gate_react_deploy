@@ -1,6 +1,7 @@
-import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+
 import App from '../../App';
 import { AuthContext } from '../../contexts/AuthContext';
 import { ErrorProvider } from '../../contexts/ErrorContext';
@@ -55,14 +56,14 @@ describe('App Routing & Access Control', () => {
     test('renders login page on default route', async () => {
         renderWithAuth(['/login']);
         // Wait for lazy load
-        await waitFor(() => expect(screen.getByTestId('login-page')).toBeInTheDocument());
+        await screen.findByTestId('login-page');
     });
 
     // 2. Protected Routes - Unauthenticated
     test('redirects unauthenticated user to login when trying to access protected route', async () => {
         renderWithAuth(['/dashboard/admin']);
         // Should be redirected to login
-        await waitFor(() => expect(screen.getByTestId('login-page')).toBeInTheDocument());
+        await screen.findByTestId('login-page');
     });
 
     // 3. Protected Routes - Authorized (Admin)
@@ -70,7 +71,7 @@ describe('App Routing & Access Control', () => {
         const adminUser = { role: 'admin', name: 'Admin user' };
         renderWithAuth(['/dashboard/admin'], { isAuthenticated: true, user: adminUser });
 
-        await waitFor(() => expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument());
+        await screen.findByTestId('admin-dashboard');
     });
 
     // 4. Protected Routes - Authorized (Resident)
@@ -78,7 +79,7 @@ describe('App Routing & Access Control', () => {
         const residentUser = { role: 'resident', name: 'Resident user' };
         renderWithAuth(['/dashboard/resident'], { isAuthenticated: true, user: residentUser });
 
-        await waitFor(() => expect(screen.getByTestId('resident-dashboard')).toBeInTheDocument());
+        await screen.findByTestId('resident-dashboard');
     });
 
     // 5. Protected Routes - Unauthorized (Role Mismatch)

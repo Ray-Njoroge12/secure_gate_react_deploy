@@ -1,6 +1,7 @@
 // Background Sync Service for PWA
-import offlineService from './offlineService';
 import logger from '../utils/logger';
+
+import offlineService from './offlineService';
 
 class BackgroundSyncService {
   constructor() {

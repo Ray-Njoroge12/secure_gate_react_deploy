@@ -22,7 +22,7 @@ jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
 }));
 jest.unstable_mockModule('../../src/services/loggingService.js', () => ({ default: mockLogger }));
 jest.unstable_mockModule('../../src/config/logger.js', () => ({ default: mockLogger, logger: mockLogger }));
-jest.unstable_mockModule('../../src/middleware/auditLogger.js', () => ({
+jest.unstable_mockModule('../../src/middleware/auditLogging.js', () => ({
   default: () => (req, res, next) => {
     req.audit = mockAudit;
     next();

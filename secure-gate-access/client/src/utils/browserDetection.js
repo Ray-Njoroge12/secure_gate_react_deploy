@@ -1,4 +1,3 @@
-import logger from './logger';
 /**
  * @fileoverview Browser detection and feature detection utilities
  * @description Comprehensive browser compatibility detection and feature support checking
@@ -15,6 +14,9 @@ import logger from './logger';
  * Provides comprehensive browser information and feature support detection
  */
 export const browserDetection = {
+  _featureSupportCache: null,
+  _featureSupportCacheUA: null,
+
   /**
    * Get detailed browser information including name, version, device type, and OS
    * 
@@ -128,7 +130,12 @@ export const browserDetection = {
    * @returns {Object} Feature support object
    */
   getFeatureSupport() {
-    return {
+    const currentUserAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    if (this._featureSupportCache && this._featureSupportCacheUA === currentUserAgent) {
+      return this._featureSupportCache;
+    }
+
+    const featureSupport = {
       // ES6+ Features - using safe feature detection without eval
       arrowFunctions: (() => {
         try {
@@ -273,9 +280,21 @@ export const browserDetection = {
       requestAnimationFrame: typeof requestAnimationFrame !== 'undefined',
       cancelAnimationFrame: typeof cancelAnimationFrame !== 'undefined',
       matchMedia: typeof matchMedia !== 'undefined',
-      intersectionObserver: typeof IntersectionObserver !== 'undefined',
       mutationObserver: typeof MutationObserver !== 'undefined'
     };
+
+    this._featureSupportCacheUA = currentUserAgent;
+    this._featureSupportCache = featureSupport;
+
+    return featureSupport;
+  },
+
+  /**
+   * Clear cached feature support data (primarily for tests and explicit refreshes)
+   */
+  clearFeatureSupportCache() {
+    this._featureSupportCache = null;
+    this._featureSupportCacheUA = null;
   },
 
   /**

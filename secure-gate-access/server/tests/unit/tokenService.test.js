@@ -10,6 +10,7 @@
 
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
+import { dbManager } from '../../src/database/db.enhanced.js';
 
 // Mock dependencies
 const mockArgon2 = {
@@ -410,6 +411,24 @@ describe('TokenService', () => {
 
       // Should have cleared and added the new one
       expect(tokenService.revokedTokens.size).toBeLessThanOrEqual(10001);
+    });
+  });
+
+  describe('database binding', () => {
+    test('should lazily bind dbManager when db cache is empty', async () => {
+      const querySpy = jest.spyOn(dbManager, 'query').mockResolvedValue({ rows: [] });
+      tokenService.db = null;
+
+      await tokenService.storeRefreshToken(
+        'jti-123',
+        1,
+        'refresh-token-value',
+        new Date(Date.now() + 60_000),
+        { userAgent: 'jest', ipAddress: '127.0.0.1' }
+      );
+
+      expect(querySpy).toHaveBeenCalled();
+      querySpy.mockRestore();
     });
   });
 

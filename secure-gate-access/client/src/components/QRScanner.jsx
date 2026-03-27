@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
 import jsQR from 'jsqr';
+import React, { useRef, useEffect, useState } from 'react';
 import logger from 'utils/logger';
+
 import { Card, Button } from './ui';
 import Icon from './ui/Icon';
 
@@ -209,7 +210,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isScanning]);
+  }, [isScanning, handleClose, startScanning, stopScanning]);
 
   // Note: keyboard navigation (Space, Escape, Ctrl+S) is handled
   // in the single useEffect above (lines 180-206) to avoid duplicate handlers

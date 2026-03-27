@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+
 import { Card, Button, Badge, Skeleton } from '../../components/ui';
-import { getAuditLogs } from '../../services/adminService';
 import { useToast } from '../../contexts/ToastContext.jsx';
+import { getAuditLogs } from '../../services/adminService';
 import logger from '../../utils/logger.js';
 
 const ACTION_TYPES = [

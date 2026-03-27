@@ -129,7 +129,7 @@ export const useAsyncLoading = (asyncFunction, dependencies = []) => {
     if (dependencies.length > 0) {
       execute();
     }
-  }, dependencies);
+  }, [execute, dependencies]);
 
   return {
     ...loadingState,
@@ -139,7 +139,7 @@ export const useAsyncLoading = (asyncFunction, dependencies = []) => {
 };
 
 // Hook for multiple loading states
-export const useMultipleLoadingStates = (keys = []) => {
+export const useMultipleLoadingStates = () => {
   const [states, setStates] = useState({});
 
   const setLoading = useCallback((key, loading, options = {}) => {

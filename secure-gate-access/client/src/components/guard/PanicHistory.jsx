@@ -6,8 +6,9 @@
  * Location data is not displayed (privacy protection).
  */
 
-import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import React, { useState, useEffect } from 'react';
+
 import emergencyService from '../../services/emergencyService';
 import logger from '../../utils/logger';
 import Button from '../ui/Button';

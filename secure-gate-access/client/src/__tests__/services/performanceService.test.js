@@ -6,6 +6,9 @@
  */
 
 import { PerformanceService } from '../../services/performanceService.js';
+// Get references to mocked instances after jest.mock hoisting
+import loggerMod from '../../utils/logger.js';
+import performanceMonitorMod from '../../utils/performanceMonitor.js';
 
 // Mock modules — factories must not reference outer variables (jest.mock is hoisted)
 jest.mock('../../utils/performanceMonitor.js', () => ({
@@ -22,10 +25,6 @@ jest.mock('../../utils/logger.js', () => ({
     error: jest.fn()
   }
 }));
-
-// Get references to mocked instances after jest.mock hoisting
-import performanceMonitorMod from '../../utils/performanceMonitor.js';
-import loggerMod from '../../utils/logger.js';
 const mockPerformanceMonitor = performanceMonitorMod;
 const mockLogger = loggerMod;
 
@@ -222,8 +221,7 @@ describe('PerformanceService', () => {
         status: 200,
         ok: true
       };
-      
-      const originalFetch = global.fetch;
+
       global.fetch.mockResolvedValueOnce(mockResponse);
 
       // Call the intercepted fetch
@@ -414,12 +412,7 @@ describe('PerformanceService', () => {
   describe('Web Vitals Monitoring', () => {
     test('should record LCP metrics', () => {
       const recordSpy = jest.spyOn(service, 'recordMetric');
-      
-      // Find the LCP observer
-      const lcpObserverCall = mockPerformanceObserver.mock.calls.find(
-        call => call.length === 0 // Constructor call
-      );
-      
+
       // Simulate LCP observer callback
       const mockList = {
         getEntries: () => [{ startTime: 2500 }]

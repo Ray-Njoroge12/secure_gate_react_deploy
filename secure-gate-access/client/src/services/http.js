@@ -175,7 +175,7 @@ export const patch = (url, data, options = {}) => {
   });
 };
 
-export default {
+const httpService = {
   apiCall,
   get,
   post,
@@ -183,6 +183,8 @@ export default {
   del,
   patch,
 };
+
+export default httpService;
 
 
 

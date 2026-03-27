@@ -5,9 +5,10 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Icon } from '../ui';
+
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import api from '../../utils/apiClient';
+import { Button, Icon } from '../ui';
 
 const IncidentModal = ({ isOpen, onClose, visitor }) => {
   const { modalRef } = useModalAccessibility(isOpen, onClose);

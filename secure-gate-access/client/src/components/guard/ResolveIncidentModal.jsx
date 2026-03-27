@@ -5,10 +5,11 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Icon } from '../ui';
+
 import { useError } from '../../contexts/ErrorContext';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import api from '../../utils/apiClient';
+import { Button, Icon } from '../ui';
 
 const ResolveIncidentModal = ({ isOpen, onClose, incident, onResolve }) => {
     const { modalRef } = useModalAccessibility(isOpen, onClose);

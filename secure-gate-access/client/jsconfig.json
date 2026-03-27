@@ -3,12 +3,12 @@
     "baseUrl": "src",
     "paths": {
       "*": ["*"],
-      "utils/*": ["utils/*"],
       "components/*": ["components/*"],
-      "hooks/*": ["hooks/*"],
       "contexts/*": ["contexts/*"],
       "pages/*": ["pages/*"],
-      "services/*": ["services/*"]
+      "hooks/*": ["hooks/*"],
+      "services/*": ["services/*"],
+      "utils/*": ["utils/*"]
     }
   },
   "include": [

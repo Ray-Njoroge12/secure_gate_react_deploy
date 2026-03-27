@@ -1,36 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { useError } from '../../contexts/ErrorContext';
+
 import { useAuth } from '../../contexts/AuthContext';
-import logger from '../../utils/logger';
+import { useError } from '../../contexts/ErrorContext';
+import api from '../../utils/apiClient';
 import Button from '../ui/Button';
 
 const AdminUserApprovals = ({ siteId }) => {
     const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const { handleError, handleSuccess } = useError();
-    const { authFetch } = useAuth();
+    const { user } = useAuth();
+    const requiresSiteSelection = user?.role === 'super_admin' && !siteId;
 
     const fetchPendingUsers = async () => {
+        if (requiresSiteSelection) {
+            setPendingUsers([]);
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             const query = siteId ? `?siteId=${siteId}` : '';
-            const response = await authFetch(`/api/admin/users/pending${query}`);
-            const data = await response.json();
-            if (response.ok) {
-                // Robust array extraction
-                let usersArray = [];
-                if (Array.isArray(data)) {
-                    usersArray = data;
-                } else if (data && Array.isArray(data.data)) {
-                    usersArray = data.data;
-                } else if (data && Array.isArray(data.users)) {
-                    usersArray = data.users;
-                }
-                setPendingUsers(usersArray);
-            } else {
-                setPendingUsers([]); // Reset on error
-                throw new Error(data.message || 'Failed to fetch pending users');
+            const response = await api.get(`/api/admin/users/pending${query}`);
+            const data = response.data;
+
+            // Robust array extraction
+            let usersArray = [];
+            if (Array.isArray(data)) {
+                usersArray = data;
+            } else if (data && Array.isArray(data.data)) {
+                usersArray = data.data;
+            } else if (data && Array.isArray(data.users)) {
+                usersArray = data.users;
             }
+            setPendingUsers(usersArray);
         } catch (err) {
             setPendingUsers([]); // Reset on error
             handleError(err, { context: 'Fetching Pending Users' });
@@ -41,28 +45,21 @@ const AdminUserApprovals = ({ siteId }) => {
 
     useEffect(() => {
         fetchPendingUsers();
-    }, [siteId]);
+    }, [siteId, requiresSiteSelection]);
 
     const handleStatusUpdate = async (userId, newStatus) => {
         try {
             // Optimistic update
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
 
-            const response = await authFetch(`/api/admin/users/${userId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+            await api.put(`/api/admin/users/${userId}/status`, {
+                status: newStatus
             });
-            const data = await response.json();
 
-            if (response.ok) {
-                handleSuccess(`User ${newStatus === 'active' ? 'approved' : 'rejected'} successfully.`);
-            } else {
-                // Revert on failure
-                await fetchPendingUsers();
-                throw new Error(data.message || 'Failed to update status');
-            }
+            handleSuccess(`User ${newStatus === 'active' ? 'approved' : 'rejected'} successfully.`);
         } catch (err) {
+            // Revert on failure
+            await fetchPendingUsers();
             handleError(err, { context: 'Updating User Status' });
         }
     };
@@ -71,6 +68,16 @@ const AdminUserApprovals = ({ siteId }) => {
         return (
             <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+            </div>
+        );
+    }
+
+    if (requiresSiteSelection) {
+        return (
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
+                <div className="p-8 text-center text-gray-500 dark:text-gray-300">
+                    Select an estate to view pending account requests.
+                </div>
             </div>
         );
     }

@@ -312,7 +312,7 @@ describe('System Health Service (Client)', () => {
       const mockCallback = jest.fn();
       jest.spyOn(systemHealthService, 'startPolling').mockReturnValue({ close: jest.fn() });
 
-      const subscription = systemHealthService.subscribeToHealthUpdates(mockCallback);
+      systemHealthService.subscribeToHealthUpdates(mockCallback);
 
       // Simulate EventSource error
       mockEventSource.onerror(new Error('Connection failed'));

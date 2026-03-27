@@ -1,28 +1,45 @@
 import React from 'react';
-import Icon from './ui/Icon';
+
+import { useBrowserCompatibility } from '../contexts/BrowserCompatibilityContext';
+
 import { Button, Card } from './ui';
-import { useBrowserCompatibility } from '../hooks/useBrowserCompatibility';
+import Icon from './ui/Icon';
 
 const BrowserCompatibilityWarning = () => {
+  const [dismissed, setDismissed] = React.useState(false);
   const {
-    showWarning,
     browserInfo,
-    isSupported,
-    hasCriticalIssues,
-    hasWarnings,
-    issues,
-    dismissWarning,
-    getBrowserSpecificRecommendations
+    warnings = [],
+    recommendations,
+    isCompatible,
+    isOutdated
   } = useBrowserCompatibility();
 
-  if (!showWarning || !browserInfo) {
+  if (!browserInfo || dismissed) {
     return null;
   }
 
-  const { browser, version } = browserInfo;
-  const criticalIssues = issues.filter(issue => issue.type === 'error');
-  const warningIssues = issues.filter(issue => issue.type === 'warning');
-  const browserRecommendations = getBrowserSpecificRecommendations();
+  const browser = (browserInfo.name || 'unknown').toLowerCase();
+  const version = browserInfo.version || 'unknown';
+  const criticalIssues = !isCompatible()
+    ? [{ type: 'error', message: 'This browser does not meet minimum compatibility requirements.' }]
+    : [];
+  const warningIssues = warnings
+    .filter((warning) => warning?.severity !== 'error')
+    .map((warning) => ({ type: 'warning', message: warning.message }));
+  const browserRecommendations = [
+    ...(recommendations?.security || []),
+    ...(recommendations?.features || []),
+    ...(recommendations?.performance || [])
+  ].map((message) => ({ message }));
+  const hasCriticalIssues = criticalIssues.length > 0;
+  const isSupported = isCompatible();
+  const dismissWarning = () => setDismissed(true);
+  const showWarning = hasCriticalIssues || isOutdated() || warningIssues.length > 0;
+
+  if (!showWarning) {
+    return null;
+  }
 
   // Get browser download links
   const getBrowserDownloadLinks = () => {
@@ -55,20 +72,6 @@ const BrowserCompatibilityWarning = () => {
         return '🟡';
       default:
         return '❓';
-    }
-  };
-
-  // Get severity color
-  const getSeverityColor = (type) => {
-    switch (type) {
-      case 'error':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'warning':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'info':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
-      default:
-        return 'text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700';
     }
   };
 

@@ -17,6 +17,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { exportToPDF, exportToCSV } from '../../utils/exportUtils';
 import { COLORS as CHART_COLORS } from '../../utils/designTokens';
 import Button from '../ui/Button';
+import logger from 'utils/logger';
 
 // Sparkline component for inline charts
 const Sparkline = ({ data = [], color = CHART_COLORS.success, height = 32, width = 100 }) => {
@@ -395,9 +396,9 @@ const AnalyticsDashboard = ({
       });
 
       // Optional: Show success toast/notification
-      console.log('PDF exported successfully');
+      logger.info('PDF exported successfully');
     } catch (error) {
-      console.error('PDF export failed:', error);
+      logger.error('PDF export failed:', error);
       // Optional: Show error toast/notification
     } finally {
       setIsExporting(false);
@@ -423,9 +424,9 @@ const AnalyticsDashboard = ({
       });
 
       // Optional: Show success toast/notification
-      console.log(`CSV (${type}) exported successfully`);
+      logger.info(`CSV (${type}) exported successfully`);
     } catch (error) {
-      console.error('CSV export failed:', error);
+      logger.error('CSV export failed:', error);
       // Optional: Show error toast/notification
     } finally {
       setIsExporting(false);

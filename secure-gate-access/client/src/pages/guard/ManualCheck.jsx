@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/apiClient';
-import { navigateTo } from '../../utils/appNavigation';
+
+import OfflineBanner from '../../components/common/OfflineBanner';
+import IncidentModal from '../../components/guard/IncidentModal'; // Phase G4
 import { Card, Button, PageHeader, Icon, Skeleton, EmptyState } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import IncidentModal from '../../components/guard/IncidentModal'; // Phase G4
-import { getStatusChipClass } from '../../utils/statusColors'; // Phase A8
-import { verifyOtp } from '../../services/visitorService';
-import notificationService from '../../services/notificationService';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import OfflineBanner from '../../components/common/OfflineBanner';
-
+import notificationService from '../../services/notificationService';
+import api from '../../utils/apiClient';
+import { navigateTo } from '../../utils/appNavigation';
 import {
-  normalizeVisitorStatus,
   formatVisitorStatus,
   canVisitorCheckIn,
   canVisitorCheckOut
 } from '../../utils/guardScanUtils';
+import { getStatusChipClass } from '../../utils/statusColors'; // Phase A8
+
 
 const ManualCheck = () => {
   const [searchTerm, setSearchTerm] = useState('');

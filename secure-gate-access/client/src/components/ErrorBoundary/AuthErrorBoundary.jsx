@@ -1,16 +1,16 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import ErrorBoundary from './ErrorBoundary';
+import React from 'react';
+
 import { navigateToLogin } from '../../utils/authNavigation';
-import './AuthErrorBoundary.css';
 import Button from '../ui/Button';
+
+import ErrorBoundary from './ErrorBoundary';
+import './AuthErrorBoundary.css';
 
 const AuthErrorFallback = ({ 
   error, 
-  errorId, 
   retryCount, 
   onRetry, 
-  onReload, 
   onGoHome,
   isRetrying 
 }) => {
@@ -94,10 +94,8 @@ const AuthErrorFallback = ({
 
 AuthErrorFallback.propTypes = {
   error: PropTypes.object,
-  errorId: PropTypes.string,
   retryCount: PropTypes.number,
   onRetry: PropTypes.func.isRequired,
-  onReload: PropTypes.func.isRequired,
   onGoHome: PropTypes.func.isRequired,
   isRetrying: PropTypes.bool
 };

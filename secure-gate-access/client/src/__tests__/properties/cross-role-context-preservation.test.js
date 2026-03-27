@@ -9,15 +9,15 @@
  * receiving role with appropriate visibility controls.
  */
 
-import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
 import * as fc from 'fast-check';
+import React from 'react';
+
 import WorkflowHandoffs from '../../components/collaboration/WorkflowHandoffs';
 import { collaborationService } from '../../services/collaborationService';
 import { 
-  createMockAccessibilityHook, 
-  accessibilityScenarios 
+  createMockAccessibilityHook
 } from '../utils/mockAccessibility';
 
 // Mock external dependencies
@@ -131,7 +131,7 @@ const ROLE_VISIBILITY_RULES = {
 };
 
 // Context preservation validation functions
-const validateContextPreservation = (originalContext, preservedContext, fromRole, toRole) => {
+const validateContextPreservation = (originalContext, preservedContext, _fromRole, _toRole) => {
   // Property: Essential data must be preserved
   expect(preservedContext.entityId).toBe(originalContext.entityId);
   expect(preservedContext.entityType).toBe(originalContext.entityType);
@@ -457,7 +457,7 @@ describe('Property 8: Cross-Role Context Preservation', () => {
         fc.property(
           fc.tuple(roleGenerator, roleGenerator),
           contextDataGenerator,
-          ([fromRole, toRole], contextData) => {
+          ([fromRole, toRole], _contextData) => {
             // Ensure different roles for meaningful test
             fc.pre(fromRole !== toRole);
             

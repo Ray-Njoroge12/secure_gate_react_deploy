@@ -27,7 +27,6 @@ describe('apiClient', () => {
   let axios;
   let requestFulfilled;
   let responseRejected;
-  let apiClientModule;
   let instance;
   let authNavigation;
 
@@ -80,7 +79,7 @@ describe('apiClient', () => {
     process.env.REACT_APP_API_URL = 'http://example.test';
     process.env.NODE_ENV = 'development';
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     expect(axios.create).toHaveBeenCalled();
     const cfg = axios.create.mock.calls[0][0];
@@ -94,7 +93,7 @@ describe('apiClient', () => {
     process.env.NODE_ENV = 'development';
     document.head.innerHTML = '<meta name="csrf-token" content="csrf123" />';
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     expect(typeof requestFulfilled).toBe('function');
 
@@ -105,7 +104,7 @@ describe('apiClient', () => {
 
   test('response interceptor retries once for GET timeouts', async () => {
     process.env.NODE_ENV = 'development';
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     instance.mockResolvedValue({ data: { ok: true } });
 
@@ -121,7 +120,7 @@ describe('apiClient', () => {
 
   test('response interceptor maps timeout to TIMEOUT when not retried', async () => {
     process.env.NODE_ENV = 'development';
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = {
       code: 'ECONNABORTED',
@@ -136,7 +135,7 @@ describe('apiClient', () => {
 
   test('response interceptor maps network errors', async () => {
     process.env.NODE_ENV = 'development';
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = { message: 'Network down', config: { url: '/x' } };
 
@@ -152,7 +151,7 @@ describe('apiClient', () => {
 
     axios.post.mockResolvedValue({ data: { success: true } });
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     instance.mockResolvedValue({ data: { ok: true } });
 
@@ -175,7 +174,7 @@ describe('apiClient', () => {
 
     axios.post.mockRejectedValue(new Error('refresh failed'));
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = {
       response: { status: 401, data: {} },
@@ -197,7 +196,7 @@ describe('apiClient', () => {
     process.env.NODE_ENV = 'development';
     axios.get.mockResolvedValue({ data: { csrfToken: 'newcsrf' }, headers: {} });
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     instance.mockResolvedValue({ data: { ok: true } });
 
@@ -208,9 +207,33 @@ describe('apiClient', () => {
 
     const result = await responseRejected(error);
 
-    expect(axios.get).toHaveBeenCalledWith('/api/auth/csrf-token', { withCredentials: true });
+    expect(axios.get).toHaveBeenCalledWith('/api/auth/csrf-token', {
+      baseURL: 'http://localhost:3001',
+      withCredentials: true
+    });
     const meta = document.querySelector('meta[name="csrf-token"]');
     expect(meta?.content).toBe('newcsrf');
+    expect(instance).toHaveBeenCalledWith(error.config);
+    expect(result).toEqual({ data: { ok: true } });
+  });
+
+  test('response interceptor accepts wrapped csrf token payload shape on refresh', async () => {
+    process.env.NODE_ENV = 'development';
+    axios.get.mockResolvedValue({ data: { success: true, data: { csrfToken: 'wrapped-token' } }, headers: {} });
+
+    require('../../utils/apiClient');
+
+    instance.mockResolvedValue({ data: { ok: true } });
+
+    const error = {
+      response: { status: 403, data: { error: { code: 'CSRF_VALIDATION_FAILED' } } },
+      config: { method: 'post', url: '/api/visitors/bulk-invite', data: { eventName: 'Gate Event' } }
+    };
+
+    const result = await responseRejected(error);
+
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    expect(meta?.content).toBe('wrapped-token');
     expect(instance).toHaveBeenCalledWith(error.config);
     expect(result).toEqual({ data: { ok: true } });
   });
@@ -219,7 +242,7 @@ describe('apiClient', () => {
     process.env.NODE_ENV = 'development';
     window.location.pathname = '/dashboard/resident';
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = {
       response: { status: 403, data: { error: { code: 'ESTATE_REQUIRED' }, message: 'Estate required' } },
@@ -238,7 +261,7 @@ describe('apiClient', () => {
     process.env.NODE_ENV = 'development';
     axios.get.mockResolvedValue({ data: { csrfToken: 'newcsrf' }, headers: {} });
 
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = {
       response: { status: 403, data: { error: { code: 'CSRF_TOKEN_MISSING' } } },
@@ -256,7 +279,7 @@ describe('apiClient', () => {
 
   test('response interceptor maps 429 rate limit error', async () => {
     process.env.NODE_ENV = 'development';
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = {
       response: {
@@ -276,7 +299,7 @@ describe('apiClient', () => {
 
   test('response interceptor maps 500+ server errors', async () => {
     process.env.NODE_ENV = 'development';
-    apiClientModule = require('../../utils/apiClient');
+    require('../../utils/apiClient');
 
     const error = {
       response: { status: 500, data: {} },

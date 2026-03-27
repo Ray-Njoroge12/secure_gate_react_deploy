@@ -5,9 +5,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import useModalAccessibility from '../../hooks/useModalAccessibility';
+
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import api from '../../utils/apiClient';
 import logger from '../../utils/logger';
 import './SiteManagement.css';
@@ -208,10 +209,25 @@ const SiteManagement = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal} role="presentation" aria-hidden="true">
+        <div
+          className="modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeModal();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              closeModal();
+            }
+          }}
+          role="button"
+          aria-label="Close site form modal"
+          tabIndex={0}
+        >
           <div
             className="modal-content large"
-            onClick={(e) => e.stopPropagation()}
             ref={modalRef}
             role="dialog"
             aria-modal="true"

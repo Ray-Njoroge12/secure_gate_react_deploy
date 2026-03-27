@@ -5,8 +5,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Icon, Card, Badge } from '../ui';
+
 import api from '../../utils/apiClient';
+import { Icon, Card, Badge } from '../ui';
 
 const PendingApprovalsQueue = () => {
   const [pendingVisitors, setPendingVisitors] = useState([]);

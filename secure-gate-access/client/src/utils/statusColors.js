@@ -202,9 +202,11 @@ export const StatusChip = ({ status, size = 'md', showIcon = false, className = 
   </span>`;
 };
 
-export default {
+const statusColorUtils = {
   getStatusColors,
   getStatusChipClass,
   getStatusIcon,
   StatusChip
 };
+
+export default statusColorUtils;

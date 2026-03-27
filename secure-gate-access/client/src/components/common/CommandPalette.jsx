@@ -15,6 +15,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
+import logger from 'utils/logger';
 
 // Icons
 const SearchIcon = () => (
@@ -439,7 +440,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
         }));
         break;
       default:
-        console.log('Unknown action:', command.action);
+        logger.warn('Unknown action:', command.action);
     }
   }, [navigate, logout, onClose]);
 

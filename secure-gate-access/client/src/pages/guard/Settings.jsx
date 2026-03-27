@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { useOnboardingTour } from "../../components/common/OnboardingTour";
 import PanicHistory from "../../components/guard/PanicHistory"; // Phase 1.1: Emergency History
 import NotificationSettings from "../../components/settings/NotificationSettings";
 import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
 import { useTheme } from "../../contexts/ThemeContext";
-import { useOnboardingTour } from "../../components/common/OnboardingTour";
-import api from "../../utils/apiClient";
 import notificationService from "../../services/notificationService";
+import api from "../../utils/apiClient";
 
 const GUARD_SETTINGS_TABS = ["profile", "notifications", "emergency", "security", "appearance"];
 

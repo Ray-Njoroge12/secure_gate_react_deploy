@@ -5,16 +5,16 @@
  */
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Card, Button, Badge, Input, PageHeader, Skeleton, Modal } from "../../components/ui";
+import logger from 'utils/logger';
+
+import { useConfirmation } from "../../components/common/ConfirmationDialog";
+import { Card, Button, PageHeader, Skeleton, Modal } from "../../components/ui";
 import { SearchFilter, Pagination } from "../../components/ui";
+import Icon from "../../components/ui/Icon";
+import { useToast } from "../../contexts/ToastContext";
+import { useSearchData } from "../../hooks/useSearch";
 import { getAccessLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
-import { useSearchData } from "../../hooks/useSearch";
-import { useToast } from "../../contexts/ToastContext";
-import { useConfirmation } from "../../components/common/ConfirmationDialog";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
-import logger from 'utils/logger';
-import Icon from "../../components/ui/Icon";
 
 // Status badge component
 const StatusBadge = ({ status }) => {
@@ -266,7 +266,6 @@ const StatsCard = ({ title, value, iconName, color }) => (
 );
 
 export default function AccessControl() {
-  const role = useCurrentRole();
   const toast = useToast();
   const confirm = useConfirmation();
   
@@ -290,7 +289,6 @@ export default function AccessControl() {
     data: filteredCards,
     pagination,
     searchTerm,
-    filters,
     setSearchTerm,
     setFilters,
     clearFilters,
@@ -359,7 +357,7 @@ export default function AccessControl() {
     }
   };
 
-  const handleSaveCard = async (cardId, data) => {
+  const handleSaveCard = async (cardId, _data) => {
     // API call would go here
     toast?.success({ 
       title: modalMode === 'assign' ? 'Card Assigned' : 'Card Updated', 

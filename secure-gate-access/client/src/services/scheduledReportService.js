@@ -3,8 +3,9 @@
  * Supports email delivery and secure download links with compliance features
  */
 
-import exportService from './exportService';
 import logger from '../utils/logger';
+
+import exportService from './exportService';
 
 class ScheduledReportService {
   constructor() {
@@ -148,7 +149,7 @@ class ScheduledReportService {
 
     try {
       // Find reports that are due for execution
-      for (const [reportId, report] of this.scheduledReports) {
+      for (const [, report] of this.scheduledReports) {
         if (report.status === 'scheduled' && new Date(report.nextRun) <= now) {
           dueReports.push(report);
         }
@@ -267,8 +268,6 @@ class ScheduledReportService {
   async generateReportData(report) {
     // This would typically fetch data from the API based on report configuration
     // For now, we'll simulate data generation
-    
-    const { dataSource, filters, sorting } = report.reportConfig;
     
     // Simulate data fetching with filters and sorting
     const mockData = Array.from({ length: Math.floor(Math.random() * 100) + 10 }, (_, index) => {
@@ -487,40 +486,10 @@ class ScheduledReportService {
   /**
    * Deliver report via email
    */
-  async deliverViaEmail(report, execution, exportBlob, channel, auditTrail) {
+  async deliverViaEmail(report, execution, exportBlob, channel, _auditTrail) {
     // This would integrate with the email service
     // For now, we'll simulate email delivery
     
-    const emailData = {
-      to: channel.recipient,
-      subject: `Scheduled Report: ${report.name}`,
-      html: `
-        <h2>Scheduled Report Delivery</h2>
-        <p>Your scheduled report "${report.name}" has been generated and is attached to this email.</p>
-        
-        <h3>Report Details:</h3>
-        <ul>
-          <li><strong>Report Name:</strong> ${report.name}</li>
-          <li><strong>Generated:</strong> ${new Date().toLocaleString()}</li>
-          <li><strong>Records:</strong> ${auditTrail.dataLineage.recordCount}</li>
-          <li><strong>Format:</strong> ${report.reportConfig.format.toUpperCase()}</li>
-        </ul>
-        
-        <h3>Compliance Information:</h3>
-        <ul>
-          <li><strong>Retention Period:</strong> ${report.compliance.retentionPeriod} days</li>
-          <li><strong>Regulatory Framework:</strong> ${auditTrail.compliance.regulatoryFramework.join(', ')}</li>
-          <li><strong>Data Classification:</strong> ${auditTrail.compliance.dataClassification}</li>
-        </ul>
-        
-        <p><em>This report contains sensitive information and should be handled according to your organization's data protection policies.</em></p>
-      `,
-      attachments: [{
-        filename: `${report.name.replace(/\s+/g, '_')}_${execution.executionId}.${report.reportConfig.format}`,
-        content: exportBlob
-      }]
-    };
-
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
 
@@ -541,7 +510,7 @@ class ScheduledReportService {
   /**
    * Deliver report via secure download link
    */
-  async deliverViaSecureDownload(report, execution, exportBlob, channel, auditTrail) {
+  async deliverViaSecureDownload(report, execution, exportBlob, channel, _auditTrail) {
     // Generate secure download URL
     const downloadToken = `dl_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`;
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -558,28 +527,6 @@ class ScheduledReportService {
     }
 
     // Send notification email about download availability
-    const notificationEmail = {
-      to: channel.recipient,
-      subject: `Secure Download Ready: ${report.name}`,
-      html: `
-        <h2>Secure Report Download</h2>
-        <p>Your scheduled report "${report.name}" is ready for secure download.</p>
-        
-        <p><strong>Download Link:</strong> <a href="${secureUrl}">${secureUrl}</a></p>
-        <p><strong>Expires:</strong> ${expiresAt.toLocaleString()}</p>
-        
-        <h3>Report Details:</h3>
-        <ul>
-          <li><strong>Generated:</strong> ${new Date().toLocaleString()}</li>
-          <li><strong>Records:</strong> ${auditTrail.dataLineage.recordCount}</li>
-          <li><strong>Format:</strong> ${report.reportConfig.format.toUpperCase()}</li>
-          <li><strong>File Size:</strong> ${(exportBlob.size / 1024).toFixed(2)} KB</li>
-        </ul>
-        
-        <p><em>This download link is secure and will expire in 7 days. Please download the report promptly.</em></p>
-      `
-    };
-
     return {
       channel: 'download',
       recipient: channel.recipient,

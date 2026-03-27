@@ -6,11 +6,12 @@ import MFAVerify from '../../pages/MFAVerify.jsx';
 
 // Mock react-router-dom navigate
 const mockNavigate = jest.fn();
+let mockLocationState = { mfaSessionId: 'test-session-123', userId: 42, username: 'testuser' };
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
   useLocation: () => ({
-    state: { mfaSessionId: 'test-session-123', userId: 42, username: 'testuser' },
+    state: mockLocationState,
     pathname: '/mfa-verify'
   }),
 }));
@@ -56,6 +57,7 @@ import api from '../../utils/apiClient';
 describe('MFAVerify', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLocationState = { mfaSessionId: 'test-session-123', userId: 42, username: 'testuser' };
   });
 
   const renderMFAVerify = () =>
@@ -150,6 +152,54 @@ describe('MFAVerify', () => {
 
     const input = screen.getByLabelText(/Verification Code/i);
     await user.type(input, '123456');
+    await user.click(screen.getByText('Verify Code'));
+
+    await waitFor(() => {
+      expect(mockCompleteMfa).toHaveBeenCalledWith(mockUser);
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard/guard');
+    });
+  });
+
+  it('uses returnUrl from MFA state after successful guard verification', async () => {
+    mockLocationState = {
+      mfaSessionId: 'test-session-123',
+      userId: 42,
+      username: 'guard.user',
+      returnUrl: '/dashboard/guard/scan-qr'
+    };
+    const mockUser = { id: 3, role: 'guard', name: 'Guard User' };
+    api.post.mockResolvedValueOnce({
+      data: { success: true, data: { user: mockUser } },
+    });
+
+    const user = userEvent.setup();
+    renderMFAVerify();
+
+    await user.type(screen.getByLabelText(/Verification Code/i), '123456');
+    await user.click(screen.getByText('Verify Code'));
+
+    await waitFor(() => {
+      expect(mockCompleteMfa).toHaveBeenCalledWith(mockUser);
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard/guard/scan-qr');
+    });
+  });
+
+  it('does not redirect back into MFA routes after successful guard verification', async () => {
+    mockLocationState = {
+      mfaSessionId: 'test-session-123',
+      userId: 42,
+      username: 'guard.user',
+      returnUrl: '/mfa/setup?returnUrl=%2Fdashboard%2Fguard'
+    };
+    const mockUser = { id: 3, role: 'guard', name: 'Guard User' };
+    api.post.mockResolvedValueOnce({
+      data: { success: true, data: { user: mockUser } },
+    });
+
+    const user = userEvent.setup();
+    renderMFAVerify();
+
+    await user.type(screen.getByLabelText(/Verification Code/i), '123456');
     await user.click(screen.getByText('Verify Code'));
 
     await waitFor(() => {

@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { expectNoGlobalErrorShell, dismissBlockingPrompts } = require('../utils/test-helpers');
 
 const TEST_ORIGIN = 'http://127.0.0.1:3000';
 
@@ -174,26 +175,6 @@ async function mockResidentApi(page) {
   });
 }
 
-async function expectNoGlobalErrorShell(page) {
-  await expect(page.locator('text=Access Restricted')).toHaveCount(0);
-  await expect(page.locator('text=Application Error')).toHaveCount(0);
-}
-
-async function dismissBlockingPrompts(page) {
-  const rejectCookies = page.getByRole('button', { name: /Reject All/i });
-  if (await rejectCookies.isVisible({ timeout: 1200 }).catch(() => false)) {
-    await rejectCookies.click({ force: true });
-  }
-
-  const pwaNotNow = page.getByRole('button', { name: /Not now/i });
-  if (await pwaNotNow.isVisible({ timeout: 1200 }).catch(() => false)) {
-    await pwaNotNow.click({ force: true });
-  }
-
-  // Fallback in case other transient overlays remain focused.
-  await page.keyboard.press('Escape').catch(() => {});
-}
-
 test.beforeEach(async ({ page }, testInfo) => {
   const isDarkMode = testInfo.project.name.includes('dark');
 
@@ -211,7 +192,9 @@ test('resident dashboard/pages smoke matrix (theme + responsive)', async ({ page
   await expect(page).toHaveURL(/\/dashboard\/resident(?:\?.*)?$/);
   await dismissBlockingPrompts(page);
   await expect(page.locator('[data-test-id="cta-quick-invite"]')).toBeVisible();
-  await expect(page.getByText(/Upcoming Invites/i).first()).toBeVisible();
+  await expect(
+    page.getByText(/(?:Upcoming Invites|dashboard\.resident\.upcomingInvites)/i).first()
+  ).toBeVisible();
   await expectNoGlobalErrorShell(page);
 
   await expect.poll(async () => {
