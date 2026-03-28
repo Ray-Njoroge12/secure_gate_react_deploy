@@ -286,4 +286,27 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Reset request failed');
     expect(errorHandlers.handleError).not.toHaveBeenCalled();
   });
+
+  test('forgot password API error is shown inline', async () => {
+    const user = userEvent.setup();
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: 'Reset request failed' })
+    });
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/forgot-password" element={<LoginPage />} />
+      </Routes>,
+      { route: '/forgot-password', auth: { isAuthenticated: false, user: null } }
+    );
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send Reset Link' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Reset request failed');
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+  });
 });

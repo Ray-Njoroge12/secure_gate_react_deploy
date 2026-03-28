@@ -83,7 +83,7 @@ export function completeTour(role) {
     localStorage.setItem(`${TOUR_KEY_PREFIX}${role}`, 'completed');
     localStorage.removeItem(`${TOUR_SKIPPED_KEY_PREFIX}${role}`);
   } catch (e) {
-    logger.warn('[tourService] Could not write to localStorage:', e);
+    logger.warn('[tourService] Could not write skip state to localStorage:', e);
   }
 }
 
@@ -113,7 +113,7 @@ export function markTourSkipped(role) {
       localStorage.setItem(key, 'pending');
     }
   } catch (e) {
-    logger.warn('[tourService] Could not write skip state to localStorage:', e);
+    console.warn('[tourService] Could not write skip state to localStorage:', e);
   }
 }
 
