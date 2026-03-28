@@ -2,6 +2,8 @@
 
 This directory contains end-to-end verification scripts intended for ad-hoc manual testing of deployed environments (staging or production).
 
+Repository-level index: [README.md](../../../../README.md)
+
 **⚠️ DO NOT RUN THESE IN CI/CD PIPELINES ⚠️**
 
 ## Scripts

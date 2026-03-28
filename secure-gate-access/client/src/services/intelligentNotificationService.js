@@ -1,4 +1,8 @@
 /**
+ * Primary notification service for SecureGate.
+ * This is the canonical notification service — prefer this over notificationService.js.
+ * Features: intelligent batching, priority routing, multi-channel delivery.
+ *
  * @file intelligentNotificationService.js
  * @description Client-side service for intelligent notification management
  * Features:
@@ -286,7 +290,7 @@ class IntelligentNotificationService {
    * @param {string} notificationType - Notification type
    * @returns {Promise<Object>} - Relevance data
    */
-  async getRelevanceScore(notificationType) {
+  async fetchRelevanceScore(notificationType) {
     try {
       const response = await apiClient.get(`/intelligent-notifications/relevance/${notificationType}`);
       

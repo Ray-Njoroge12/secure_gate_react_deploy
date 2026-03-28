@@ -5,9 +5,11 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Icon } from '../ui';
+
 import { useError } from '../../contexts/ErrorContext';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import api from '../../utils/apiClient';
+import { Button, Icon } from '../ui';
 
 const ResolveIncidentModal = ({ isOpen, onClose, incident, onResolve }) => {
     const { modalRef } = useModalAccessibility(isOpen, onClose);
@@ -22,20 +24,9 @@ const ResolveIncidentModal = ({ isOpen, onClose, incident, onResolve }) => {
         try {
             setIsSubmitting(true);
 
-            const response = await fetch(`/api/guard/incidents/${incident.id}/resolve`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include', // Important for cookies
-                body: JSON.stringify({ resolution })
-            });
+            const response = await api.put(`/api/guard/incidents/${incident.id}/resolve`, { resolution });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to resolve incident');
-            }
+            const data = response.data;
 
             onResolve(data.data);
             onClose();

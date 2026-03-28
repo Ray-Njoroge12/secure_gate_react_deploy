@@ -1,8 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import logger from 'utils/logger';
+import { useNavigate } from "react-router-dom";
 
 import { Button, SearchFilter, Pagination, ResponsiveTable, PageHeader, Icon } from "../../components/ui";
+import Modal from "../../components/ui/Modal";
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirmation } from '../../components/common/ConfirmationDialog';
 import { useSearchData } from "../../hooks/useSearch";
+import { useResidentVisitorEvents, VISITOR_EVENTS } from "../../hooks/useVisitorEvents";
+import api from '../../utils/apiClient';
 // import AppShell from "../../layouts/AppShell";
 // import { useCurrentRole } from "../../hooks/useCurrentRole";
 
@@ -13,10 +19,35 @@ function mask(value) {
   return d.length >= 4 ? `${d.slice(0, 2)}***${d.slice(-2)}` : "***";
 }
 
+const HIDDEN_STATUSES = new Set(['cancelled', 'rejected', 'revoked']);
+const DELETE_ELIGIBLE_STATUSES = new Set([
+  'pending',
+  'pending_confirmation',
+  'otp_sent',
+  'verified',
+  'approved',
+  'confirmed',
+  'active'
+]);
+
+function normalizeStatus(status) {
+  return String(status || '').toLowerCase();
+}
+
+function isDeleteEligible(visitor) {
+  const normalizedStatus = normalizeStatus(visitor?.status);
+  return Boolean(visitor?.id) && DELETE_ELIGIBLE_STATUSES.has(normalizedStatus);
+}
+
 export default function VisitorHistory() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState(null);
+  const [deletingVisitorId, setDeletingVisitorId] = useState(null);
 
   // Search and filter configuration
   const searchFields = ['name', 'phone', 'email', 'status'];
@@ -49,6 +80,9 @@ export default function VisitorHistory() {
     }
   ];
 
+  // Sort state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
   // Use search hook
   const {
     data: filteredRows,
@@ -58,6 +92,7 @@ export default function VisitorHistory() {
     setFilters,
     clearFilters,
     setPage,
+    setSort,
     isSearching,
     hasFilters,
     hasResults
@@ -66,53 +101,130 @@ export default function VisitorHistory() {
     pageSize: 10
   });
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        if (!loading) {
-          fetchMine();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading]);
-
   async function fetchMine() {
     try {
       setLoading(true);
-      // Use httpOnly cookies for authentication
-      const res = await fetch('/api/visitors', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors');
+      const json = res.data;
       if (json?.success) {
         // Handle response format: { data: { visitors: [] } } or { data: [] }
         const visitors = Array.isArray(json.data)
           ? json.data
           : (json.data?.visitors || []);
-        setRows(visitors);
+        setRows(visitors.filter((visitor) => !HIDDEN_STATUSES.has(normalizeStatus(visitor?.status))));
       }
     } finally {
       setLoading(false);
     }
   }
 
-  React.useEffect(() => {
-    fetchMine();
-    const t = setInterval(fetchMine, 10000);
-    return () => clearInterval(t);
+  // WebSocket: subscribe to real-time visitor events
+  const handleVisitorEvent = useCallback((event) => {
+    // On any visitor event, update the rows in-place or re-fetch
+    const visitorData = event.visitor || event.data?.visitor || event;
+    const visitorId = visitorData.id || visitorData.visitor_id;
+    const eventType = event.type;
+
+    if (!visitorId) {
+      // Cannot match to a row — do a full refresh
+      fetchMine();
+      return;
+    }
+
+    setRows(prev => {
+      const idx = prev.findIndex(r => r.id === visitorId);
+      if (idx === -1) {
+        // New visitor — prepend if it's an invite or check-in
+        if (
+          eventType === VISITOR_EVENTS.INVITED ||
+          eventType === VISITOR_EVENTS.CHECK_IN ||
+          eventType === VISITOR_EVENTS.SELF_CHECK_IN ||
+          eventType === VISITOR_EVENTS.ARRIVAL
+        ) {
+          return HIDDEN_STATUSES.has(normalizeStatus(visitorData.status))
+            ? prev
+            : [visitorData, ...prev];
+        }
+        // Unknown visitor for other events — trigger full refresh
+        fetchMine();
+        return prev;
+      }
+      // Update existing row in-place
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...visitorData };
+      return updated.filter((row) => !HIDDEN_STATUSES.has(normalizeStatus(row?.status)));
+    });
   }, []);
 
-  // Transform data for ResponsiveTable
+  const { isConnected: wsConnected } = useResidentVisitorEvents({
+    enabled: true,
+    onVisitorEvent: handleVisitorEvent,
+    showNotifications: false
+  });
+
+  // Initial fetch on mount (no polling — WebSocket handles live updates)
+  React.useEffect(() => {
+    fetchMine();
+  }, []);
+
+  // Shared interaction contract for opening visitor details (desktop + mobile)
+  const getOpenDetailsAriaLabel = useCallback((visitor) => {
+    const safeName = visitor?.name || 'visitor';
+    return `View details for ${safeName}`;
+  }, []);
+
+  // Handle row click — open detail modal
+  const handleRowClick = (row) => {
+    setSelectedVisitor(row);
+  };
+
+  // Handle sort — toggle direction if same column, reset to asc for new column
+  const handleSort = (columnKey, direction) => {
+    const newDirection = sortConfig.key === columnKey && sortConfig.direction === 'asc'
+      ? 'desc'
+      : (direction || 'asc');
+    setSortConfig({ key: columnKey, direction: newDirection });
+    setSort(columnKey, newDirection);
+  };
+
+  const handleOpenPassView = () => {
+    if (!selectedVisitor?.id) return;
+    navigate(`/resident/visitor-pass/${selectedVisitor.id}`);
+    setSelectedVisitor(null);
+  };
+
+  const handleDeleteVisitor = useCallback(async (visitor) => {
+    if (!isDeleteEligible(visitor)) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      variant: 'danger',
+      title: 'Delete Visitor Invite',
+      message: `Delete invite for ${visitor.name || 'this visitor'}? This action cannot be undone.`,
+      confirmText: 'Delete'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const visitorId = String(visitor.id);
+
+    try {
+      setDeletingVisitorId(visitorId);
+      await api.delete(`/api/visitors/${visitorId}`);
+      setRows((prevRows) => prevRows.filter((row) => String(row.id) !== visitorId));
+      setSelectedVisitor((prevSelected) => (String(prevSelected?.id) === visitorId ? null : prevSelected));
+      toast.success({ title: 'Visitor invite deleted.' });
+    } catch (error) {
+      logger.error('Failed to delete visitor invite', error);
+      toast.error({ title: 'Failed to delete visitor invite. Please try again.' });
+    } finally {
+      setDeletingVisitorId(null);
+    }
+  }, [confirm, toast]);
+
   const columns = [
     {
       key: 'name',
@@ -149,20 +261,47 @@ export default function VisitorHistory() {
       priority: 4,
       sortable: true,
       render: (value, row) => row.check_out || row.check_out_time || "Not checked out"
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      // Keep actions visible on tablet (md) where ResponsiveTable shows priority <= 3.
+      priority: 3,
+      sortable: false,
+      render: (value, row) => (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            data-testid="open-visitor-details"
+            data-visitor-id={String(row?.id || '')}
+            aria-label={getOpenDetailsAriaLabel(row)}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleRowClick(row);
+            }}
+          >
+            View Details
+          </Button>
+          {isDeleteEligible(row) && (
+            <Button
+              size="sm"
+              variant="outline"
+              data-testid="delete-visitor-action"
+              data-visitor-id={String(row?.id || '')}
+              disabled={deletingVisitorId === String(row.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDeleteVisitor(row);
+              }}
+            >
+              {deletingVisitorId === String(row.id) ? 'Deleting...' : 'Delete'}
+            </Button>
+          )}
+        </div>
+      )
     }
   ];
-
-  // Handle sort
-  const handleSort = (columnKey, direction) => {
-    // Implement sorting logic here
-    logger.debug('Sort by:', columnKey, direction);
-  };
-
-  // Handle row click
-  const handleRowClick = (row) => {
-    logger.debug('Row clicked:', row);
-    // Navigate to visitor details or show modal
-  };
 
   // Enhanced export functionality
   const handleExport = (format = 'csv') => {
@@ -178,7 +317,7 @@ export default function VisitorHistory() {
     const filename = `visitor-history-${timestamp}`;
 
     switch (format) {
-      case 'csv':
+      case 'csv': {
         const csvContent = [
           headers.join(','),
           ...tableData.map(row => row.map(cell => `"${cell}"`).join(','))
@@ -192,8 +331,9 @@ export default function VisitorHistory() {
         csvLink.click();
         window.URL.revokeObjectURL(csvUrl);
         break;
+      }
 
-      case 'json':
+      case 'json': {
         const jsonData = filteredRows.map(row => {
           const jsonRow = {};
           columns.forEach(col => {
@@ -212,11 +352,12 @@ export default function VisitorHistory() {
         jsonLink.click();
         window.URL.revokeObjectURL(jsonUrl);
         break;
+      }
 
       case 'pdf':
         // For PDF export, we'd typically use a library like jsPDF
         // For now, we'll show an alert and suggest CSV/JSON
-        alert('PDF export requires additional setup. Please use CSV or JSON export for now.');
+        toast.info({ title: 'PDF export requires additional setup. Please use CSV or JSON export for now.' });
         break;
 
       default:
@@ -225,7 +366,7 @@ export default function VisitorHistory() {
   };
 
   // PHASE B4: Mobile Card Component
-  const VisitorCard = ({ visitor }) => (
+  const VisitorCard = ({ visitor, onViewDetails }) => (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
@@ -260,9 +401,33 @@ export default function VisitorHistory() {
             Resend Invite
           </Button>
         )}
-        <Button size="sm" variant="ghost" className="flex-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="flex-1"
+          data-testid="open-visitor-details"
+          data-visitor-id={String(visitor?.id || '')}
+          aria-label={getOpenDetailsAriaLabel(visitor)}
+          onClick={() => onViewDetails(visitor)}
+        >
           View Details
         </Button>
+        {isDeleteEligible(visitor) && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            data-testid="delete-visitor-action"
+            data-visitor-id={String(visitor?.id || '')}
+            disabled={deletingVisitorId === String(visitor.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleDeleteVisitor(visitor);
+            }}
+          >
+            {deletingVisitorId === String(visitor.id) ? 'Deleting...' : 'Delete'}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -280,6 +445,23 @@ export default function VisitorHistory() {
           backTo="/dashboard/resident"
           actions={
             <div className="flex items-center gap-2">
+              {/* Live connection indicator */}
+              {wsConnected ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  </span>
+                  Live
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-400" />
+                  </span>
+                  Offline
+                </span>
+              )}
               <Button
                 onClick={() => setShowFilters(!showFilters)}
                 variant="outline"
@@ -302,8 +484,10 @@ export default function VisitorHistory() {
                 disabled={loading}
                 variant="outline"
                 size="sm"
+                title={wsConnected ? "Refresh data" : "WebSocket offline — click to refresh manually"}
               >
                 <Icon name="RefreshCw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {!wsConnected && <span className="ml-1">Refresh</span>}
               </Button>
             </div>
           }
@@ -407,11 +591,87 @@ export default function VisitorHistory() {
           {hasResults && (
             <div className="space-y-4 md:hidden">
               {filteredRows.map((visitor) => (
-                <VisitorCard key={visitor.id || `${visitor.name}-${visitor.check_in || 'na'}`} visitor={visitor} />
+                <VisitorCard
+                  key={visitor.id || `${visitor.name}-${visitor.check_in || 'na'}`}
+                  visitor={visitor}
+                  onViewDetails={handleRowClick}
+                />
               ))}
             </div>
           )}
         </div>
+
+        {/* Visitor Detail Modal */}
+        {selectedVisitor && (
+          <Modal
+            isOpen={!!selectedVisitor}
+            onClose={() => setSelectedVisitor(null)}
+            title="Visitor Details"
+            size="md"
+          >
+            <div
+              className="space-y-3"
+              data-testid="visitor-details-modal"
+              data-visitor-id={String(selectedVisitor?.id || '')}
+            >
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
+                <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.name || 'Unknown'}</p>
+              </div>
+              {selectedVisitor.phone && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.phone}</p>
+                </div>
+              )}
+              {selectedVisitor.email && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.email}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                <p className="font-medium text-gray-900 dark:text-white capitalize">
+                  {(selectedVisitor.status || 'Unknown').replace(/_/g, ' ')}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Visit Date</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {selectedVisitor.visit_date
+                    ? new Date(selectedVisitor.visit_date).toLocaleString()
+                    : selectedVisitor.check_in
+                      ? new Date(selectedVisitor.check_in).toLocaleString()
+                      : selectedVisitor.created_at
+                        ? new Date(selectedVisitor.created_at).toLocaleString()
+                        : 'N/A'}
+                </p>
+              </div>
+              {selectedVisitor.check_out && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Check-out</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {new Date(selectedVisitor.check_out).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {selectedVisitor.purpose && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Purpose</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.purpose}</p>
+                </div>
+              )}
+              <div className="pt-2 flex justify-end">
+                <Button onClick={handleOpenPassView} variant="outline" size="sm">
+                  <Icon name="QrCode" className="w-4 h-4 mr-1" />
+                  View Pass / QR
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+        <ConfirmDialog {...dialogProps} />
       </div>
     // </AppShell>
   );

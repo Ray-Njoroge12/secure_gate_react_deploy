@@ -6,6 +6,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
+import api from '../../utils/apiClient';
 import Button from '../ui/Button';
 
 const VisitorDirections = ({ visitorId, inviteToken }) => {
@@ -25,10 +27,10 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams({ token: inviteToken });
-      const response = await fetch(
+      const response = await api.get(
         `/api/directions/visitor/${visitorId}?${params.toString()}`
       );
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         setDirections({
@@ -55,8 +57,8 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
   const shareLink = async () => {
     try {
       const params = new URLSearchParams({ token: inviteToken });
-      const response = await fetch(`/api/directions/visitor/${visitorId}/share?${params.toString()}`);
-      const data = await response.json();
+      const response = await api.get(`/api/directions/visitor/${visitorId}/share?${params.toString()}`);
+      const data = response.data;
       
       if (data.success && navigator.share) {
         await navigator.share({

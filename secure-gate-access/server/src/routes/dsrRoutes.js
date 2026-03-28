@@ -13,6 +13,20 @@ import { v4 as uuidv4 } from 'uuid';
 import dataExportService from '../services/dataExportService.js';
 
 const router = express.Router();
+const LEGACY_DSR_PREFIX = '/api/dsr';
+const CANONICAL_DSR_PREFIX = '/api/privacy/dsr';
+
+router.use((req, res, next) => {
+  if (req.baseUrl === LEGACY_DSR_PREFIX) {
+    res.set('Deprecation', 'true');
+    res.set('Sunset', 'Wed, 31 Dec 2026 23:59:59 GMT');
+    res.set('Link', `<${CANONICAL_DSR_PREFIX}>; rel="successor-version"`);
+    res.set('Warning', `299 - "Deprecated API path. Use ${CANONICAL_DSR_PREFIX}"`);
+    res.set('X-API-Deprecated', 'true');
+  }
+
+  next();
+});
 
 /**
  * @swagger

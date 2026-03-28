@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { clearAuthNavigator, setAuthNavigator } from '../utils/authNavigation';
 
 const AuthNavigationBridge = () => {

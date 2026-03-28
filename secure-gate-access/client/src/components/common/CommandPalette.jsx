@@ -15,6 +15,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../ui/Button';
+import logger from 'utils/logger';
 
 // Icons
 const SearchIcon = () => (
@@ -59,7 +60,7 @@ const getCommands = (role) => {
       category: 'Help',
       icon: '❓',
       action: 'navigate',
-      path: isAdminLike ? '/dashboard/admin/help/security' : role === 'guard' ? '/dashboard/guard/help/mfa-setup' : '/resident/settings'
+      path: isAdminLike ? '/dashboard/admin/settings?tab=security' : role === 'guard' ? '/dashboard/guard/settings?tab=security' : '/resident/settings?tab=security'
     },
     {
       id: 'keyboard-shortcuts',
@@ -439,7 +440,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
         }));
         break;
       default:
-        console.log('Unknown action:', command.action);
+        logger.warn('Unknown action:', command.action);
     }
   }, [navigate, logout, onClose]);
 

@@ -5,8 +5,9 @@
  * analytics integration, and user journey management.
  */
 
-import fc from 'fast-check';
 import { jest } from '@jest/globals';
+import fc from 'fast-check';
+
 import { 
   TEST_CONFIG, 
   SELECTORS,

@@ -5,29 +5,28 @@
  * @version 1.0.0
  */
 
-import { jest } from '@jest/globals';
 import { PerformanceService } from '../../services/performanceService.js';
+// Get references to mocked instances after jest.mock hoisting
+import loggerMod from '../../utils/logger.js';
+import performanceMonitorMod from '../../utils/performanceMonitor.js';
 
-// Mock dependencies
-const mockPerformanceMonitor = {
-  recordComponentRender: jest.fn()
-};
-
-const mockLogger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn()
-};
-
-// Mock modules
+// Mock modules — factories must not reference outer variables (jest.mock is hoisted)
 jest.mock('../../utils/performanceMonitor.js', () => ({
-  default: mockPerformanceMonitor
+  __esModule: true,
+  default: { recordComponentRender: jest.fn() }
 }));
 
 jest.mock('../../utils/logger.js', () => ({
-  default: mockLogger
+  __esModule: true,
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  }
 }));
+const mockPerformanceMonitor = performanceMonitorMod;
+const mockLogger = loggerMod;
 
 // Mock global objects
 const mockConnection = {
@@ -222,8 +221,7 @@ describe('PerformanceService', () => {
         status: 200,
         ok: true
       };
-      
-      const originalFetch = global.fetch;
+
       global.fetch.mockResolvedValueOnce(mockResponse);
 
       // Call the intercepted fetch
@@ -414,12 +412,7 @@ describe('PerformanceService', () => {
   describe('Web Vitals Monitoring', () => {
     test('should record LCP metrics', () => {
       const recordSpy = jest.spyOn(service, 'recordMetric');
-      
-      // Find the LCP observer
-      const lcpObserverCall = mockPerformanceObserver.mock.calls.find(
-        call => call.length === 0 // Constructor call
-      );
-      
+
       // Simulate LCP observer callback
       const mockList = {
         getEntries: () => [{ startTime: 2500 }]

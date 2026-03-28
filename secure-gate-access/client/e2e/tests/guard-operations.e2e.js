@@ -4,18 +4,24 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { login, logout, navigateTo, waitForText, randomString } = require('../utils/test-helpers');
-const users = require('../fixtures/users.json');
+const path = require('path');
+const { navigateTo, suppressGlobalOverlays } = require('../utils/test-helpers');
+
+test.use({ storageState: path.join(__dirname, '..', '.auth', 'guard-storage.json') });
 
 test.describe('E2E-GUARD: Guard Operations', () => {
   
   test.beforeEach(async ({ page }) => {
-    // Login as guard
-    await login(page, {
-      email: users.guard.email,
-      password: users.guard.password
-    });
-    await page.waitForTimeout(1500);
+    await suppressGlobalOverlays(page);
+    await navigateTo(page, '/dashboard/guard');
+
+    // If auth storage was not bootstrapped, skip instead of failing on deprecated login assumptions.
+    test.skip(
+      /\/login/.test(page.url()),
+      'Guard storage state unavailable. Re-run with backend reachable for Playwright global setup.'
+    );
+
+    await page.waitForTimeout(1200);
   });
 
   test('E2E-GUARD-01: Guard Views Expected Visitors', async ({ page }) => {
@@ -23,7 +29,7 @@ test.describe('E2E-GUARD: Guard Operations', () => {
     await navigateTo(page, '/dashboard/guard');
     
     // Wait for dashboard to fully load with explicit selector
-    await page.waitForSelector('[data-tour="expected-visitors"], text=/Pending Approvals/i, .grid', { 
+    await page.waitForSelector('[data-tour="expected-visitors"], .grid', { 
       timeout: 10000,
       state: 'visible'
     });
@@ -121,7 +127,7 @@ test.describe('E2E-GUARD: Guard Operations', () => {
     await navigateTo(page, '/dashboard/guard');
     
     // Wait for dashboard KPIs to load
-    await page.waitForSelector('.grid, [class*="kpi"], text=/On Premise/i', { 
+    await page.waitForSelector('.grid, [class*="kpi"]', { 
       timeout: 10000,
       state: 'visible'
     });

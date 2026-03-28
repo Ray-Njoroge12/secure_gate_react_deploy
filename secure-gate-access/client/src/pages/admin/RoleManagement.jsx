@@ -12,11 +12,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import useModalAccessibility from '../../hooks/useModalAccessibility';
+
 import Button from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
+import api from '../../utils/apiClient';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('roles'); // 'roles', 'users', 'permissions'
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
@@ -42,19 +46,12 @@ const RoleManagement = () => {
     setLoading(true);
     try {
       const [rolesRes, permsRes] = await Promise.all([
-        fetch('/api/admin/roles', { credentials: 'include' }),
-        fetch('/api/admin/permissions', { credentials: 'include' })
+        api.get('/api/admin/roles'),
+        api.get('/api/admin/permissions')
       ]);
 
-      if (!rolesRes.ok || !permsRes.ok) {
-        throw new Error('Failed to fetch roles/permissions');
-      }
-
-      const rolesData = await rolesRes.json();
-      const permsData = await permsRes.json();
-
-      setRoles(rolesData.data || []);
-      setPermissions(permsData.data || []);
+      setRoles(rolesRes.data.data || []);
+      setPermissions(permsRes.data.data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -64,11 +61,8 @@ const RoleManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch users');
-      
-      const data = await response.json();
-      setUsers(data.data || []);
+      const response = await api.get('/api/admin/users');
+      setUsers(response.data.data || []);
     } catch (err) {
       setError(err.message);
     }
@@ -76,20 +70,13 @@ const RoleManagement = () => {
 
   const assignRoleToUser = async (userId, roleId) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/assign-role`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roleId })
-      });
+      await api.post(`/api/admin/users/${userId}/assign-role`, { roleId });
 
-      if (!response.ok) throw new Error('Failed to assign role');
-
-      alert('Role assigned successfully!');
+      toast.success({ title: 'Role assigned successfully!' });
       setShowAssignModal(false);
       fetchUsers();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 

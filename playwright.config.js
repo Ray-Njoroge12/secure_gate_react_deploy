@@ -1,4 +1,5 @@
-const { defineConfig, devices } = require('@playwright/test');
+const { defineConfig } = require('@playwright/test');
+const shared = require('./playwright.shared.cjs');
 
 module.exports = defineConfig({
   testDir: './e2e',
@@ -7,20 +8,13 @@ module.exports = defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
+  use: shared.makeUseDefaults({
+    baseURL: 'http://127.0.0.1:3000',
+  }),
+  projects: shared.projectSets.chromiumOnly,
   webServer: {
     command: 'cd secure-gate-access/client && npm start',
-    url: 'http://localhost:3000',
+    url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

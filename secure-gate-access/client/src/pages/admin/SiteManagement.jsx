@@ -5,14 +5,19 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import useModalAccessibility from '../../hooks/useModalAccessibility';
+
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
+import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 import './SiteManagement.css';
 
 const SiteManagement = () => {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingSite, setEditingSite] = useState(null);
   const closeModal = () => setShowModal(false);
@@ -38,13 +43,10 @@ const SiteManagement = () => {
   const fetchSites = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/sites', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch sites');
-      
-      const data = await response.json();
-      setSites(data.data || []);
+      const response = await api.get('/api/admin/sites');
+      setSites(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching sites:', err);
+      logger.error('Error fetching sites:', err);
     } finally {
       setLoading(false);
     }
@@ -58,38 +60,27 @@ const SiteManagement = () => {
         ? `/api/admin/sites/${editingSite.id}`
         : '/api/admin/sites';
       
-      const method = editingSite ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('Failed to save site');
+      if (editingSite) {
+        await api.put(url, formData);
+      } else {
+        await api.post(url, formData);
+      }
 
       await fetchSites();
       setShowModal(false);
       resetForm();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
   const switchSite = async (siteId) => {
     try {
-      const response = await fetch(`/api/admin/sites/${siteId}/switch`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to switch site');
-
-      alert('Site switched successfully! Reloading page...');
-      window.location.reload();
+      await api.patch(`/api/admin/sites/${siteId}/switch`);
+      setNotice('Site switched successfully! Reloading page...');
+      setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
@@ -141,6 +132,8 @@ const SiteManagement = () => {
 
   return (
     <div className="site-management">
+      {error && <div role="alert" className="error-banner" style={{ color: 'red', padding: '8px', marginBottom: '8px' }}>{error}</div>}
+      {notice && <div role="status" className="notice-banner" style={{ color: 'green', padding: '8px', marginBottom: '8px' }}>{notice}</div>}
       <div className="site-header">
         <div className="header-left">
           <h1>🏢 Site Management</h1>
@@ -216,10 +209,25 @@ const SiteManagement = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal} role="presentation" aria-hidden="true">
+        <div
+          className="modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeModal();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              closeModal();
+            }
+          }}
+          role="button"
+          aria-label="Close site form modal"
+          tabIndex={0}
+        >
           <div
             className="modal-content large"
-            onClick={(e) => e.stopPropagation()}
             ref={modalRef}
             role="dialog"
             aria-modal="true"

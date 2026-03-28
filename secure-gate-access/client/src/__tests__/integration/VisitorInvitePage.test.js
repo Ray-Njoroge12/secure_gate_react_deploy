@@ -1,8 +1,9 @@
+import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import VisitorInvitePage from '../../pages/public/VisitorInvitePage';
+
 import { useVisitorInvite } from '../../hooks/useVisitorInvite';
+import VisitorInvitePage from '../../pages/public/VisitorInvitePage';
 
 // Mock the hook
 jest.mock('../../hooks/useVisitorInvite');

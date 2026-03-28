@@ -18,6 +18,7 @@ import { PASS_STATUS } from '../constants/statuses.js';
 import QRCodeService from '../services/qrCodeService.js';
 import { sendVisitorInviteSms, sendVisitorInviteEmail, sendOtpVerificationSms, sendOtpVerificationEmail } from '../services/notificationService.js';
 import encryptionService from '../services/encryptionService.js';
+import logger from '../config/logger.js';
 import { generateOTP, generateSecureToken } from '../utils/tokenHelper.js';
 import { sanitizeString } from '../utils/sanitizeInput.js';
 import phoneValidator from '../utils/phoneValidator.js';
@@ -34,7 +35,7 @@ async function decryptIdNumber(visitor) {
     try {
       visitor.id_number = await encryptionService.decrypt(visitor.id_number_encrypted);
     } catch (error) {
-      console.error(`Failed to decrypt ID number for visitor ${visitor.id}:`, error.message);
+      logger.error(`Failed to decrypt ID number for visitor ${visitor.id}`, { error: error.message });
       // Keep plaintext if decryption fails
     }
   }
@@ -82,6 +83,21 @@ function generateInviteCode() {
  */
 function generateVisitorToken() {
   return `vst_${generateSecureToken(24)}`;
+}
+
+const RESIDENT_CANCEL_ELIGIBLE_STATUSES = new Set([
+  PASS_STATUS.PENDING,
+  PASS_STATUS.PENDING_CONFIRMATION,
+  PASS_STATUS.OTP_SENT,
+  PASS_STATUS.VERIFIED,
+  PASS_STATUS.APPROVED,
+  PASS_STATUS.CONFIRMED,
+  PASS_STATUS.ACTIVE,
+  PASS_STATUS.QR_PENDING
+]);
+
+function isResidentCancelEligible(status) {
+  return RESIDENT_CANCEL_ELIGIBLE_STATUSES.has(String(status || '').toLowerCase());
 }
 
 /**
@@ -339,7 +355,7 @@ export const createVisitor = async (req, res) => {
         notificationSent = !!emailSent;
       }
     } catch (notifyError) {
-      console.warn('[createVisitor] Notification sending failed:', notifyError.message);
+      logger.warn('[createVisitor] Notification sending failed', { error: notifyError.message });
       notificationSent = false;
     }
 
@@ -372,7 +388,7 @@ export const createVisitor = async (req, res) => {
     respond(res, responseData, 201);
 
   } catch (error) {
-    console.error('[createVisitor] Error:', error);
+    logger.error('[createVisitor] Error', { error: error.message, stack: error.stack });
     await req.audit?.('visitor.create', 'visitor', null, {
       outcome: 'fail',
       error: error.message
@@ -509,7 +525,7 @@ export const getMyVisitors = async (req, res) => {
           rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
       } catch (otpErr) {
-        console.error('OTP Search enhancement error:', otpErr);
+        logger.error('OTP Search enhancement error', { error: otpErr.message });
       }
     }
 
@@ -547,7 +563,7 @@ export const getMyVisitors = async (req, res) => {
           rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
       } catch (rsErr) {
-        console.error('Rideshare Search enhancement error:', rsErr);
+        logger.error('Rideshare Search enhancement error', { error: rsErr.message });
       }
     }
 
@@ -621,7 +637,7 @@ export const getMyVisitors = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get visitors error:', error);
+    logger.error('Get visitors error', { error: error.message, stack: error.stack });
     respondError(res, 500, 'Failed to get visitors');
   }
 };
@@ -724,7 +740,7 @@ export const createPass = async (req, res) => {
         qrId = qrResult.data.qrId;
       }
     } catch (qrError) {
-      console.warn('[createPass] QR code generation failed:', qrError.message);
+      logger.warn('[createPass] QR code generation failed', { error: qrError.message });
     }
 
     if (qrId) {
@@ -738,7 +754,7 @@ export const createPass = async (req, res) => {
         await sendOtpVerificationEmail({ name: visitor.name, email: visitor.email }, otp, OTP_EXPIRY_MINUTES);
       }
     } catch (notifyError) {
-      console.warn('[createPass] OTP notification failed:', notifyError.message);
+      logger.warn('[createPass] OTP notification failed', { error: notifyError.message });
     }
 
     const passLink = `${CLIENT_ORIGIN}/v/${visitorToken}`;
@@ -765,7 +781,7 @@ export const createPass = async (req, res) => {
 
     return respond(res, responseData);
   } catch (error) {
-    console.error('[createPass] Error:', error);
+    logger.error('[createPass] Error', { error: error.message, stack: error.stack });
     return respondError(res, 500, 'Failed to create pass');
   }
 };
@@ -972,7 +988,7 @@ export const bulkInvite = async (req, res) => {
     }, 201);
 
   } catch (error) {
-    console.error('[bulkInvite] Error:', error);
+    logger.error('[bulkInvite] Error', { error: error.message, stack: error.stack });
     respondError(res, 500, 'Failed to create event invite');
   }
 };
@@ -1023,7 +1039,7 @@ export const getBulkInvite = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[getBulkInvite] Error:', error);
+    logger.error('[getBulkInvite] Error', { error: error.message, stack: error.stack });
     respondError(res, 500, 'Failed to get invitation details');
   }
 };
@@ -1214,16 +1230,16 @@ export const completeInvite = async (req, res) => {
           await dbManager.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
         } else {
           qrGenerationFailed = true;
-          console.warn('[completeInvite] QR generation returned no qrId');
+          logger.warn('[completeInvite] QR generation returned no qrId');
         }
       } catch (qrError) {
         qrGenerationFailed = true;
-        console.error('[completeInvite] QR generation failed (non-fatal):', qrError);
+        logger.error('[completeInvite] QR generation failed (non-fatal)', { error: qrError.message });
         // BULK-001 FIX: Mark QR as failed for later retry
         await dbManager.query(
           'UPDATE visitors SET status = $1 WHERE id = $2',
           [PASS_STATUS.QR_PENDING, visitor.id]
-        ).catch(err => console.error('[completeInvite] Failed to update QR status:', err));
+        ).catch(err => logger.error('[completeInvite] Failed to update QR status', { error: err.message }));
       }
 
       if (resultData?.error) {
@@ -1240,7 +1256,7 @@ export const completeInvite = async (req, res) => {
           await sendOtpVerificationEmail({ name: visitor.name, email: visitor.email }, otp, OTP_EXPIRY_MINUTES);
         }
       } catch (notifyError) {
-        console.warn('[completeInvite] OTP notification failed:', notifyError.message);
+        logger.warn('[completeInvite] OTP notification failed', { error: notifyError.message });
       }
 
       const responseData = {
@@ -1362,8 +1378,6 @@ export const completeInvite = async (req, res) => {
     }
 
     const { visitor, otp } = resultData;
-    console.log('DEBUG: Transaction complete');
-
     // OPTIMIZATION: Generate QR Code OUTSIDE the transaction
     let qrCodeDataUrl = null;
     try {
@@ -1384,9 +1398,8 @@ export const completeInvite = async (req, res) => {
         await dbManager.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
       }
     } catch (qrError) {
-      console.error('[completeInvite] QR generation failed (non-fatal):', qrError);
+      logger.error('[completeInvite] QR generation failed (non-fatal)', { error: qrError.message });
     }
-    console.log('DEBUG: QR Gen complete');
 
     if (resultData?.error) {
       return respondError(res, resultData.error.status, resultData.error.message);
@@ -1396,15 +1409,13 @@ export const completeInvite = async (req, res) => {
     const passLink = `${CLIENT_ORIGIN}/v/${visitor.visitor_token}`;
 
     try {
-      console.log('DEBUG: Sending Pass Code...');
       if (visitor.phone) {
         await sendOtpVerificationSms({ name: visitor.name, phone: visitor.phone }, otp, OTP_EXPIRY_MINUTES);
       } else if (visitor.email) {
         await sendOtpVerificationEmail({ name: visitor.name, email: visitor.email }, otp, OTP_EXPIRY_MINUTES);
       }
-      console.log('DEBUG: Pass Code Sent (or attempted)');
     } catch (notifyError) {
-      console.warn('[completeInvite] Pass Code notification failed:', notifyError.message);
+      logger.warn('[completeInvite] Pass Code notification failed', { error: notifyError.message });
     }
 
     const responseData = {
@@ -1430,7 +1441,7 @@ export const completeInvite = async (req, res) => {
     return respond(res, responseData, 201);
 
   } catch (error) {
-    console.error('[completeInvite] Error:', error);
+    logger.error('[completeInvite] Error', { error: error.message, stack: error.stack });
     // Return actual error in dev/debug mode or if needed for diagnosis
     respondError(res, 500, error.message || 'Failed to complete registration');
   }
@@ -1487,6 +1498,10 @@ export const cancelVisitor = async (req, res) => {
       if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
         return respondError(res, 403, 'You can only cancel your own visitors');
       }
+
+      if (!isResidentCancelEligible(visitor.status)) {
+        return respondError(res, 409, 'Only pending or unadmitted visitor invites can be deleted');
+      }
     } else if (role !== 'admin' && role !== 'super_admin') {
       return respondError(res, 403, 'Forbidden');
     }
@@ -1513,7 +1528,7 @@ export const cancelVisitor = async (req, res) => {
 
     respond(res, { message: 'Visitor cancelled successfully' });
   } catch (error) {
-    console.error('Cancel visitor error:', error);
+    logger.error('Cancel visitor error', { error: error.message, stack: error.stack });
     await req.audit?.('visitor.cancel', 'visitor', null, {
       outcome: 'fail',
       message: 'Failed to cancel visitor',

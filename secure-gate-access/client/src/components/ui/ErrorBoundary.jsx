@@ -1,11 +1,14 @@
 // client/src/components/ui/ErrorBoundary.jsx
 import React from 'react';
-import { Card, Button } from './index';
-import Icon from './Icon.jsx';
 import logger from 'utils/logger';
-import { reportError, reportUserAction } from '../../utils/errorReporting';
+
 import { navigateTo } from '../../utils/appNavigation';
 import { handleError, getRecoveryActions, ERROR_TYPES } from '../../utils/errorHandler';
+import { reportError, reportUserAction } from '../../utils/errorReporting';
+
+import Icon from './Icon.jsx';
+
+import { Card, Button } from './index';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -50,7 +53,7 @@ class ErrorBoundary extends React.Component {
     }
   }
 
-  static getDerivedStateFromError(error) {
+    static getDerivedStateFromError(_error) {
     // Update state to show fallback UI
     return { hasError: true };
   }

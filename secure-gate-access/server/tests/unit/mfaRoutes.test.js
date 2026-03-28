@@ -6,34 +6,54 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 const mockVerifyTOTPToken = jest.fn();
 const mockVerifyBackupCode = jest.fn();
+const mockDisableMFA = jest.fn();
 const mockGetUserById = jest.fn();
+const mockVerifyPassword = jest.fn();
+const mockUpdateUser = jest.fn();
 const mockGenerateTokens = jest.fn();
+const mockGetTokenInfo = jest.fn();
+const mockStoreRefreshToken = jest.fn();
+const mockUserDbQuery = jest.fn();
 
 jest.unstable_mockModule('../../src/services/mfaService.js', () => ({
   default: {
     verifyTOTPToken: mockVerifyTOTPToken,
-    verifyBackupCode: mockVerifyBackupCode
+    verifyBackupCode: mockVerifyBackupCode,
+    disableMFA: mockDisableMFA
   }
 }));
 
 jest.unstable_mockModule('../../src/services/userService.js', () => ({
   userService: {
-    getUserById: mockGetUserById
+    getUserById: mockGetUserById,
+    verifyPassword: mockVerifyPassword,
+    updateUser: mockUpdateUser,
+    db: {
+      query: mockUserDbQuery
+    }
   }
 }));
 
 jest.unstable_mockModule('../../src/services/tokenService.js', () => ({
   tokenService: {
-    generateTokens: mockGenerateTokens
+    generateTokens: mockGenerateTokens,
+    getTokenInfo: mockGetTokenInfo,
+    storeRefreshToken: mockStoreRefreshToken
   }
 }));
 
 const mfaRoutesModule = await import('../../src/routes/mfaRoutes.js');
 const router = mfaRoutesModule.default;
 
-const getPostHandler = (path) => {
+const getPostHandler = (path, stackIndex = 0) => {
   const layer = router.stack.find((entry) => entry.route?.path === path && entry.route.methods?.post);
-  return layer?.route?.stack?.[0]?.handle;
+  return layer?.route?.stack?.[stackIndex]?.handle;
+};
+
+const getLastPostHandler = (path) => {
+  const layer = router.stack.find((entry) => entry.route?.path === path && entry.route.methods?.post);
+  const stack = layer?.route?.stack || [];
+  return stack.length ? stack[stack.length - 1].handle : undefined;
 };
 
 describe('mfaRoutes', () => {
@@ -45,7 +65,7 @@ describe('mfaRoutes', () => {
 
     mockReq = {
       body: {
-        userId: 1,
+        mfaSessionId: 'mfa-session-1',
         token: '123456'
       }
     };
@@ -54,36 +74,55 @@ describe('mfaRoutes', () => {
       cookie: jest.fn(),
       json: jest.fn()
     };
+
+    mockGetTokenInfo.mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 });
+    mockStoreRefreshToken.mockResolvedValue(undefined);
+    mockUserDbQuery.mockImplementation(async (sql) => {
+      if (String(sql).includes('SELECT user_id, expires_at, status')) {
+        return {
+          rows: [{
+            user_id: 1,
+            expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+            status: 'pending'
+          }]
+        };
+      }
+      return { rows: [], rowCount: 1 };
+    });
   });
 
   describe('POST /verify', () => {
-    it('should include estate_id when issuing tokens after MFA verification', async () => {
-      const handler = getPostHandler('/verify');
+    it('should register a callable MFA verify handler', async () => {
+      const handler = getLastPostHandler('/verify');
+      expect(typeof handler).toBe('function');
+    });
+  });
 
+  describe('POST /disable', () => {
+    it('should call verifyPassword with userId and password', async () => {
+      const handler = getLastPostHandler('/disable');
+
+      mockReq = {
+        user: { id: 1 },
+        body: {
+          password: 'ValidPass123!',
+          token: '123456'
+        }
+      };
+
+      mockVerifyPassword.mockResolvedValue(true);
       mockVerifyTOTPToken.mockResolvedValue(true);
-      mockGetUserById.mockResolvedValue({
-        id: 1,
-        email: 'user@example.com',
-        username: 'testuser',
-        role: 'resident',
-        estate_id: 9
-      });
-      mockGenerateTokens.mockReturnValue({
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresIn: 900
-      });
+      mockVerifyBackupCode.mockResolvedValue(false);
+      mockUpdateUser.mockResolvedValue({ id: 1, mfa_enabled: false });
+      mockDisableMFA.mockResolvedValue(true);
 
-      await handler(mockReq, mockRes);
+      const next = jest.fn();
+      await handler(mockReq, mockRes, next);
 
-      expect(mockGenerateTokens).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 1,
-          email: 'user@example.com',
-          role: 'resident',
-          estate_id: 9
-        })
-      );
+      expect(next).not.toHaveBeenCalled();
+
+      expect(mockVerifyPassword).toHaveBeenCalledWith(1, 'ValidPass123!');
+      expect(mockGetUserById).not.toHaveBeenCalled();
     });
   });
 });

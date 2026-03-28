@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useI18n } from "../../i18n/index.js";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 // AppShell removed - handled by Layout Route
 import AdminMetrics from '../../components/admin/AdminMetrics.jsx';
@@ -28,6 +29,7 @@ import ManageGuards from './ManageGuards';
 import ManageResidents from './ManageResidents';
 import VisitorLog from './VisitorLog';
 import Reports from './Reports';
+import AuditLogs from './AuditLogs';
 import Settings from './Settings';
 import Table from '../../components/Table';
 import Button from '../../components/ui/Button';
@@ -35,8 +37,10 @@ import Button from '../../components/ui/Button';
 export default function AdminDashboard({ initialTab = 'overview' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { tab: routeTab } = useParams();
   const { logout } = useAuth();
   const role = useCurrentRole();
+  const { t } = useI18n();
   const selectedSiteId = searchParams.get('siteId');
 
   // Metrics state
@@ -84,16 +88,6 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         e.preventDefault();
         navigate(appendSiteId('/dashboard/admin/approvals'));
       }
-      // Ctrl/Cmd + S to settings
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        navigate(appendSiteId('/dashboard/admin/settings'));
-      }
-      // Ctrl/Cmd + R to refresh - reload page
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        window.location.reload();
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -104,19 +98,23 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
   // Sync internal state with URL prop
   useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
+    const validTabs = new Set(['overview', 'approvals', 'guards', 'residents', 'visitors', 'reports', 'audit', 'settings']);
+    const resolvedTab = (initialTab && initialTab !== 'overview')
+      ? initialTab
+      : (routeTab && validTabs.has(routeTab) ? routeTab : 'overview');
+
+    setActiveTab(resolvedTab);
+  }, [initialTab, routeTab]);
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'approvals', label: 'User Approvals' },
-    { id: 'guards', label: 'Guards' },
-    { id: 'residents', label: 'Residents' },
-    { id: 'visitors', label: 'Visitor Logs' },
-    { id: 'reports', label: 'Reports' },
-    { id: 'settings', label: 'Settings' }
+    { id: 'overview', label: t('dashboard.admin.overview') },
+    { id: 'approvals', label: t('dashboard.admin.approvals') },
+    { id: 'guards', label: t('dashboard.admin.guards') },
+    { id: 'residents', label: t('dashboard.admin.residents') },
+    { id: 'visitors', label: t('dashboard.admin.visitorLogs') },
+    { id: 'reports', label: t('dashboard.admin.reports') },
+    { id: 'audit', label: t('dashboard.admin.auditLogs') },
+    { id: 'settings', label: t('dashboard.admin.settings') }
   ];
 
   useEffect(() => {
@@ -204,7 +202,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadMetrics();
     const id = setInterval(loadMetrics, 30000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id, withEstateParams]); // Reload metrics when estate changes
+  }, [currentEstate?.id]); // Reload metrics when estate changes
 
   useEffect(() => {
     let cancelled = false;
@@ -235,7 +233,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadQueueData();
     const id = setInterval(loadQueueData, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id, withEstateParams]);
+  }, [currentEstate?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,7 +258,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadHealthDetails();
     const id = setInterval(loadHealthDetails, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id, withEstateParams]);
+  }, [currentEstate?.id]);
 
   const onLogout = async () => {
     await logout();
@@ -293,7 +291,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
       disabled={retryingJobId === item.id}
     >
-      {retryingJobId === item.id ? 'Retrying...' : 'Retry'}
+      {retryingJobId === item.id ? t('dashboard.admin.retrying') : t('dashboard.admin.retry')}
     </Button>
   ]);
 
@@ -320,7 +318,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            Admin Dashboard
+            {t('dashboard.admin.adminDashboard')}
             {currentEstate && !isSuperAdmin && (
               <span className="text-sm font-normal px-3 py-1 bg-brand-100 dark:bg-brand-900/30 text-brand-800 dark:text-brand-300 rounded-full border border-brand-200 dark:border-brand-700">
                 {currentEstate.name}
@@ -340,7 +338,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   }
                 }}
               >
-                <option value="">Select Estate</option>
+                <option value="">{t('dashboard.admin.selectEstate')}</option>
                 {availableEstates.map(est => (
                   <option key={est.id} value={est.id}>{est.name}</option>
                 ))}
@@ -348,7 +346,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             )}
             <span className={`text-xs px-2 py-1 rounded-full ${role === 'super_admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
               }`}>
-              {role === 'super_admin' ? 'Super Admin' : 'Administrator'}
+              {role === 'super_admin' ? t('dashboard.admin.superAdmin') : t('dashboard.admin.administrator')}
             </span>
           </h1>
         </div>
@@ -358,18 +356,18 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             variant="secondary"
             size="sm"
             onClick={() => navigate('/dashboard/admin/help/security')}
-            className="flex items-center px-4 py-2 text-sm font-medium"
+            className="flex items-center text-sm font-medium"
           >
-            Security Help
+            {t('dashboard.common.securityHelp')}
           </Button>
           {role === 'super_admin' && (
             <Button
               variant="secondary"
               size="sm"
               onClick={() => navigate('/dashboard/super-admin')}
-              className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              className="flex items-center bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
             >
-              ← Back to Global Dashboard
+              ← {t('dashboard.admin.backToGlobalDashboard')}
             </Button>
           )}
         </div>
@@ -384,6 +382,8 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           {tabs.map((tab) => (
             <Button
               key={tab.id}
+              variant="ghost"
+              size="sm"
               id={`admin-tab-${tab.id}`}
               role="tab"
               aria-selected={activeTab === tab.id}
@@ -396,7 +396,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               className={`${activeTab === tab.id
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                } h-auto rounded-none whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               {tab.label}
             </Button>
@@ -414,39 +414,39 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           >
             {/* Quick Actions Panel */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm p-6 text-white">
-              <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('dashboard.admin.quickActions')}</h2>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/approvals'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
-                  ✓ Approve Users
+                  ✓ {t('dashboard.admin.approveUsers')}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/visitors'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
-                  📋 View Today's Visitors
+                  📋 {t('dashboard.admin.viewTodaysVisitors')}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/residents'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
-                  🏠 Manage Residents
+                  🏠 {t('dashboard.admin.manageResidents')}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/reports'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
-                  📊 Generate Reports
+                  📊 {t('dashboard.admin.generateReports')}
                 </Button>
               </div>
             </div>
@@ -458,7 +458,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${queueError ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                Notification System Status
+                {t('dashboard.admin.notificationSystemStatus')}
               </h3>
 
               {queueError ? (
@@ -468,15 +468,15 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-300 text-sm">Active Jobs</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">{t('dashboard.admin.activeJobs')}</span>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.active || 0}</div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-300 text-sm">Completed</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">{t('dashboard.admin.completed')}</span>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.completed || 0}</div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-300 text-sm">Failed</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">{t('dashboard.admin.failed')}</span>
                     <div className="text-2xl font-bold text-red-600">{queueStats?.failed || 0}</div>
                   </div>
                 </div>
@@ -506,7 +506,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       {
         activeTab === 'approvals' && (
           <div id="admin-tabpanel-approvals" role="tabpanel" aria-labelledby="admin-tab-approvals" className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account Approvals</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('dashboard.admin.userAccountApprovals')}</h3>
             <AdminUserApprovals siteId={currentEstate?.id} />
           </div>
         )
@@ -538,6 +538,14 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         activeTab === 'reports' && (
           <div id="admin-tabpanel-reports" role="tabpanel" aria-labelledby="admin-tab-reports">
             <Reports estateId={currentEstate?.id} />
+          </div>
+        )
+      }
+
+      {
+        activeTab === 'audit' && (
+          <div id="admin-tabpanel-audit" role="tabpanel" aria-labelledby="admin-tab-audit">
+            <AuditLogs />
           </div>
         )
       }

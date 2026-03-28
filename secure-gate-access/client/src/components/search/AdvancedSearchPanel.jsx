@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { useSearch } from '../../contexts/SearchContext.jsx';
+
 import { useToast } from '../../contexts/ToastContext.jsx';
 import './AdvancedSearchPanel.css';
 import Button from '../ui/Button';

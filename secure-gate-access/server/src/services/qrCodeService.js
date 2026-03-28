@@ -94,7 +94,10 @@ class OptimizedQRCodeService {
       ]);
 
       // Store QR code data in database with timeout (legacy JWT for backward compat)
-      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is required for QR generation');
+      }
       const expiresInSeconds = Math.max(1, Math.floor(expiresInMs / 1000));
       const legacyToken = jwt.sign({ qrId, type: 'visitor_access' }, jwtSecret, { expiresIn: expiresInSeconds });
 
@@ -228,7 +231,14 @@ class OptimizedQRCodeService {
 
       // Legacy validation for old QR codes (backward compatibility)
       // Verify JWT token
-      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        return {
+          success: false,
+          error: 'QR validation misconfigured',
+          code: 500
+        };
+      }
       let payload;
       try {
         payload = jwt.verify(token, jwtSecret);

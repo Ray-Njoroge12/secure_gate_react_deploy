@@ -8,6 +8,7 @@
  */
 
 import fc from 'fast-check';
+
 import exportService from '../../services/exportService';
 
 // Mock dependencies

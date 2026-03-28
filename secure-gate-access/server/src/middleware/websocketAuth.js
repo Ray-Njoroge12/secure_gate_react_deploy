@@ -10,9 +10,9 @@
  * - Secure token refresh handling
  */
 
-import jwt from 'jsonwebtoken';
 import logger from '../config/logger.js';
 import { maskEmail } from '../utils/redaction.js';
+import { tokenService } from '../services/tokenService.js';
 
 const parseCookieHeader = (cookieHeader = '') => {
   if (!cookieHeader || typeof cookieHeader !== 'string') {
@@ -43,7 +43,7 @@ const parseCookieHeader = (cookieHeader = '') => {
  * Authenticate WebSocket connection using JWT token
  * Extracts user info INCLUDING estate_id for proper tenant isolation
  */
-export const authenticateSocket = (socket, next) => {
+export const authenticateSocket = async (socket, next) => {
   try {
     const authToken = typeof socket.handshake.auth?.token === 'string'
       ? socket.handshake.auth.token.trim()
@@ -61,8 +61,8 @@ export const authenticateSocket = (socket, next) => {
       return next(new Error('Authentication required'));
     }
 
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Verify JWT token using revocation-aware token service
+    const decoded = await tokenService.verifyAccessToken(token);
 
     // Attach user info to socket - INCLUDING estate_id for isolation
     socket.userId = decoded.id || decoded.userId || decoded.sub;
@@ -98,9 +98,9 @@ export const authenticateSocket = (socket, next) => {
       ip: socket.handshake.address
     });
 
-    if (error.name === 'TokenExpiredError') {
+    if (error.message?.includes('Token expired')) {
       return next(new Error('Token expired'));
-    } else if (error.name === 'JsonWebTokenError') {
+    } else if (error.message?.includes('Invalid token signature') || error.message?.includes('Token has been revoked') || error.message?.includes('Token verification failed')) {
       return next(new Error('Invalid token'));
     }
 

@@ -8,16 +8,18 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { useConfirmation } from '../../components/common/ConfirmationDialog';
+import OfflineBanner from '../../components/common/OfflineBanner';
+import PageHeader from '../../components/PageHeader';
+import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
-import PageHeader from '../../components/PageHeader';
-import { useConfirmation } from '../../components/common/ConfirmationDialog';
-import notificationService from '../../services/notificationService';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import OfflineBanner from '../../components/common/OfflineBanner';
 import usePullToRefresh from '../../hooks/usePullToRefresh';
+import notificationService from '../../services/notificationService';
+import api from '../../utils/apiClient';
 import logger from '../../utils/logger';
 
 // Icons
@@ -70,6 +72,8 @@ export default function ShiftHandover() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [scheduledShift, setScheduledShift] = useState(null);
+  const [shiftStartError, setShiftStartError] = useState(null);
   const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const { isOnline, wasOffline } = useOnlineStatus();
 
@@ -81,10 +85,8 @@ export default function ShiftHandover() {
 
       // Get current shift
       const today = new Date().toISOString().split('T')[0];
-      const shiftsRes = await fetch(`/api/guards/shifts?start_date=${today}&end_date=${today}`, {
-        credentials: 'include'
-      });
-      const shiftsJson = await shiftsRes.json();
+      const shiftsRes = await api.get(`/api/guards/shifts?start_date=${today}&end_date=${today}`);
+      const shiftsJson = shiftsRes.data;
 
       if (shiftsJson.success && shiftsJson.data?.length > 0) {
         // Find current user's active shift
@@ -93,12 +95,20 @@ export default function ShiftHandover() {
         );
         setCurrentShift(myShift || null);
 
+        // If no active shift, check for a scheduled shift the guard can start
+        if (!myShift) {
+          const myScheduled = shiftsJson.data.find(
+            s => s.guard_id === user.id && s.status === 'scheduled'
+          );
+          setScheduledShift(myScheduled || null);
+        } else {
+          setScheduledShift(null);
+        }
+
         // Get handover notes for the previous shift
         if (myShift) {
-          const handoverRes = await fetch(`/api/guards/handover/${myShift.id}`, {
-            credentials: 'include'
-          });
-          const handoverJson = await handoverRes.json();
+          const handoverRes = await api.get(`/api/guards/handover/${myShift.id}`);
+          const handoverJson = handoverRes.data;
           if (handoverJson.success && handoverJson.data?.length > 0) {
             setIncomingHandover(handoverJson.data[0]);
           }
@@ -106,10 +116,8 @@ export default function ShiftHandover() {
       }
 
       // Fetch list of guards for handover selection
-      const guardsRes = await fetch('/api/guards/shifts?start_date=' + today + '&end_date=' + today, {
-        credentials: 'include'
-      });
-      const guardsJson = await guardsRes.json();
+      const guardsRes = await api.get('/api/guards/shifts?start_date=' + today + '&end_date=' + today);
+      const guardsJson = guardsRes.data;
       if (guardsJson.success) {
         // Extract unique guards from shifts
         const uniqueGuards = [];
@@ -164,20 +172,15 @@ export default function ShiftHandover() {
     try {
       setLoading('submitHandover', true);
 
-      const res = await fetch('/api/guards/handover', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shift_id: currentShift.id,
-          to_guard_id: handoverForm.to_guard_id || null,
-          notes: handoverForm.notes,
-          incidents_summary: handoverForm.incidents_summary,
-          equipment_status: handoverForm.equipment_status
-        })
+      const res = await api.post('/api/guards/handover', {
+        shift_id: currentShift.id,
+        to_guard_id: handoverForm.to_guard_id || null,
+        notes: handoverForm.notes,
+        incidents_summary: handoverForm.incidents_summary,
+        equipment_status: handoverForm.equipment_status
       });
 
-      const json = await res.json();
+      const json = res.data;
 
       if (!json.success) {
         throw new Error(json.message || 'Failed to submit handover');
@@ -220,16 +223,11 @@ export default function ShiftHandover() {
     try {
       setLoading('endShift', true);
 
-      const res = await fetch(`/api/guards/shifts/${currentShift.id}/end`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          handover_notes: handoverForm.notes || 'Shift ended without additional notes.'
-        })
+      const res = await api.post(`/api/guards/shifts/${currentShift.id}/end`, {
+        handover_notes: handoverForm.notes || 'Shift ended without additional notes.'
       });
 
-      const json = await res.json();
+      const json = res.data;
 
       if (!json.success) {
         throw new Error(json.message || 'Failed to end shift');
@@ -242,6 +240,27 @@ export default function ShiftHandover() {
       handleApiError(error, 'End Shift');
     } finally {
       setLoading('endShift', false);
+    }
+  };
+
+  // Start a scheduled shift
+  const handleStartShift = async () => {
+    if (!scheduledShift) return;
+
+    try {
+      setLoading('startShift', true);
+      setShiftStartError(null);
+
+      await api.post(`/api/guards/shifts/${scheduledShift.id}/start`);
+
+      notificationService.success('Shift Started', 'Shift started successfully.');
+      await fetchShiftData();
+
+    } catch (error) {
+      setShiftStartError(error.response?.data?.message || error.message || 'Failed to start shift. Please try again.');
+      handleApiError(error, 'Start Shift');
+    } finally {
+      setLoading('startShift', false);
     }
   };
 
@@ -384,15 +403,38 @@ export default function ShiftHandover() {
               <EmptyState
                 icon="clipboard"
                 title="No Active Shift"
-                message="You need to have an active shift to create or view handover notes. Please start a shift first."
+                message={scheduledShift
+                  ? `You have a scheduled ${scheduledShift.shift_type || ''} shift today. Start it to begin handover.`
+                  : 'You need to have an active shift to create or view handover notes.'
+                }
                 actions={[
+                  ...(scheduledShift ? [{
+                    label: isLoading('startShift') ? 'Starting...' : 'Start Shift',
+                    onClick: handleStartShift,
+                    variant: 'primary',
+                    disabled: isLoading('startShift')
+                  }] : []),
                   {
                     label: 'Go to Dashboard',
                     onClick: () => navigate('/dashboard/guard'),
-                    variant: 'primary'
+                    variant: scheduledShift ? 'outline' : 'primary'
                   }
                 ]}
               />
+              {shiftStartError && (
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                  <p className="text-sm text-red-700 dark:text-red-300">{shiftStartError}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleStartShift}
+                    className="mt-2"
+                    disabled={isLoading('startShift')}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Card>

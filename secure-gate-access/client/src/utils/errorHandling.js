@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import { handleApiError } from './errorMapper';
 import logger from './logger';
 
 /**
@@ -240,7 +239,7 @@ export function createStandardError(error, context = {}, options = {}) {
     originalError: error,
     userMessage: options.userMessage || getUserFriendlyMessage(error, errorType),
     technicalDetails: options.technicalDetails || extractTechnicalDetails(error),
-    recoveryActions: getRecoveryActions(errorType, error),
+    recoveryActions: getRecoveryActions(errorType),
     retryable: isRetryable(error, errorType),
     ...options
   };
@@ -390,7 +389,7 @@ function extractTechnicalDetails(error) {
  * @param {Error} error - Error object
  * @returns {Array} Recovery actions
  */
-function getRecoveryActions(errorType, error) {
+function getRecoveryActions(errorType) {
   const actions = [];
 
   switch (errorType) {

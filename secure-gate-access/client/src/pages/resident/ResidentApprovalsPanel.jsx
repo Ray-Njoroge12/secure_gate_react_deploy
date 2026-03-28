@@ -7,39 +7,54 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 import { Button, Card, Badge, ErrorDisplay, SuccessDisplay, Icon } from '../../components/ui';
+import Modal from '../../components/ui/Modal.jsx';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext.jsx';
 import useWebSocket from '../../hooks/useWebSocket';
+import pushNotificationService from '../../services/pushNotificationService.js';
+import api from '../../utils/apiClient';
 import { handleApiError } from '../../utils/errorMapper';
 
 const ResidentApprovalsPanel = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [processingIds, setProcessingIds] = useState(new Set());
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [, setTick] = useState(0); // Force re-render for relative time updates
+
+  // Re-render every 15 seconds to keep relative timestamps fresh
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const URGENT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+  const isUrgent = (timestamp) => {
+    if (!timestamp) return false;
+    return (Date.now() - new Date(timestamp).getTime()) > URGENT_THRESHOLD_MS;
+  };
+
   const { addEventListener } = useWebSocket({
     enabled: !!user,
     autoConnect: true,
     subscribeDashboard: false,
-    subscribeVisitors: false,
+    subscribeVisitors: true,
     subscribeAdmin: false
   });
 
   // Fetch pending approvals from API
   const fetchPendingApprovals = useCallback(async () => {
     try {
-      const response = await fetch('/api/visitors/pending-approvals', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await api.get('/api/visitors/pending-approvals');
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch pending approvals');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       setPendingApprovals(result.data || []);
       setError('');
     } catch (err) {
@@ -87,6 +102,13 @@ const ResidentApprovalsPanel = () => {
     fetchPendingApprovals();
   }, [fetchPendingApprovals]);
 
+  // Subscribe to push notifications for walk-in approval alerts
+  useEffect(() => {
+    if (pushNotificationService.getPermissionStatus() === 'granted') {
+      pushNotificationService.subscribe().catch(() => {});
+    }
+  }, []);
+
   // Handle approve action
   const handleApprove = async (visitorId, visitorName) => {
     setProcessingIds(prev => new Set(prev).add(visitorId));
@@ -94,16 +116,7 @@ const ResidentApprovalsPanel = () => {
     setSuccess('');
 
     try {
-      const response = await fetch(`/api/visitors/${visitorId}/approve`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to approve visitor');
-      }
+      await api.post(`/api/visitors/${visitorId}/approve`);
 
       // Remove from pending list
       setPendingApprovals(prev => prev.filter(a => a.id !== visitorId));
@@ -123,56 +136,49 @@ const ResidentApprovalsPanel = () => {
     }
   };
 
-  // Handle reject action
-  const handleReject = async (visitorId, visitorName) => {
-    // Optional: Show reason dialog
-    const reason = window.prompt('Reason for rejection (optional):');
-    
-    setProcessingIds(prev => new Set(prev).add(visitorId));
+  // Handle reject action — open modal instead of window.prompt
+  const openRejectModal = (visitorId, visitorName) => {
+    setRejectTarget({ id: visitorId, name: visitorName });
+    setRejectReason('');
+    setRejectModalOpen(true);
+  };
+
+  const submitRejection = async () => {
+    const { id, name } = rejectTarget;
+    setRejectModalOpen(false);
+    setProcessingIds(prev => new Set(prev).add(id));
     setError('');
     setSuccess('');
 
     try {
-      const response = await fetch(`/api/visitors/${visitorId}/reject`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason || 'Not expecting this visitor' })
-      });
+      await api.post(`/api/visitors/${id}/reject`, { reason: rejectReason || 'Not expecting this visitor' });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to reject visitor');
-      }
-
-      // Remove from pending list
-      setPendingApprovals(prev => prev.filter(a => a.id !== visitorId));
-      setSuccess(`❌ ${visitorName} rejected. Guard will be notified.`);
-      
-      // Clear success after 5 seconds
-      setTimeout(() => setSuccess(''), 5000);
-
+      setPendingApprovals(prev => prev.filter(a => a.id !== id));
+      toast.success(`${name} declined. Guard will be notified.`);
     } catch (err) {
-      setError(handleApiError(err));
+      toast.error(handleApiError(err));
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
-        newSet.delete(visitorId);
+        newSet.delete(id);
         return newSet;
       });
+      setRejectTarget(null);
     }
   };
 
-  // Format time ago
+  // Format time ago with descriptive text
   const timeAgo = (timestamp) => {
     const now = new Date();
     const time = new Date(timestamp);
     const diff = Math.floor((now - time) / 1000); // seconds
 
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
+    if (diff < 60) return 'Just now';
+    if (diff < 120) return '1 minute ago';
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 7200) return '1 hour ago';
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    return `${Math.floor(diff / 86400)} days ago`;
   };
 
   if (loading) {
@@ -221,24 +227,35 @@ const ResidentApprovalsPanel = () => {
         <div className="space-y-4">
           {pendingApprovals.map((approval) => {
             const isProcessing = processingIds.has(approval.id);
-            
+            const urgent = isUrgent(approval.approval_requested_at);
+
             return (
               <Card
                 key={approval.id}
-                className="border-2 border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/50 transition-all"
+                className={`border-2 transition-all ${
+                  urgent
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 hover:border-amber-600 shadow-amber-100'
+                    : 'border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/50'
+                }`}
               >
                 <Card.Content className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     {/* Visitor Info */}
                     <div className="flex-1 space-y-3">
-                      {/* Name & Time */}
-                      <div className="flex items-center gap-3">
+                      {/* Name & Time & Urgency */}
+                      <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-slate-200">
                           {approval.name || 'Unknown Visitor'}
                         </h3>
+                        {urgent && (
+                          <Badge variant="danger" className="flex items-center gap-1 animate-pulse">
+                            <Icon name="AlertTriangle" className="w-3 h-3" />
+                            Urgent
+                          </Badge>
+                        )}
                         <Badge variant="warning" className="flex items-center gap-1">
                           <Icon name="Clock" className="w-3 h-3" />
-                          {timeAgo(approval.approval_requested_at)}
+                          Requested {timeAgo(approval.approval_requested_at)}
                         </Badge>
                       </div>
 
@@ -299,7 +316,7 @@ const ResidentApprovalsPanel = () => {
                       
                       <Button
                         variant="danger"
-                        onClick={() => handleReject(approval.id, approval.name)}
+                        onClick={() => openRejectModal(approval.id, approval.name)}
                         disabled={isProcessing}
                         className="w-full flex items-center justify-center gap-2"
                       >
@@ -339,6 +356,39 @@ const ResidentApprovalsPanel = () => {
           </div>
         </div>
       </div>
+
+      {/* Rejection Reason Modal */}
+      <Modal
+        isOpen={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        title="Decline Visitor"
+        size="sm"
+        ariaLabel="Rejection reason dialog"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-slate-400">
+            Reason for declining <strong>{rejectTarget?.name}</strong>
+          </p>
+          <label className="block">
+            <span id="reject-reason-label" className="block text-sm font-medium mb-1">
+              Rejection reason (optional)
+            </span>
+            <textarea
+              id="reject-reason"
+              aria-labelledby="reject-reason-label"
+              className="w-full px-3 py-2 border rounded-lg resize-none dark:bg-slate-800 dark:border-slate-600"
+              rows={3}
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="e.g. Not expecting this visitor"
+            />
+          </label>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setRejectModalOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={submitRejection}>Confirm Decline</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -6,6 +6,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
+
 import Icon from './Icon';
 
 /**

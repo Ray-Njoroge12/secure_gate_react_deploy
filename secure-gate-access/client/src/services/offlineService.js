@@ -1,6 +1,7 @@
 // Enhanced Offline Service for PWA capabilities
 // Phase 4: Guard Offline Improvements - QR Scanning, Walk-In Registration, Auto-Purge
 
+import logger from '../utils/logger';
 class OfflineService {
   constructor() {
     this.dbName = 'SecureGateOffline';
@@ -144,7 +145,7 @@ class OfflineService {
         this.purgeConfig = { ...this.purgeConfig, ...config };
       }
     } catch (error) {
-      console.warn('[OfflineService] Failed to load purge config:', error);
+      logger.warn('[OfflineService] Failed to load purge config:', error);
     }
   }
 
@@ -171,7 +172,7 @@ class OfflineService {
     
     // Persist config
     localStorage.setItem('offlinePurgeConfig', JSON.stringify(this.purgeConfig));
-    console.log('[OfflineService] Purge policy configured:', this.purgeConfig);
+    logger.info('[OfflineService] Purge policy configured:', this.purgeConfig);
   }
 
   getPurgeConfig() {
@@ -210,7 +211,7 @@ class OfflineService {
     this.inactivityTimer = setInterval(() => {
       const inactiveTime = Date.now() - this.lastActivity;
       if (inactiveTime > this.purgeConfig.inactivityPurgeMs) {
-        console.log('[OfflineService] Inactivity timeout - purging sensitive data');
+        logger.info('[OfflineService] Inactivity timeout - purging sensitive data');
         this.securityPurge();
       }
     }, 60 * 1000);
@@ -242,10 +243,10 @@ class OfflineService {
       await this.enforceMaxVisitorsLimit();
       
       if (purgedCount > 0) {
-        console.log(`[OfflineService] Scheduled purge completed: ${purgedCount} items removed`);
+        logger.info(`[OfflineService] Scheduled purge completed: ${purgedCount} items removed`);
       }
     } catch (error) {
-      console.error('[OfflineService] Purge error:', error);
+      logger.error('[OfflineService] Purge error:', error);
     }
   }
 
@@ -367,10 +368,10 @@ class OfflineService {
           await this.promisifyRequest(store.delete(visitor.id));
         }
         
-        console.log(`[OfflineService] Enforced max visitors limit: removed ${toDelete.length} old entries`);
+        logger.info(`[OfflineService] Enforced max visitors limit: removed ${toDelete.length} old entries`);
       }
     } catch (error) {
-      console.error('[OfflineService] Failed to enforce max visitors limit:', error);
+      logger.error('[OfflineService] Failed to enforce max visitors limit:', error);
     }
   }
 
@@ -383,10 +384,10 @@ class OfflineService {
       await this.clearStore('qrCache');
       // Keep pendingWalkIns and offlineCheckIns for sync
       // Keep preferences
-      console.log('[OfflineService] Security purge completed');
+      logger.info('[OfflineService] Security purge completed');
       this.notifyListeners('security_purge');
     } catch (error) {
-      console.error('[OfflineService] Security purge failed:', error);
+      logger.error('[OfflineService] Security purge failed:', error);
     }
   }
 
@@ -411,7 +412,7 @@ class OfflineService {
       await this.clearStore(store);
     }
     
-    console.log('[OfflineService] All offline data cleared');
+    logger.info('[OfflineService] All offline data cleared');
   }
 
   // ==================== QR CODE OFFLINE VALIDATION ====================
@@ -433,7 +434,7 @@ class OfflineService {
       }));
     }
     
-    console.log(`[OfflineService] Cached ${qrData.length} QR codes for offline validation`);
+    logger.info(`[OfflineService] Cached ${qrData.length} QR codes for offline validation`);
   }
 
   async validateQRCodeOffline(qrCode) {
@@ -468,7 +469,7 @@ class OfflineService {
       
       return { ...cached, valid: true };
     } catch (error) {
-      console.error('[OfflineService] QR validation error:', error);
+      logger.error('[OfflineService] QR validation error:', error);
       return null;
     }
   }
@@ -523,7 +524,7 @@ class OfflineService {
       
       return null;
     } catch (error) {
-      console.error('[OfflineService] QR pattern search error:', error);
+      logger.error('[OfflineService] QR pattern search error:', error);
       return null;
     }
   }
@@ -556,12 +557,12 @@ class OfflineService {
       // Also update local visitor cache status
       await this.updateLocalVisitorStatus(visitorId, 'ON_PREMISE');
       
-      console.log('[OfflineService] Queued offline check-in:', checkInData);
+      logger.info('[OfflineService] Queued offline check-in:', checkInData);
       this.notifyListeners('offline_checkin_queued', checkInData);
       
       return checkInData;
     } catch (error) {
-      console.error('[OfflineService] Failed to queue offline check-in:', error);
+      logger.error('[OfflineService] Failed to queue offline check-in:', error);
       throw error;
     }
   }
@@ -594,12 +595,12 @@ class OfflineService {
       // Update local visitor cache status
       await this.updateLocalVisitorStatus(visitorId, 'CHECKED_OUT');
       
-      console.log('[OfflineService] Queued offline check-out:', checkOutData);
+      logger.info('[OfflineService] Queued offline check-out:', checkOutData);
       this.notifyListeners('offline_checkout_queued', checkOutData);
       
       return checkOutData;
     } catch (error) {
-      console.error('[OfflineService] Failed to queue offline check-out:', error);
+      logger.error('[OfflineService] Failed to queue offline check-out:', error);
       throw error;
     }
   }
@@ -619,7 +620,7 @@ class OfflineService {
         await this.promisifyRequest(store.put(visitor));
       }
     } catch (error) {
-      console.error('[OfflineService] Failed to update local visitor status:', error);
+      logger.error('[OfflineService] Failed to update local visitor status:', error);
     }
   }
 
@@ -633,7 +634,7 @@ class OfflineService {
       
       return await this.promisifyRequest(index.getAll(false));
     } catch (error) {
-      console.error('[OfflineService] Failed to get pending check-ins:', error);
+      logger.error('[OfflineService] Failed to get pending check-ins:', error);
       return [];
     }
   }
@@ -654,7 +655,7 @@ class OfflineService {
         await this.promisifyRequest(store.put(record));
       }
     } catch (error) {
-      console.error('[OfflineService] Failed to mark check-in synced:', error);
+      logger.error('[OfflineService] Failed to mark check-in synced:', error);
     }
   }
 
@@ -680,12 +681,12 @@ class OfflineService {
       
       await this.promisifyRequest(store.put(registration));
       
-      console.log('[OfflineService] Queued offline walk-in registration:', registration.localId);
+      logger.info('[OfflineService] Queued offline walk-in registration:', registration.localId);
       this.notifyListeners('offline_walkin_queued', registration);
       
       return registration;
     } catch (error) {
-      console.error('[OfflineService] Failed to queue walk-in registration:', error);
+      logger.error('[OfflineService] Failed to queue walk-in registration:', error);
       throw error;
     }
   }
@@ -700,7 +701,7 @@ class OfflineService {
       
       return await this.promisifyRequest(index.getAll(false));
     } catch (error) {
-      console.error('[OfflineService] Failed to get pending walk-ins:', error);
+      logger.error('[OfflineService] Failed to get pending walk-ins:', error);
       return [];
     }
   }
@@ -715,7 +716,7 @@ class OfflineService {
       const walkIns = await this.promisifyRequest(store.getAll());
       return walkIns.sort((a, b) => b.timestamp - a.timestamp);
     } catch (error) {
-      console.error('[OfflineService] Failed to get all walk-ins:', error);
+      logger.error('[OfflineService] Failed to get all walk-ins:', error);
       return [];
     }
   }
@@ -736,7 +737,7 @@ class OfflineService {
         await this.promisifyRequest(store.put(record));
       }
     } catch (error) {
-      console.error('[OfflineService] Failed to mark walk-in synced:', error);
+      logger.error('[OfflineService] Failed to mark walk-in synced:', error);
     }
   }
 
@@ -757,7 +758,7 @@ class OfflineService {
         await this.promisifyRequest(store.put(record));
       }
     } catch (error) {
-      console.error('[OfflineService] Failed to update walk-in with server data:', error);
+      logger.error('[OfflineService] Failed to update walk-in with server data:', error);
     }
   }
 
@@ -765,7 +766,7 @@ class OfflineService {
 
   async syncPendingOperations() {
     if (!this.isOnline) {
-      console.log('[OfflineService] Cannot sync - offline');
+      logger.info('[OfflineService] Cannot sync - offline');
       return { success: false, reason: 'offline' };
     }
     
@@ -800,7 +801,7 @@ class OfflineService {
             results.checkIns.failed++;
           }
         } catch (error) {
-          console.error('[OfflineService] Failed to sync check-in:', error);
+          logger.error('[OfflineService] Failed to sync check-in:', error);
           results.checkIns.failed++;
         }
       }
@@ -827,17 +828,17 @@ class OfflineService {
             results.walkIns.failed++;
           }
         } catch (error) {
-          console.error('[OfflineService] Failed to sync walk-in:', error);
+          logger.error('[OfflineService] Failed to sync walk-in:', error);
           results.walkIns.failed++;
         }
       }
       
-      console.log('[OfflineService] Sync completed:', results);
+      logger.info('[OfflineService] Sync completed:', results);
       this.notifyListeners('sync_completed', results);
       
       return { success: true, results };
     } catch (error) {
-      console.error('[OfflineService] Sync failed:', error);
+      logger.error('[OfflineService] Sync failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -940,9 +941,9 @@ class OfflineService {
       try {
         await this.executeAction(action);
         await this.promisifyRequest(store.delete(action.id));
-        console.log('Synced action:', action.type);
+        logger.info('Synced action:', action.type);
       } catch (error) {
-        console.warn('Failed to sync action:', action.type, error);
+        logger.warn('Failed to sync action:', action.type, error);
         
         // Increment retry count
         action.retries = (action.retries || 0) + 1;
@@ -950,7 +951,7 @@ class OfflineService {
         if (action.retries >= action.maxRetries) {
           // Remove failed action after max retries
           await this.promisifyRequest(store.delete(action.id));
-          console.error('Max retries reached for action:', action.type);
+          logger.error('Max retries reached for action:', action.type);
         } else {
           // Update retry count
           await this.promisifyRequest(store.put(action));
@@ -960,7 +961,7 @@ class OfflineService {
   }
 
   async executeAction(action) {
-    const { type, data, url, method, headers } = action;
+    const { data, url, method, headers } = action;
     
     const response = await fetch(url, {
       method: method || 'POST',
@@ -1126,7 +1127,7 @@ class OfflineService {
       try {
         callback(event, this.isOnline);
       } catch (error) {
-        console.error('Error in connection listener:', error);
+        logger.error('Error in connection listener:', error);
       }
     });
   }
@@ -1137,7 +1138,7 @@ class OfflineService {
     if ('serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.register('/service-worker.js');
-        console.log('Service Worker registered:', registration);
+        logger.info('Service Worker registered:', registration);
         
         // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', (event) => {
@@ -1146,7 +1147,7 @@ class OfflineService {
         
         return registration;
       } catch (error) {
-        console.error('Service Worker registration failed:', error);
+        logger.error('Service Worker registration failed:', error);
       }
     }
   }
@@ -1197,7 +1198,7 @@ class OfflineService {
      * Should be called when guard logs in or periodically
      */
     if (!this.isOnline) {
-      console.log('[OfflineService] Cannot fetch QR cache - offline');
+      logger.info('[OfflineService] Cannot fetch QR cache - offline');
       return false;
     }
 
@@ -1214,13 +1215,13 @@ class OfflineService {
       const result = await response.json();
       if (result.success && result.data?.visitors) {
         await this.cacheQRCodes(result.data.visitors);
-        console.log(`[OfflineService] Cached ${result.data.count} QR codes for offline validation`);
+        logger.info(`[OfflineService] Cached ${result.data.count} QR codes for offline validation`);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('[OfflineService] Failed to fetch QR cache:', error);
+      logger.error('[OfflineService] Failed to fetch QR cache:', error);
       return false;
     }
   }
@@ -1249,7 +1250,7 @@ class OfflineService {
 
       return false;
     } catch (error) {
-      console.error('[OfflineService] Failed to fetch offline policy:', error);
+      logger.error('[OfflineService] Failed to fetch offline policy:', error);
       return false;
     }
   }
@@ -1259,7 +1260,7 @@ class OfflineService {
      * Initialize offline service for guard role
      * Call this after guard login
      */
-    console.log('[OfflineService] Initializing for guard...');
+    logger.info('[OfflineService] Initializing for guard...');
     
     // Fetch offline policy
     await this.fetchOfflinePolicy();
@@ -1272,7 +1273,7 @@ class OfflineService {
       await this.syncPendingOperations();
     }
     
-    console.log('[OfflineService] Guard initialization complete');
+    logger.info('[OfflineService] Guard initialization complete');
   }
 
   // ==================== RESIDENT OFFLINE METHODS ====================
@@ -1318,9 +1319,9 @@ class OfflineService {
         });
       }
 
-      console.log(`[OfflineService] Cached ${favorites.length} favorite visitors`);
+      logger.info(`[OfflineService] Cached ${favorites.length} favorite visitors`);
     } catch (error) {
-      console.error('[OfflineService] Failed to cache favorites:', error);
+      logger.error('[OfflineService] Failed to cache favorites:', error);
     }
   }
 
@@ -1382,9 +1383,9 @@ class OfflineService {
         });
       }
 
-      console.log(`[OfflineService] Cached ${passes.length} recurring passes`);
+      logger.info(`[OfflineService] Cached ${passes.length} recurring passes`);
     } catch (error) {
-      console.error('[OfflineService] Failed to cache recurring passes:', error);
+      logger.error('[OfflineService] Failed to cache recurring passes:', error);
     }
   }
 
@@ -1425,7 +1426,7 @@ class OfflineService {
       });
 
       request.onsuccess = () => {
-        console.log('[OfflineService] Queued offline invite:', localId);
+        logger.info('[OfflineService] Queued offline invite:', localId);
         resolve(localId);
       };
       request.onerror = () => reject(request.error);
@@ -1507,12 +1508,12 @@ class OfflineService {
           failed++;
         }
       } catch (error) {
-        console.error('[OfflineService] Failed to sync invite:', invite.localId, error);
+        logger.error('[OfflineService] Failed to sync invite:', invite.localId, error);
         failed++;
       }
     }
 
-    console.log(`[OfflineService] Synced invites: ${synced} success, ${failed} failed`);
+    logger.info(`[OfflineService] Synced invites: ${synced} success, ${failed} failed`);
     return { synced, failed };
   }
 
@@ -1521,7 +1522,7 @@ class OfflineService {
      * Initialize offline service for resident role
      * Call this after resident login
      */
-    console.log('[OfflineService] Initializing for resident...');
+    logger.info('[OfflineService] Initializing for resident...');
 
     try {
       // Fetch and cache favorites
@@ -1553,10 +1554,27 @@ class OfflineService {
         await this.syncPendingInvites();
       }
 
-      console.log('[OfflineService] Resident initialization complete');
+      logger.info('[OfflineService] Resident initialization complete');
     } catch (error) {
-      console.error('[OfflineService] Resident initialization failed:', error);
+      logger.error('[OfflineService] Resident initialization failed:', error);
     }
+  }
+
+  // ==================== SYNC QUEUE ====================
+
+  async addToSyncQueue(action) {
+    const db = this.db || await this.initDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('syncQueue', 'readwrite');
+      const store = tx.objectStore('syncQueue');
+      const request = store.add({
+        ...action,
+        timestamp: Date.now(),
+        synced: false
+      });
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+    });
   }
 
   // ==================== CLEANUP ====================

@@ -7,8 +7,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotifications } from '../../hooks/useWebSocket';
+import { NOTIFICATION_SOUND_MP3, NOTIFICATION_SOUND_OGG } from '../../utils/soundAssets';
 
 import Icon from './Icon';
 import './NotificationBell.css';
@@ -196,8 +198,8 @@ const NotificationBell = ({ className = '' }) => {
     <>
       {/* Notification Sound */}
       <audio ref={audioRef} preload="auto">
-        <source src="/sounds/notification.mp3" type="audio/mpeg" />
-        <source src="/sounds/notification.ogg" type="audio/ogg" />
+        <source src={NOTIFICATION_SOUND_MP3} type="audio/mpeg" />
+        <source src={NOTIFICATION_SOUND_OGG} type="audio/ogg" />
       </audio>
 
       {/* Bell Button */}

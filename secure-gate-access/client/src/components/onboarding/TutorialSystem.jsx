@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { sanitizeContent } from '../../utils/sanitize';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeEngine';
@@ -44,6 +45,7 @@ const TutorialSystem = ({
   const overlayRef = useRef(null);
   const tooltipRef = useRef(null);
   const focusTrapRef = useRef(null);
+  const positionTimerRef = useRef(null);
 
   // Default options
   const defaultOptions = {
@@ -179,7 +181,7 @@ const TutorialSystem = ({
       });
 
       // Position tooltip
-      setTimeout(() => positionTooltip(target, step), 100);
+      positionTimerRef.current = setTimeout(() => positionTooltip(target, step), 100);
     } else if (step.position) {
       // Use fixed position if no target element
       setTooltipPosition(step.position);
@@ -366,6 +368,7 @@ const TutorialSystem = ({
 
     return () => {
       removeHighlight();
+      if (positionTimerRef.current) clearTimeout(positionTimerRef.current);
     };
   }, [isVisible, steps.length, goToStep, removeHighlight]);
 
@@ -459,7 +462,7 @@ const TutorialSystem = ({
           <div 
             id="tutorial-content"
             className="text-gray-700 dark:text-gray-300 mb-4"
-            dangerouslySetInnerHTML={{ __html: currentStepData.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeContent(currentStepData.content) }}
           />
 
           {/* Action hint */}

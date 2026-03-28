@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import logger from 'utils/logger';
 
+
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import OnboardingTour from "../../components/common/OnboardingTour";
 import QuickActionMenu from "../../components/common/QuickActionMenu";
@@ -11,6 +12,8 @@ import { Card, Button, Skeleton, UpcomingVisitsEmpty, RecentVisitorsEmpty, Icon 
 // AppShell removed - handled by Layout Route
 import { useLoadingState } from "../../hooks/useLoadingState";
 import { useResidentVisitorEvents } from "../../hooks/useVisitorEvents";
+import { useI18n } from "../../i18n/index.js";
+import api from '../../utils/apiClient';
 // Unused page imports removed
 import { navigateTo } from "../../utils/appNavigation";
 
@@ -25,6 +28,7 @@ const handleKeyAction = (event, action) => {
 };
 
 const DashboardHome = () => {
+  const { t } = useI18n();
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
@@ -81,13 +85,6 @@ const DashboardHome = () => {
         e.preventDefault();
         navigateTo('/resident/visitor-history');
       }
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        if (!loading) {
-          fetchDashboardData();
-        }
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -108,17 +105,11 @@ const DashboardHome = () => {
       if (mfaDismissed) return;
 
       try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const userData = data.data || data.user || data;
-          if (userData && userData.mfa_enabled === false) {
-            setShowMfaBanner(true);
-          }
+        const response = await api.get('/api/auth/me');
+        const data = response.data;
+        const userData = data.data || data.user || data;
+        if (userData && userData.mfa_enabled === false) {
+          setShowMfaBanner(true);
         }
       } catch (error) {
         logger.error('Error checking MFA status:', error);
@@ -138,17 +129,10 @@ const DashboardHome = () => {
     try {
       startLoading({ message: 'Loading dashboard data...' });
 
-      // Fetch visitor data using httpOnly cookies
-      const response = await fetch('/api/visitors', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.get('/api/visitors');
 
-      if (response.ok) {
-        const data = await response.json();
+      {
+        const data = response.data;
         // Handle response format: { data: { visitors: [] } } or { data: [] }
         const visitors = Array.isArray(data.data)
           ? data.data
@@ -187,11 +171,6 @@ const DashboardHome = () => {
 
         setUpcomingInvites(upcoming);
         setRecentVisitors(recent);
-      } else {
-        logger.error('[ERROR] Failed to fetch visitor data:', response.status);
-        // Fallback to empty data
-        setUpcomingInvites([]);
-        setRecentVisitors([]);
       }
     } catch (error) {
       logger.error('[ERROR] Error fetching dashboard data:', error);
@@ -266,21 +245,21 @@ const DashboardHome = () => {
       {/* PHASE A1: Mobile-First Above-the-Fold Summary Card */}
       <div className="md:hidden bg-white dark:bg-slate-800 border-2 border-brand-500 rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Today's Overview</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.resident.todaysOverview')}</h2>
           <Icon name="bar-chart-2" className="text-2xl text-gray-400" />
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-brand-50 dark:bg-brand-900/20 rounded-lg p-2">
             <div className="text-2xl font-bold text-brand-600 dark:text-brand-400">{todayExpected}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-200">Expected</div>
+            <div className="text-xs text-gray-600 dark:text-gray-200">{t('dashboard.resident.expected')}</div>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{onPremises}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-200">On Site</div>
+            <div className="text-xs text-gray-600 dark:text-gray-200">{t('dashboard.resident.onSite')}</div>
           </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{todayActive}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-200">Checked In</div>
+            <div className="text-xs text-gray-600 dark:text-gray-200">{t('dashboard.resident.checkedIn')}</div>
           </div>
         </div>
         {/* Mobile Customize Button */}
@@ -291,7 +270,7 @@ const DashboardHome = () => {
           className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
         >
           <Icon name="settings" className="w-4 h-4" />
-          Customize Dashboard
+          {t('dashboard.common.customizeDashboard')}
         </Button>
       </div>
 
@@ -303,7 +282,7 @@ const DashboardHome = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Welcome back! 👋
+              {t('dashboard.common.welcomeBack')} 👋
             </h1>
             <p className="text-base text-gray-600 dark:text-gray-200">
               {upcomingInvites.length > 0
@@ -319,7 +298,7 @@ const DashboardHome = () => {
             title="Customize dashboard widgets"
           >
             <Icon name="settings" className="w-4 h-4" />
-            Customize
+            {t('dashboard.common.customize')}
           </Button>
         </div>
 
@@ -362,8 +341,8 @@ const DashboardHome = () => {
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-lg md:text-xl font-bold text-white mb-1">✉️ Quick Invite</h2>
-            <p className="text-sm md:text-base text-brand-100">Send an invite in seconds</p>
+            <h2 className="text-lg md:text-xl font-bold text-white mb-1">✉️ {t('dashboard.resident.quickInvite')}</h2>
+            <p className="text-sm md:text-base text-brand-100">{t('dashboard.resident.sendInviteQuickly')}</p>
           </div>
           <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,10 +359,10 @@ const DashboardHome = () => {
           <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <Card.Content className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Upcoming Invites</h2>
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">{t('dashboard.resident.upcomingInvites')}</h2>
                 {upcomingInvites.length > 0 && (
-                  <span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm font-medium">
-                    🟢 {upcomingInvites.length} active
+                  <span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    <Icon name="CheckCircle" className="w-4 h-4 text-green-600 inline-block" aria-hidden="true" /> {upcomingInvites.length} active
                   </span>
                 )}
               </div>
@@ -399,8 +378,8 @@ const DashboardHome = () => {
                   {upcomingInvites.map(invite => (
                     <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 border-l-4 border-brand-500 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
+                        <div className="font-medium text-gray-900 dark:text-white"><Icon name="User" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{invite.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-200"><Icon name="Calendar" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{invite.time}</div>
                       </div>
                       <div className="flex gap-2">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${invite.status === 'Confirmed'
@@ -426,7 +405,7 @@ const DashboardHome = () => {
           <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <Card.Content className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">{t('dashboard.resident.recentVisitors')}</h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -446,10 +425,10 @@ const DashboardHome = () => {
                   {recentVisitors.map(visitor => (
                     <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border-l-4 border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">👤 {visitor.name}</div>
-                        <div className="text-sm text-green-600">✅ Checked in</div>
+                        <div className="font-medium text-gray-900 dark:text-white"><Icon name="User" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{visitor.name}</div>
+                        <div className="text-sm text-green-600"><Icon name="Check" className="w-4 h-4 text-green-600 inline-block mr-1" aria-hidden="true" />Checked in</div>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-200">🕐 {visitor.checkedInAt}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-200"><Icon name="Clock" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{visitor.checkedInAt}</div>
                     </div>
                   ))}
                 </div>
@@ -489,7 +468,7 @@ const DashboardHome = () => {
       {/* PHASE A3: Clarified Quick Actions - Mobile Optimized */}
       {isWidgetVisible('quick-actions') && (
         <div data-tour="quick-actions" className="mt-6 md:mt-8">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Quick Actions</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">{t('dashboard.common.quickActions')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {/* Visitor Approvals - Highlighted */}
             <Card
@@ -502,8 +481,8 @@ const DashboardHome = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Approvals</h3>
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Walk-in visitors</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">{t('dashboard.resident.approvals')}</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">{t('dashboard.resident.walkInVisitors')}</p>
                 <span className="absolute top-2 right-2 px-2 py-0.5 bg-brand-500 text-white text-xs rounded-full font-medium">
                   NEW
                 </span>

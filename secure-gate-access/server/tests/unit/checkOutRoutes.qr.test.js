@@ -11,7 +11,7 @@ jest.unstable_mockModule('../../src/services/tokenService.js', () => ({ tokenSer
 jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({ dbManager: { query: mockQuery }, default: { query: mockQuery } }));
 jest.unstable_mockModule('../../src/services/loggingService.js', () => ({ default: mockLogger }));
 jest.unstable_mockModule('../../src/config/logger.js', () => ({ default: mockLogger, logger: mockLogger }));
-jest.unstable_mockModule('../../src/middleware/auditLogger.js', () => ({ default: () => (req, res, next) => { req.audit = mockAudit; next(); } }));
+jest.unstable_mockModule('../../src/middleware/auditLogging.js', () => ({ default: () => (req, res, next) => { req.audit = mockAudit; next(); } }));
 
 const usersByToken = {
   'resident-token': { id: 1, email: 'resident@test.com', username: 'resident', role: 'resident', estate_id: 100 },

@@ -1,4 +1,6 @@
 // Background Sync Service for PWA
+import logger from '../utils/logger';
+
 import offlineService from './offlineService';
 
 class BackgroundSyncService {
@@ -7,13 +9,14 @@ class BackgroundSyncService {
     this.registration = null;
     this.syncTags = new Set();
     this.listeners = new Set();
+    this._intervals = [];
     
     this.init();
   }
 
   async init() {
     if (!this.isSupported) {
-      console.warn('Background sync not supported');
+      logger.warn('Background sync not supported');
       return;
     }
 
@@ -21,7 +24,7 @@ class BackgroundSyncService {
       this.registration = await navigator.serviceWorker.ready;
       this.setupMessageListener();
     } catch (error) {
-      console.error('Failed to initialize background sync:', error);
+      logger.error('Failed to initialize background sync:', error);
     }
   }
 
@@ -29,7 +32,7 @@ class BackgroundSyncService {
 
   async registerSync(tag, data = null) {
     if (!this.isSupported || !this.registration) {
-      console.warn('Background sync not available, falling back to immediate sync');
+      logger.warn('Background sync not available, falling back to immediate sync');
       return this.fallbackSync(tag, data);
     }
 
@@ -42,25 +45,25 @@ class BackgroundSyncService {
       await this.registration.sync.register(tag);
       this.syncTags.add(tag);
       
-      console.log('Background sync registered:', tag);
+      logger.info('Background sync registered:', tag);
       this.notifyListeners('sync_registered', { tag, data });
       
       return true;
     } catch (error) {
-      console.error('Failed to register background sync:', error);
+      logger.error('Failed to register background sync:', error);
       return this.fallbackSync(tag, data);
     }
   }
 
   async fallbackSync(tag, data) {
     // Immediate sync fallback for unsupported browsers
-    console.log('Performing immediate sync fallback:', tag);
+    logger.info('Performing immediate sync fallback:', tag);
     
     try {
       await this.performSync(tag, data);
       return true;
     } catch (error) {
-      console.error('Fallback sync failed:', error);
+      logger.error('Fallback sync failed:', error);
       return false;
     }
   }
@@ -157,7 +160,7 @@ class BackgroundSyncService {
     try {
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Error parsing sync data:', error);
+      logger.error('Error parsing sync data:', error);
       localStorage.removeItem(key);
       return null;
     }
@@ -171,7 +174,7 @@ class BackgroundSyncService {
   // ==================== SYNC EXECUTION ====================
 
   async performSync(tag, data = null) {
-    console.log('Performing sync:', tag);
+    logger.info('Performing sync:', tag);
     
     // Get stored data if not provided
     if (!data) {
@@ -180,7 +183,7 @@ class BackgroundSyncService {
     }
 
     if (!data) {
-      console.warn('No sync data found for tag:', tag);
+      logger.warn('No sync data found for tag:', tag);
       return;
     }
 
@@ -202,7 +205,7 @@ class BackgroundSyncService {
           await this.syncBulkOperations(data);
           break;
         default:
-          console.warn('Unknown sync tag:', tag);
+          logger.warn('Unknown sync tag:', tag);
       }
 
       // Remove sync data after successful sync
@@ -210,7 +213,7 @@ class BackgroundSyncService {
       this.notifyListeners('sync_completed', { tag, success: true });
       
     } catch (error) {
-      console.error('Sync failed:', tag, error);
+      logger.error('Sync failed:', tag, error);
       await this.handleSyncFailure(tag, data, error);
       this.notifyListeners('sync_failed', { tag, error });
     }
@@ -298,7 +301,7 @@ class BackgroundSyncService {
     syncEntry.lastAttempt = Date.now();
 
     if (syncEntry.retries >= syncEntry.maxRetries) {
-      console.error('Max retries reached for sync:', tag);
+      logger.error('Max retries reached for sync:', tag);
       await this.removeSyncData(tag);
       this.notifyListeners('sync_abandoned', { tag, error, retries: syncEntry.retries });
     } else {
@@ -344,13 +347,13 @@ class BackgroundSyncService {
 
   handleSyncCompleted(data) {
     const { tag } = data || {};
-    console.log('Sync completed by service worker:', tag);
+    logger.info('Sync completed by service worker:', tag);
     this.notifyListeners('sync_completed', data);
   }
 
   handleSyncFailed(data) {
     const { tag, error } = data || {};
-    console.error('Sync failed in service worker:', tag, error);
+    logger.error('Sync failed in service worker:', tag, error);
     this.notifyListeners('sync_failed', data);
   }
 
@@ -358,11 +361,11 @@ class BackgroundSyncService {
 
   async schedulePeriodicSync() {
     // Check for pending syncs every 5 minutes when app is active
-    setInterval(() => {
+    this._intervals.push(setInterval(() => {
       if (!document.hidden && navigator.onLine) {
         this.checkPendingSyncs();
       }
-    }, 5 * 60 * 1000);
+    }, 5 * 60 * 1000));
   }
 
   async checkPendingSyncs() {
@@ -371,7 +374,7 @@ class BackgroundSyncService {
     for (const tag of pendingTags) {
       const syncData = await this.getSyncData(tag);
       if (syncData && Date.now() - syncData.timestamp > 60000) { // Older than 1 minute
-        console.log('Retrying pending sync:', tag);
+        logger.info('Retrying pending sync:', tag);
         await this.performSync(tag);
       }
     }
@@ -407,7 +410,7 @@ class BackgroundSyncService {
     }
     
     this.syncTags.clear();
-    console.log('All pending syncs cleared');
+    logger.info('All pending syncs cleared');
   }
 
   // ==================== EVENT LISTENERS ====================
@@ -422,9 +425,14 @@ class BackgroundSyncService {
       try {
         callback(event, data);
       } catch (error) {
-        console.error('Error in background sync listener:', error);
+        logger.error('Error in background sync listener:', error);
       }
     });
+  }
+
+  destroy() {
+    (this._intervals || []).forEach(id => clearInterval(id));
+    this._intervals = [];
   }
 }
 

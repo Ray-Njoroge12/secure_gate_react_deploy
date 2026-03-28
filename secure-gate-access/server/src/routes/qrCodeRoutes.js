@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { attachRequestAudit } from '../middleware/auditLogging.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import qrCodeController from '../controllers/qrCodeController.js';
@@ -64,7 +65,7 @@ router.get('/visitor/:visitorId', authenticateToken, requireEstateContext, attac
  *     security:
  *       - bearerAuth: []
  */
-router.get('/analytics', authenticateToken, attachRequestAudit(), qrCodeController.getQRAnalytics);
+router.get('/analytics', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContext, attachRequestAudit(), qrCodeController.getQRAnalytics);
 
 /**
  * @swagger
@@ -75,6 +76,6 @@ router.get('/analytics', authenticateToken, attachRequestAudit(), qrCodeControll
  *     security:
  *       - bearerAuth: []
  */
-router.post('/cleanup', authenticateToken, attachRequestAudit(), qrCodeController.cleanupQRCodes);
+router.post('/cleanup', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContext, attachRequestAudit(), qrCodeController.cleanupQRCodes);
 
 export default router;

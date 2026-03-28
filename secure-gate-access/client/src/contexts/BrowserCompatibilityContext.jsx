@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import logger from 'utils/logger';
+
 import { browserDetection } from '../utils/browserDetection';
 
 const BrowserCompatibilityContext = createContext(null);
@@ -22,10 +23,10 @@ export const BrowserCompatibilityProvider = ({ children }) => {
   // Initialize browser detection
   const initializeBrowserDetection = useCallback(() => {
     try {
-      const browser = browserDetection.getBrowserInfo();
-      const features = browserDetection.getFeatureSupport();
       const compat = browserDetection.checkCompatibility();
-      const warns = browserDetection.getWarnings(browser, features);
+      const browser = compat.browser;
+      const features = compat.features;
+      const warns = compat.warnings;
       const recs = browserDetection.getRecommendations();
 
       setBrowserInfo(browser);
@@ -188,6 +189,7 @@ export const BrowserCompatibilityProvider = ({ children }) => {
   // Refresh browser detection (useful for testing)
   const refreshDetection = useCallback(() => {
     setIsLoading(true);
+    browserDetection.clearFeatureSupportCache();
     initializeBrowserDetection();
   }, [initializeBrowserDetection]);
 

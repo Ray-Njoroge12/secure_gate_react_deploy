@@ -1,4 +1,5 @@
 import express from 'express';
+import logger from '../config/logger.js';
 import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
 import {
   getSettings,
@@ -10,7 +11,8 @@ import {
   getMetrics, getAuditLogs, getPendingUsers, updateUserStatus, getEstateInfo,
   triggerBackup, bulkApproveUsers, bulkRejectUsers,
   getResidents, createResident, updateResident, deleteResident,
-  getVisitorLogs, getAccessLogs
+  getVisitorLogs, getAccessLogs,
+  getSites, createSite, updateSite, switchSite
 } from '../controllers/adminController.js';
 import {
   getPlatformOverview,
@@ -387,6 +389,13 @@ router.post('/compliance/review', authenticateToken, requireRolePolicy('adminOnl
  */
 // Audit logs endpoint
 router.get('/audit-logs', authenticateToken, adminQueryLimit(), attachRequestAudit, getAuditLogs);
+router.get('/access-logs', authenticateToken, requireRole(['admin', 'super_admin']), adminQueryLimit(), attachRequestAudit, getAccessLogs);
+
+// Site management routes
+router.get('/sites', authenticateToken, requireRole(['admin', 'super_admin']), adminQueryLimit(), attachRequestAudit, getSites);
+router.post('/sites', authenticateToken, requireRole(['super_admin']), estateModificationLimit(), attachRequestAudit, createSite);
+router.put('/sites/:id', authenticateToken, requireRole(['super_admin']), estateModificationLimit(), attachRequestAudit, updateSite);
+router.patch('/sites/:id/switch', authenticateToken, requireRole(['super_admin']), superAdminSensitiveLimit(), attachRequestAudit, switchSite);
 
 /**
  * @swagger
@@ -493,6 +502,7 @@ router.put('/users/:id/status',
 router.post('/users/bulk-approve',
   authenticateToken,
   requireRolePolicy('adminOnly'),
+  requireEstateContextForAdmin,
   adminModificationLimit(),
   attachRequestAudit,
   bulkApproveUsers
@@ -507,6 +517,7 @@ router.post('/users/bulk-approve',
 router.post('/users/bulk-reject',
   authenticateToken,
   requireRolePolicy('adminOnly'),
+  requireEstateContextForAdmin,
   adminModificationLimit(),
   attachRequestAudit,
   bulkRejectUsers
@@ -598,7 +609,7 @@ router.get('/users',
       });
       // Fix A-002: Safe Error Handling
     } catch (error) {
-      console.error('Error fetching users:', error);
+      logger.error('Error fetching users', { error: error.message });
       respondError(res, 500, 'Failed to fetch users', error);
     }
   });
@@ -635,7 +646,7 @@ router.get('/users/:id',
       // Return full unmasked details
       respond(res, result.rows[0]);
     } catch (error) {
-      console.error('Error fetching user details:', error);
+      logger.error('Error fetching user details', { error: error.message });
       respondError(res, 500, 'Failed to fetch user details');
     }
   });
@@ -754,7 +765,7 @@ router.post('/users/advanced-search',
         }
       });
     } catch (error) {
-      console.error('Error in advanced search:', error);
+      logger.error('Error in advanced search', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to perform advanced search',
@@ -839,7 +850,7 @@ router.put('/users/:id',
         data: result.rows[0]
       });
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to update user',
@@ -924,7 +935,7 @@ router.get('/users/:id/sessions',
         }
       });
     } catch (error) {
-      console.error('Error fetching user sessions:', error);
+      logger.error('Error fetching user sessions', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch sessions',
@@ -1002,7 +1013,7 @@ router.delete('/users/:userId/sessions/:sessionId',
         message: 'Session revoked successfully'
       });
     } catch (error) {
-      console.error('Error revoking session:', error);
+      logger.error('Error revoking session', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to revoke session',
@@ -1087,7 +1098,7 @@ router.delete('/users/:id/sessions',
         }
       });
     } catch (error) {
-      console.error('Error revoking sessions:', error);
+      logger.error('Error revoking sessions', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to revoke sessions',
@@ -1158,9 +1169,9 @@ router.post('/users/:id/reset-password',
         try {
           // TODO: Integrate with email service
           // await emailService.sendPasswordReset(user.email, tempPassword);
-          console.log(`Temporary password for ${user.email}: ${tempPassword}`);
+          logger.info(`Temporary password generated for ${user.email}`);
         } catch (emailError) {
-          console.error('Failed to send password reset email:', emailError);
+          logger.error('Failed to send password reset email', { error: emailError.message });
         }
       }
 
@@ -1178,7 +1189,7 @@ router.post('/users/:id/reset-password',
         }
       });
     } catch (error) {
-      console.error('Error resetting password:', error);
+      logger.error('Error resetting password', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to reset password',
@@ -1239,7 +1250,7 @@ router.delete('/users/:id',
         message: 'User deleted successfully'
       });
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to delete user',
@@ -1344,7 +1355,7 @@ router.get('/activity/trends',
         const visitorResult = await dbManager.query(visitorQuery, params);
         visitorTrends = visitorResult.rows;
       } catch (err) {
-        console.log('Visitors table not available for trends');
+        logger.debug('Visitors table not available for trends');
       }
 
       res.json({
@@ -1358,7 +1369,7 @@ router.get('/activity/trends',
         }
       });
     } catch (error) {
-      console.error('Error fetching activity trends:', error);
+      logger.error('Error fetching activity trends', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch activity trends',
@@ -1440,7 +1451,7 @@ router.get('/activity/anomalies',
           });
         }
       } catch (err) {
-        console.log('Visitors table not available for anomaly detection');
+        logger.debug('Visitors table not available for anomaly detection');
       }
 
       // Check for after-hours activity (10 PM - 6 AM)
@@ -1472,7 +1483,7 @@ router.get('/activity/anomalies',
         }
       });
     } catch (error) {
-      console.error('Error detecting anomalies:', error);
+      logger.error('Error detecting anomalies', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to detect anomalies',
@@ -1545,7 +1556,7 @@ router.get('/activity/summary',
         );
         visitorsToday = parseInt(visitorResult.rows[0].count);
       } catch (err) {
-        console.log('Visitors table not available');
+        logger.debug('Visitors table not available');
       }
 
       res.json({
@@ -1560,7 +1571,7 @@ router.get('/activity/summary',
         }
       });
     } catch (error) {
-      console.error('Error fetching activity summary:', error);
+      logger.error('Error fetching activity summary', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch activity summary',
@@ -1652,7 +1663,7 @@ router.get('/notification-preferences',
         data: result.rows
       });
     } catch (error) {
-      console.error('Error fetching notification preferences:', error);
+      logger.error('Error fetching notification preferences', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch notification preferences',
@@ -1741,7 +1752,7 @@ router.put('/notification-preferences/:id',
         data: result.rows[0]
       });
     } catch (error) {
-      console.error('Error updating notification preference:', error);
+      logger.error('Error updating notification preference', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to update notification preference',
@@ -1827,7 +1838,7 @@ router.post('/notification-preferences/bulk-update',
         data: updated
       });
     } catch (error) {
-      console.error('Error in bulk update:', error);
+      logger.error('Error in bulk update', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to update preferences',
@@ -1851,7 +1862,7 @@ router.get('/retention/stats', authenticateToken, requireRolePolicy('adminOnly')
       data: stats
     });
   } catch (error) {
-    console.error('Error fetching retention stats:', error);
+    logger.error('Error fetching retention stats', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to fetch retention statistics',
@@ -1875,7 +1886,7 @@ router.post('/retention/run', authenticateToken, requireRolePolicy('adminOnly'),
       data: results
     });
   } catch (error) {
-    console.error('Error running retention job:', error);
+    logger.error('Error running retention job', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Retention job failed',
@@ -1898,7 +1909,7 @@ router.get('/retention/scheduler/status', authenticateToken, requireRolePolicy('
       data: status
     });
   } catch (error) {
-    console.error('Error fetching scheduler status:', error);
+    logger.error('Error fetching scheduler status', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to fetch scheduler status',
@@ -1906,5 +1917,86 @@ router.get('/retention/scheduler/status', authenticateToken, requireRolePolicy('
     });
   }
 });
+
+// ==============================================================================
+// ROLE MANAGEMENT
+// ==============================================================================
+
+/**
+ * @route GET /api/admin/roles
+ * @desc Get list of available roles with descriptions
+ * @access Private (Admin only)
+ */
+router.get('/roles', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, async (req, res) => {
+  const roles = [
+    { id: 'resident', name: 'Resident', description: 'Estate resident with visitor invitation privileges', permissions: ['invite_visitors', 'view_own_visitors', 'manage_deliveries'] },
+    { id: 'guard', name: 'Guard', description: 'Security guard with check-in/check-out privileges', permissions: ['check_in_visitors', 'check_out_visitors', 'view_all_visitors', 'log_incidents', 'manage_walk_ins'] },
+    { id: 'admin', name: 'Admin', description: 'Estate administrator with full management access', permissions: ['manage_users', 'manage_settings', 'view_analytics', 'manage_watchlist', 'manage_policies'] },
+    { id: 'super_admin', name: 'Super Admin', description: 'Platform-wide administrator', permissions: ['manage_estates', 'manage_all_users', 'platform_settings', 'view_global_analytics'] },
+  ];
+  return respond(res, 200, 'Roles retrieved', roles);
+});
+
+/**
+ * @route GET /api/admin/permissions
+ * @desc Get list of available permissions
+ * @access Private (Admin only)
+ */
+router.get('/permissions', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, async (req, res) => {
+  const permissions = [
+    { id: 'invite_visitors', name: 'Invite Visitors', category: 'visitor' },
+    { id: 'view_own_visitors', name: 'View Own Visitors', category: 'visitor' },
+    { id: 'view_all_visitors', name: 'View All Visitors', category: 'visitor' },
+    { id: 'check_in_visitors', name: 'Check In Visitors', category: 'guard' },
+    { id: 'check_out_visitors', name: 'Check Out Visitors', category: 'guard' },
+    { id: 'log_incidents', name: 'Log Incidents', category: 'guard' },
+    { id: 'manage_walk_ins', name: 'Manage Walk-Ins', category: 'guard' },
+    { id: 'manage_users', name: 'Manage Users', category: 'admin' },
+    { id: 'manage_settings', name: 'Manage Settings', category: 'admin' },
+    { id: 'view_analytics', name: 'View Analytics', category: 'admin' },
+    { id: 'manage_watchlist', name: 'Manage Watchlist', category: 'admin' },
+    { id: 'manage_policies', name: 'Manage Policies', category: 'admin' },
+    { id: 'manage_deliveries', name: 'Manage Deliveries', category: 'resident' },
+    { id: 'manage_estates', name: 'Manage Estates', category: 'super_admin' },
+    { id: 'manage_all_users', name: 'Manage All Users', category: 'super_admin' },
+    { id: 'platform_settings', name: 'Platform Settings', category: 'super_admin' },
+    { id: 'view_global_analytics', name: 'View Global Analytics', category: 'super_admin' },
+  ];
+  return respond(res, 200, 'Permissions retrieved', permissions);
+});
+
+/**
+ * @route POST /api/admin/users/:id/assign-role
+ * @desc Assign a role to a user
+ * @access Private (Admin only)
+ */
+router.post('/users/:id/assign-role', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  const estateId = req.user.estate_id;
+
+  const validRoles = ['resident', 'guard', 'admin'];
+  if (!role || !validRoles.includes(role)) {
+    return respondError(res, 400, `Invalid role. Must be one of: ${validRoles.join(', ')}`);
+  }
+
+  // Verify user belongs to same estate
+  const userResult = await dbManager.query(
+    'SELECT id, role FROM users WHERE id = $1 AND estate_id = $2',
+    [id, estateId]
+  );
+
+  if (userResult.rows.length === 0) {
+    return respondError(res, 404, 'User not found in this estate');
+  }
+
+  await dbManager.query(
+    'UPDATE users SET role = $1 WHERE id = $2 AND estate_id = $3',
+    [role, id, estateId]
+  );
+
+  logger.info(`Role assigned: user ${id} -> ${role} by admin ${req.user.id}`);
+  return respond(res, 200, 'Role assigned successfully', { userId: id, role });
+}));
 
 export default router;

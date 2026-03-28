@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import ErrorAlert from './ui/ErrorAlert';
+
 import errorQueueService from '../services/errorQueueService';
+
+import ErrorAlert from './ui/ErrorAlert';
 
 /**
  * Error Queue Component

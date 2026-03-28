@@ -4,8 +4,6 @@ describe('authStateMachine', () => {
     // Helpers to reset state if needed, although state is module-scoped singleton
     // so we should rely on transitions to verify behavior.
 
-    const initialState = { ...authStateMachine.getState() };
-
     it('should have correct initial state', () => {
         // Note: State might have changed due to other tests if running in parallel execution environments
         // but in unit tests, it should be isolated or at least deterministic.
@@ -69,5 +67,34 @@ describe('authStateMachine', () => {
         // However, getState returns the variable 'currentState'.
         // If transition does not hit a case, it returns.
         expect(postState.updatedAt).toBe(preState.updatedAt);
+    });
+
+    // MFA_PENDING state tests
+    it('AUTH_STATES.MFA_PENDING should equal "mfa_pending"', () => {
+        expect(AUTH_STATES.MFA_PENDING).toBe('mfa_pending');
+    });
+
+    it('should transition to MFA_PENDING on MFA_REQUIRED event', () => {
+        authStateMachine.transition('MFA_REQUIRED');
+        const state = authStateMachine.getState();
+        expect(state.status).toBe(AUTH_STATES.MFA_PENDING);
+        expect(state.reason).toBeNull();
+    });
+
+    it('should transition to MFA_PENDING with reason payload', () => {
+        authStateMachine.transition('MFA_REQUIRED', { reason: 'totp_required' });
+        const state = authStateMachine.getState();
+        expect(state.status).toBe(AUTH_STATES.MFA_PENDING);
+        expect(state.reason).toBe('totp_required');
+    });
+
+    it('should transition from MFA_PENDING to AUTHENTICATED', () => {
+        authStateMachine.transition('MFA_REQUIRED');
+        expect(authStateMachine.getState().status).toBe(AUTH_STATES.MFA_PENDING);
+
+        authStateMachine.transition('AUTHENTICATED', { reason: 'mfa_complete' });
+        const state = authStateMachine.getState();
+        expect(state.status).toBe(AUTH_STATES.AUTHENTICATED);
+        expect(state.reason).toBe('mfa_complete');
     });
 });

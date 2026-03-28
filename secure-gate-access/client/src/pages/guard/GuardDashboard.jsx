@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from '../../utils/apiClient';
 import logger from 'utils/logger';
 import { useAuth } from "../../contexts/AuthContext";
+import { useI18n } from "../../i18n/index.js";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 // AppShell removed - handled by Layout Route
 import { Card, Button, SearchFilter, Pagination, Skeleton } from "../../components/ui";
@@ -37,6 +39,7 @@ export default function GuardDashboard() {
   const { handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
   const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
+  const { t } = useI18n();
 
   const [active, setActive] = useState([]);
   const [toasts, setToasts] = useState([]);
@@ -99,11 +102,8 @@ export default function GuardDashboard() {
     try {
       setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
       clearAllErrors();
-      const res = await fetch('/api/visitors/active', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors/active');
+      const json = res.data;
       if (!json.success) throw new Error(json.error || 'Failed');
       setActive(json.data || []);
     } catch (e) {
@@ -117,66 +117,72 @@ export default function GuardDashboard() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + S to scan QR
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        navigate('/dashboard/guard/scan-qr');
-      }
       // Ctrl/Cmd + M to manual check
       if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
         e.preventDefault();
         navigate('/dashboard/guard/manual-check');
       }
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        if (!isLoading('guardDashboard')) {
-          fetchActive();
-        }
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [fetchActive, isLoading, navigate]);
+  }, [navigate]);
 
   useEffect(() => { fetchActive(); }, [fetchActive]);
 
-  // Subscribe to guard SSE for live updates
+  // Subscribe to guard SSE for live updates with exponential backoff reconnect
   useEffect(() => {
     let es;
-    try {
-      es = new EventSource('/api/ws/guards', { withCredentials: false });
+    let retryCount = 0;
+    let retryTimer = null;
 
-      // Track connection status
-      es.onopen = () => setIsConnected(true);
-      es.onerror = () => setIsConnected(false);
+    const connectSSE = () => {
+      try {
+        es = new EventSource('/api/ws/guards', { withCredentials: false });
 
-      const onEvt = (evt) => {
-        setIsConnected(true); // Receiving events means we're connected
-        try {
-          const data = JSON.parse(evt.data || '{}');
-          // Minimal toast based on severity; never show PII
-          const map = {
-            'visitor.check_in': 'Visitor checked in',
-            'visitor.check_out': 'Visitor checked out',
-            'visitor.revoked': 'Visitor revoked',
-            'visitor.self_check_in': 'Visitor self check-in',
-          };
-          const msg = map[evt.type] || 'Event';
-          const sev = (data && data.severity) || 'info';
-          pushToast({ message: msg, severity: sev });
-        } catch { /* ignore */ }
-        fetchActive();
-      };
-      es.addEventListener('visitor.check_in', onEvt);
-      es.addEventListener('visitor.check_out', onEvt);
-      es.addEventListener('visitor.revoked', onEvt);
-      es.addEventListener('visitor.self_check_in', onEvt);
-    } catch {
-      setIsConnected(false);
-    }
-    return () => { try { es && es.close(); } catch { } };
+        es.onopen = () => {
+          setIsConnected(true);
+          retryCount = 0; // Reset backoff on successful connection
+        };
+
+        es.onerror = () => {
+          setIsConnected(false);
+          try { es.close(); } catch { /* ignore */ }
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+          retryCount++;
+          retryTimer = setTimeout(connectSSE, delay);
+        };
+
+        const onEvt = (evt) => {
+          setIsConnected(true);
+          try {
+            const data = JSON.parse(evt.data || '{}');
+            const map = {
+              'visitor.check_in': 'Visitor checked in',
+              'visitor.check_out': 'Visitor checked out',
+              'visitor.revoked': 'Visitor revoked',
+              'visitor.self_check_in': 'Visitor self check-in',
+            };
+            const msg = map[evt.type] || 'Event';
+            const sev = (data && data.severity) || 'info';
+            pushToast({ message: msg, severity: sev });
+          } catch { /* ignore */ }
+          fetchActive();
+        };
+        es.addEventListener('visitor.check_in', onEvt);
+        es.addEventListener('visitor.check_out', onEvt);
+        es.addEventListener('visitor.revoked', onEvt);
+        es.addEventListener('visitor.self_check_in', onEvt);
+      } catch {
+        setIsConnected(false);
+      }
+    };
+
+    connectSSE();
+    return () => {
+      clearTimeout(retryTimer);
+      try { es && es.close(); } catch { /* ignore */ }
+    };
   }, [fetchActive]);
 
   // Persist toast filter and auto-scroll to newest
@@ -199,13 +205,8 @@ export default function GuardDashboard() {
 
   async function postAction(id, action) {
     const url = `/api/visitors/${id}/${action}`;
-    const headers = { 'Content-Type': 'application/json' };
-    const res = await fetch(url, {
-      method: 'POST',
-      credentials: 'include',
-      headers
-    });
-    const json = await res.json();
+    const res = await api.post(url);
+    const json = res.data;
     if (!json.success) throw new Error(json.error || 'Action failed');
     await fetchActive();
     return json;
@@ -374,7 +375,7 @@ export default function GuardDashboard() {
       {/* Enhanced: Live Connection Status Header */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Guard Station</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.guard.guardStation')}</h2>
           <LiveConnectionStatus isConnected={isConnected} showLabel={true} />
         </div>
         <div className="text-sm text-gray-500 dark:text-gray-300">
@@ -393,12 +394,11 @@ export default function GuardDashboard() {
             </div>
             <div className="ml-3 flex-1">
               <h3 className="text-sm font-semibold text-amber-800">
-                🔒 Multi-Factor Authentication (MFA) Not Enabled
+                🔒 {t('dashboard.guard.mfaNotEnabled')}
               </h3>
               <div className="mt-2 text-sm text-amber-700">
                 <p>
-                  <strong>Security Notice:</strong> MFA is required for all guards to perform sensitive operations 
-                  (check-ins, check-outs, incident reports). Please enable MFA now to ensure uninterrupted access.
+                  <strong>{t('dashboard.guard.mfaSecurityNotice')}</strong> {t('dashboard.guard.mfaRequiredForGuards')}
                 </p>
               </div>
               <div className="mt-4 flex gap-3">
@@ -407,17 +407,17 @@ export default function GuardDashboard() {
                   className="min-h-[44px] bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-4 rounded-lg shadow transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                   aria-label="Enable Multi-Factor Authentication now"
                 >
-                  Enable MFA Now
+                  {t('dashboard.common.enableMfaNow')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    navigate('/dashboard/guard/help/mfa-setup');
+                    navigate('/dashboard/guard/settings?tab=security');
                   }}
                   className="min-h-[44px] text-amber-700 hover:text-amber-900 font-medium py-2 px-4 rounded-lg border border-amber-300 hover:bg-amber-100 transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                   aria-label="Learn more about MFA setup"
                 >
-                  Learn More
+                  {t('dashboard.common.learnMore')}
                 </Button>
               </div>
             </div>
@@ -469,8 +469,8 @@ export default function GuardDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4m-4 0h4m-4 0v4m-4-4h4m-4 0h4" />
               </svg>
             </div>
-            <h3 className="font-bold text-base md:text-lg">Scan QR</h3>
-            <p className="text-xs md:text-sm text-blue-100 mt-1">Quick check-in</p>
+            <h3 className="font-bold text-base md:text-lg">{t('dashboard.guard.scanQR')}</h3>
+            <p className="text-xs md:text-sm text-blue-100 mt-1">{t('dashboard.guard.quickCheckin')}</p>
           </div>
         </div>
 
@@ -490,8 +490,8 @@ export default function GuardDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 className="font-bold text-base md:text-lg">Manual Check</h3>
-            <p className="text-xs md:text-sm text-green-100 mt-1">Search visitor</p>
+            <h3 className="font-bold text-base md:text-lg">{t('dashboard.guard.manualCheck')}</h3>
+            <p className="text-xs md:text-sm text-green-100 mt-1">{t('dashboard.guard.searchVisitor')}</p>
           </div>
         </div>
 
@@ -511,8 +511,8 @@ export default function GuardDashboard() {
               </svg>
             </div>
             <div className="flex-1 md:flex-none">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm md:text-base">Walk-In Registration</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-200 md:mt-1">New visitor</p>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm md:text-base">{t('dashboard.guard.walkInRegistration')}</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-200 md:mt-1">{t('dashboard.guard.newVisitor')}</p>
             </div>
           </div>
         </div>
@@ -532,8 +532,8 @@ export default function GuardDashboard() {
             <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hidden md:inline">Shift Handover</span>
-            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 md:hidden">Handover</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hidden md:inline">{t('dashboard.guard.shiftHandover')}</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 md:hidden">{t('dashboard.guard.handover')}</span>
           </div>
         </div>
         <div
@@ -548,8 +548,8 @@ export default function GuardDashboard() {
             <svg className="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hidden md:inline">Activity Log</span>
-            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 md:hidden">Log</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hidden md:inline">{t('dashboard.guard.activityLog')}</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 md:hidden">{t('dashboard.guard.log')}</span>
           </div>
         </div>
         <div
@@ -564,8 +564,8 @@ export default function GuardDashboard() {
             <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hidden md:inline">Bulk Checkout</span>
-            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 md:hidden">Bulk</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 hidden md:inline">{t('dashboard.guard.bulkCheckout')}</span>
+            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 md:hidden">{t('dashboard.guard.bulk')}</span>
           </div>
         </div>
       </div>
@@ -626,34 +626,34 @@ export default function GuardDashboard() {
       {/* Status Overview */}
       <Card>
         <Card.Header className="flex flex-row items-center justify-between">
-          <Card.Title>Visitor Status</Card.Title>
+          <Card.Title>{t('dashboard.guard.visitorStatus')}</Card.Title>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
           >
-            {showFilters ? 'Hide' : 'Show'} Filters
+            {showFilters ? t('dashboard.common.hideFilters') : t('dashboard.common.showFilters')}
           </Button>
         </Card.Header>
         <Card.Content>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatusBadge
-              label="Confirmed"
+              label={t('dashboard.guard.confirmed')}
               value={isSearching || hasFilters ? getFilteredStatusCount('CONFIRMED') : getStatusCount('CONFIRMED')}
               color="text-blue-600 bg-blue-50"
             />
             <StatusBadge
-              label="On Premise"
+              label={t('dashboard.guard.onPremise')}
               value={isSearching || hasFilters ? getFilteredStatusCount('ON_PREMISE') : getStatusCount('ON_PREMISE')}
               color="text-green-600 bg-green-50"
             />
             <StatusBadge
-              label="Exited"
+              label={t('dashboard.guard.exited')}
               value={isSearching || hasFilters ? getFilteredStatusCount('EXITED') : getStatusCount('EXITED')}
               color="text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900"
             />
             <StatusBadge
-              label="Revoked"
+              label={t('dashboard.guard.revoked')}
               value={isSearching || hasFilters ? getFilteredStatusCount('REVOKED') : getStatusCount('REVOKED')}
               color="text-red-600 bg-red-50"
             />
@@ -670,9 +670,9 @@ export default function GuardDashboard() {
       {/* Active Visitors - Mobile Optimized */}
       <Card>
         <Card.Header className="flex flex-row items-center justify-between">
-          <Card.Title>Active Visitors</Card.Title>
+          <Card.Title>{t('dashboard.guard.activeVisitors')}</Card.Title>
           <Button variant="outline" size="sm" onClick={fetchActive} disabled={isLoading('guardDashboard')}>
-            {isLoading('guardDashboard') ? 'Refreshing...' : 'Refresh'}
+            {isLoading('guardDashboard') ? t('dashboard.common.refreshing') : t('common.refresh')}
           </Button>
         </Card.Header>
         <Card.Content>
@@ -688,9 +688,9 @@ export default function GuardDashboard() {
                 {/* PHASE A5: Improved empty state messages */}
                 {isSearching || hasFilters ? (
                   <div>
-                    <p className="text-gray-900 dark:text-white font-medium mb-1">No visitors match your criteria</p>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">{t('dashboard.common.noMatchCriteria')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
-                      Try adjusting your search or filters
+                      {t('dashboard.common.adjustSearchFilters')}
                     </p>
                     <Button
                       variant="outline"
@@ -700,14 +700,14 @@ export default function GuardDashboard() {
                         clearFilters();
                       }}
                     >
-                      Clear all filters
+                      {t('dashboard.common.clearAllFilters')}
                     </Button>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-gray-900 dark:text-white font-medium mb-1">No active visitors right now</p>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">{t('dashboard.guard.noActiveVisitors')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-200">
-                      Visitors will appear here when they check in
+                      {t('dashboard.guard.visitorsWillAppear')}
                     </p>
                   </div>
                 )}
@@ -739,9 +739,9 @@ export default function GuardDashboard() {
                 {/* PHASE A5: Improved empty state messages - Desktop */}
                 {isSearching || hasFilters ? (
                   <div>
-                    <p className="text-gray-900 dark:text-white font-medium mb-1">No visitors match your criteria</p>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">{t('dashboard.common.noMatchCriteria')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
-                      Try adjusting your search or filters
+                      {t('dashboard.common.adjustSearchFilters')}
                     </p>
                     <Button
                       variant="outline"
@@ -751,14 +751,14 @@ export default function GuardDashboard() {
                         clearFilters();
                       }}
                     >
-                      Clear all filters
+                      {t('dashboard.common.clearAllFilters')}
                     </Button>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-gray-900 dark:text-white font-medium mb-1">No active visitors right now</p>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">{t('dashboard.guard.noActiveVisitors')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-200">
-                      Visitors will appear here when they check in
+                      {t('dashboard.guard.visitorsWillAppear')}
                     </p>
                   </div>
                 )}

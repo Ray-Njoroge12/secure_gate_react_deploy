@@ -8,9 +8,10 @@
  * should be at least 44px in both dimensions to ensure accessibility and usability
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import fc from 'fast-check';
+import React from 'react';
+
 import { TouchOptimizedButton, MobileNavigation, MobileForm } from '../../components/mobile/index.js';
 
 // Mock the enhanced responsive hook to simulate mobile environment
@@ -101,7 +102,7 @@ const navItemsGen = fc.array(navItemGen, { minLength: 2, maxLength: 6 })
     const uniqueItems = [];
     const usedPaths = new Set();
     
-    items.forEach((item, index) => {
+    items.forEach((item, _index) => {
       let uniquePath = item.path;
       let counter = 1;
       
@@ -129,7 +130,6 @@ const inputPropsGen = fc.record({
 
 describe('Property 3: Mobile Touch Target Compliance', () => {
   const MINIMUM_TOUCH_TARGET_SIZE = 44; // pixels
-  const RECOMMENDED_TOUCH_TARGET_SIZE = 48; // pixels
 
   test('TouchOptimizedButton should meet minimum touch target requirements', () => {
     fc.assert(fc.property(
@@ -199,7 +199,6 @@ describe('Property 3: Mobile Touch Target Compliance', () => {
         expect(navButtons.length).toBeGreaterThan(0);
 
         navButtons.forEach((button, index) => {
-          const dimensions = getElementDimensions(button);
 
           // Property: Each navigation item should meet minimum touch target size
           // Check for CSS classes that ensure minimum size
@@ -282,7 +281,7 @@ describe('Property 3: Mobile Touch Target Compliance', () => {
         const uniqueOptions = [];
         const usedValues = new Set();
         
-        options.forEach((option, index) => {
+        options.forEach((option, _index) => {
           let uniqueValue = option.value;
           let counter = 1;
           

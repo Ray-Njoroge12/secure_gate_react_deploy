@@ -81,20 +81,47 @@ class EventManagementService {
   }
 
   /**
+   * Build and execute event lookup with analytics counters.
+   *
+   * Estate scoping is always applied on events (source of truth), while analytics
+   * are joined from event_analytics to avoid depending on view-specific columns.
+   */
+  async getEventWithAnalytics(eventId, estateId = null) {
+    const params = [eventId];
+    let query = `
+      SELECT
+        e.*,
+        COALESCE(ea.total_invited, 0) as total_invited,
+        COALESCE(ea.confirmed_count, 0) as confirmed_count,
+        COALESCE(ea.declined_count, 0) as declined_count,
+        COALESCE(ea.pending_count, 0) as pending_count,
+        COALESCE(ea.rsvp_attending, 0) as rsvp_attending,
+        COALESCE(ea.rsvp_not_attending, 0) as rsvp_not_attending,
+        COALESCE(ea.rsvp_maybe, 0) as rsvp_maybe,
+        COALESCE(ea.checked_in_count, 0) as checked_in_count,
+        COALESCE(ea.checked_out_count, 0) as checked_out_count,
+        COALESCE(ea.total_plus_ones, 0) as total_plus_ones,
+        ea.rsvp_response_rate,
+        ea.attendance_rate
+      FROM events e
+      LEFT JOIN event_analytics ea ON ea.id = e.id
+      WHERE e.id = $1
+    `;
+
+    if (estateId) {
+      params.push(estateId);
+      query += ' AND e.estate_location_id = $2';
+    }
+
+    return db.query(query, params);
+  }
+
+  /**
    * Get event by ID with analytics
    */
   async getEventById(eventId, estateId = null) {
     try {
-      const result = estateId
-        ? await db.query(`
-          SELECT * FROM event_analytics
-          WHERE id = $1
-          AND estate_location_id = $2
-        `, [eventId, estateId])
-        : await db.query(`
-          SELECT * FROM event_analytics
-          WHERE id = $1
-        `, [eventId]);
+      const result = await this.getEventWithAnalytics(eventId, estateId);
 
       if (result.rows.length === 0) {
         return null;
@@ -800,11 +827,7 @@ class EventManagementService {
    */
   async getEventStatistics(eventId, estateId) {
     try {
-      const result = await db.query(`
-        SELECT * FROM event_analytics
-        WHERE id = $1
-        AND estate_location_id = $2
-      `, [eventId, estateId]);
+      const result = await this.getEventWithAnalytics(eventId, estateId);
 
       if (result.rows.length === 0) {
         return null;

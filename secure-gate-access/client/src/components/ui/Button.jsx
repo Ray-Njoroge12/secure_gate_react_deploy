@@ -5,7 +5,9 @@
  * @version 1.0.0
  */
 
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef, forwardRef } from 'react';
+import { twMerge } from 'tailwind-merge';
+
 import Icon from './Icon';
 
 /**
@@ -55,7 +57,7 @@ import Icon from './Icon';
  *   Save
  * </Button>
  */
-const Button = memo(({ 
+const ButtonBase = forwardRef(({ 
   children, 
   variant = 'primary', 
   size = 'md', 
@@ -72,7 +74,7 @@ const Button = memo(({
   'aria-expanded': ariaExpanded,
   'aria-controls': ariaControls,
   ...props 
-}) => {
+}, forwardedRef) => {
   const buttonRef = useRef(null);
 
   /**
@@ -167,7 +169,7 @@ const Button = memo(({
    * Combined CSS classes for the button
    * @constant {string}
    */
-  const buttonClasses = `${baseClasses} ${resolvedVariantClasses} ${resolvedSizeClasses} ${className}`;
+  const buttonClasses = twMerge(baseClasses, resolvedVariantClasses, resolvedSizeClasses, className);
   
   // Auto-generate aria-label for icon-only buttons
   const isIconOnly = icon && !children;
@@ -175,7 +177,15 @@ const Button = memo(({
   
   return (
     <button
-      ref={buttonRef}
+      ref={(node) => {
+        buttonRef.current = node;
+
+        if (typeof forwardedRef === 'function') {
+          forwardedRef(node);
+        } else if (forwardedRef && typeof forwardedRef === 'object') {
+          forwardedRef.current = node;
+        }
+      }}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
@@ -202,6 +212,8 @@ const Button = memo(({
     </button>
   );
 });
+
+const Button = memo(ButtonBase);
 
 /**
  * Display name for the component (useful for debugging)

@@ -253,6 +253,19 @@ expect(queuedActionsResult.length).toBe(queuedActions.length);
 
 ## Test Execution Guidelines
 
+### E2E Runner Contract
+End-to-end browser testing is standardized on Playwright.
+
+- Canonical commands (from repo root): `npm run test:playwright:client`, `npm run test:playwright:client:resident-smoke`, `npm run test:playwright:client:ui`, `npm run test:playwright:client:headed`, `npm run test:playwright:client:debug`.
+- Compatibility commands (from `secure-gate-access/client`): `npm run test:playwright`, `npm run test:playwright:resident-smoke`, `npm run test:playwright:ui`, `npm run test:playwright:headed`, `npm run test:playwright:debug`.
+- Main config: `playwright.config.js` (tests in `e2e/tests/*.e2e.js`).
+- Resident smoke config: `playwright.resident.smoke.config.js` (targets `resident-smoke-matrix.e2e.js`).
+- Global auth/session bootstrap: `e2e/global-setup.js`.
+- Generated outputs (`playwright-results*.json`, `playwright-report/`, `test-results/`) are runtime artifacts and should not be committed.
+- Legacy Puppeteer-specific local helpers are intentionally removed from the supported workflow.
+
+Cross-repo Playwright scope and command matrix are documented in `../PLAYWRIGHT_TESTING_MATRIX.md`.
+
 ### Running Tests
 ```bash
 # Run all tests

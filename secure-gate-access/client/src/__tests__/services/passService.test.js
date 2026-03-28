@@ -1,3 +1,4 @@
+import { http } from '../../services/_http';
 import {
   createVisitor,
   getMyVisitors,
@@ -14,7 +15,6 @@ import {
   visitorVerifyOtp,
   resendVisitorOtp
 } from '../../services/passService';
-import { http } from '../../services/_http';
 
 jest.mock('../../services/_http', () => ({
   http: {
@@ -59,7 +59,7 @@ describe('passService', () => {
     test('calls GET /api/passes/mine', async () => {
       http.get.mockResolvedValue([{ id: 1 }]);
 
-      const result = await listMyPasses();
+      await listMyPasses();
 
       expect(http.get).toHaveBeenCalledWith('/api/passes/mine');
     });
@@ -69,7 +69,7 @@ describe('passService', () => {
     test('calls POST /api/passes/verify-otp with passId and otp', async () => {
       http.post.mockResolvedValue({ verified: true });
 
-      const result = await verifyOtp('pass123', '1234');
+      await verifyOtp('pass123', '1234');
 
       expect(http.post).toHaveBeenCalledWith('/api/passes/verify-otp', {
         passId: 'pass123',
@@ -136,7 +136,7 @@ describe('passService', () => {
       };
       http.post.mockResolvedValue({ inviteCode: 'ABC123' });
 
-      const result = await bulkInvite(eventDetails);
+      await bulkInvite(eventDetails);
 
       expect(http.post).toHaveBeenCalledWith('/api/visitors/bulk-invite', {
         eventName: 'Party',
@@ -151,7 +151,7 @@ describe('passService', () => {
     test('calls GET /api/visitors/bulk-invite/:code', async () => {
       http.get.mockResolvedValue({ eventName: 'Party' });
 
-      const result = await getBulkInvite('ABC123');
+      await getBulkInvite('ABC123');
 
       expect(http.get).toHaveBeenCalledWith('/api/visitors/bulk-invite/ABC123');
     });

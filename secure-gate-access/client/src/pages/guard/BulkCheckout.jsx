@@ -8,17 +8,19 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { useConfirmation } from '../../components/common/ConfirmationDialog';
+import OfflineBanner from '../../components/common/OfflineBanner';
+import { useMFAVerification, SENSITIVE_OPERATIONS } from '../../components/guard/MFAVerificationModal';
+import PageHeader from '../../components/PageHeader';
+import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
-import PageHeader from '../../components/PageHeader';
-import { useMFAVerification, SENSITIVE_OPERATIONS } from '../../components/guard/MFAVerificationModal';
-import { useConfirmation } from '../../components/common/ConfirmationDialog';
-import notificationService from '../../services/notificationService';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import OfflineBanner from '../../components/common/OfflineBanner';
 import usePullToRefresh from '../../hooks/usePullToRefresh';
+import notificationService from '../../services/notificationService';
+import api from '../../utils/apiClient';
 import logger from '../../utils/logger';
 
 // Icons
@@ -86,10 +88,8 @@ export default function BulkCheckout() {
       setLoading('bulkCheckout', true);
       setFetchError(null);
 
-      const res = await fetch('/api/visitors/active', {
-        credentials: 'include'
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors/active');
+      const json = res.data;
 
       if (!json.success) {
         throw new Error(json.error || 'Failed to fetch visitors');
@@ -187,36 +187,20 @@ export default function BulkCheckout() {
     try {
       setLoading('performCheckout', true);
 
-      const results = { success: 0, failed: 0, errors: [] };
+      // Single bulk API call instead of N individual calls
+      const res = await api.post('/api/bulk-operations/execute', {
+        operationType: 'checkout_visitors',
+        itemIds: Array.from(selectedIds)
+      });
 
-      // Process each checkout
-      for (const visitorId of selectedIds) {
-        try {
-          const res = await fetch(`/api/visitors/${visitorId}/check-out`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-          });
+      const json = res.data;
 
-          const json = await res.json();
-
-          if (json.success) {
-            results.success++;
-          } else {
-            results.failed++;
-            results.errors.push({
-              id: visitorId,
-              error: json.error || 'Unknown error'
-            });
-          }
-        } catch (error) {
-          results.failed++;
-          results.errors.push({
-            id: visitorId,
-            error: error.message
-          });
-        }
-      }
+      const bulkResults = json.data?.results || json.results || {};
+      const results = {
+        success: Array.isArray(bulkResults.success) ? bulkResults.success.length : (bulkResults.success || 0),
+        failed: Array.isArray(bulkResults.failed) ? bulkResults.failed.length : (bulkResults.failed || 0),
+        errors: Array.isArray(bulkResults.failed) ? bulkResults.failed : []
+      };
 
       setCheckoutResults(results);
       setSelectedIds(new Set());
@@ -237,40 +221,22 @@ export default function BulkCheckout() {
     try {
       setLoading('eodCheckout', true);
 
-      // Select all visitors for EOD
-      const allIds = new Set(activeVisitors.map(v => v.id));
-      const results = { success: 0, failed: 0, errors: [] };
+      // Single bulk API call for EOD checkout of all visitors
+      const allIds = activeVisitors.map(v => v.id);
+      const res = await api.post('/api/bulk-operations/execute', {
+        operationType: 'checkout_visitors',
+        itemIds: allIds,
+        data: { notes: `EOD Checkout - ${eodNotes || 'End of day batch checkout'}` }
+      });
 
-      for (const visitorId of allIds) {
-        try {
-          const res = await fetch(`/api/visitors/${visitorId}/check-out`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              notes: `EOD Checkout - ${eodNotes || 'End of day batch checkout'}`
-            })
-          });
+      const json = res.data;
 
-          const json = await res.json();
-
-          if (json.success) {
-            results.success++;
-          } else {
-            results.failed++;
-            results.errors.push({
-              id: visitorId,
-              error: json.error || 'Unknown error'
-            });
-          }
-        } catch (error) {
-          results.failed++;
-          results.errors.push({
-            id: visitorId,
-            error: error.message
-          });
-        }
-      }
+      const bulkResults = json.data?.results || json.results || {};
+      const results = {
+        success: Array.isArray(bulkResults.success) ? bulkResults.success.length : (bulkResults.success || 0),
+        failed: Array.isArray(bulkResults.failed) ? bulkResults.failed.length : (bulkResults.failed || 0),
+        errors: Array.isArray(bulkResults.failed) ? bulkResults.failed : []
+      };
 
       setCheckoutResults(results);
       setShowEODConfirm(false);
@@ -362,7 +328,7 @@ export default function BulkCheckout() {
               </Button>
             </div>
             {checkoutResults.errors.length > 0 && (
-              <div className="mt-3 text-sm text-red-600 dark:text-red-400">
+              <div className="mt-3 text-sm text-red-700 dark:text-red-400">
                 <p className="font-medium">Errors:</p>
                 <ul className="list-disc list-inside">
                   {checkoutResults.errors.slice(0, 3).map((err, i) => (
@@ -584,12 +550,8 @@ export default function BulkCheckout() {
                               });
                               if (confirmed) {
                                 try {
-                                  const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
-                                    method: 'POST',
-                                    credentials: 'include',
-                                    headers: { 'Content-Type': 'application/json' }
-                                  });
-                                  const json = await res.json();
+                                  const res = await api.post(`/api/visitors/${visitor.id}/check-out`);
+                                  const json = res.data;
                                   if (json.success) {
                                     notificationService.success('Checked Out', `${visitor.name} has been checked out.`);
                                     fetchActiveVisitors();
@@ -658,12 +620,8 @@ export default function BulkCheckout() {
                         });
                         if (confirmed) {
                           try {
-                            const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
-                              method: 'POST',
-                              credentials: 'include',
-                              headers: { 'Content-Type': 'application/json' }
-                            });
-                            const json = await res.json();
+                            const res = await api.post(`/api/visitors/${visitor.id}/check-out`);
+                            const json = res.data;
                             if (json.success) {
                               notificationService.success('Checked Out', `${visitor.name} has been checked out.`);
                               fetchActiveVisitors();

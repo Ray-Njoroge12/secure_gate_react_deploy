@@ -48,19 +48,19 @@ router.get('/live', asyncHandler(async (req, res) => {
  */
 router.get('/ready', asyncHandler(async (req, res) => {
   try {
-    const healthReport = await systemHealthService.performHealthCheck();
+    const readinessProbe = await systemHealthService.getReadinessProbe(req);
 
-    if (healthReport.status === 'unhealthy') {
+    if (readinessProbe.status !== 'ready') {
       return res.status(503).json({
         status: 'not_ready',
-        reason: 'System health check failed',
-        timestamp: new Date().toISOString()
+        reason: readinessProbe.error || 'System readiness probe failed',
+        timestamp: readinessProbe.timestamp || new Date().toISOString()
       });
     }
 
     res.status(200).json({
       status: 'ready',
-      timestamp: new Date().toISOString()
+      timestamp: readinessProbe.timestamp || new Date().toISOString()
     });
 
   } catch (error) {

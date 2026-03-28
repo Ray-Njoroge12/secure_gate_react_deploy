@@ -17,6 +17,7 @@
  */
 
 import * as crypto from 'crypto';
+import logger from '../config/logger.js';
 
 // Key cache (in-memory, per-process)
 const keyCache = new Map();
@@ -137,7 +138,7 @@ export async function getKey(keyName, options = {}) {
     if (key) {
         // Validate key length
         if (key.length < minLength) {
-            console.warn(`[KeyManagement] Key ${keyName} is shorter than recommended (${key.length} < ${minLength})`);
+            logger.warn(`[KeyManagement] Key ${keyName} is shorter than recommended (${key.length} < ${minLength})`);
         }
         storeInCache(keyName, key);
         return key;
@@ -261,25 +262,22 @@ export async function validateKeyConfig() {
 export async function logKeyStatus() {
     if (process.env.NODE_ENV === 'test') return;
 
-    console.log('🔐 Key Management Configuration:');
+    logger.info('Key Management Configuration:');
 
     const validation = await validateKeyConfig();
 
     for (const [name, status] of Object.entries(validation.keys)) {
-        const icon = status.status === 'ok' ? '✅' :
-            status.status === 'weak' ? '⚠️' :
-                status.status === 'missing' ? '❌' : '🔴';
-        console.log(`   ${icon} ${name}: ${status.status}${status.length ? ` (${status.length} chars)` : ''}`);
+        logger.info(`  ${name}: ${status.status}${status.length ? ` (${status.length} chars)` : ''}`);
     }
 
     if (validation.errors.length > 0) {
-        console.error('\n❌ Key Configuration Errors:');
-        validation.errors.forEach(e => console.error(`   • ${e}`));
+        logger.error('Key Configuration Errors:');
+        validation.errors.forEach(e => logger.error(`  ${e}`));
     }
 
     if (validation.warnings.length > 0) {
-        console.warn('\n⚠️  Key Configuration Warnings:');
-        validation.warnings.forEach(w => console.warn(`   • ${w}`));
+        logger.warn('Key Configuration Warnings:');
+        validation.warnings.forEach(w => logger.warn(`  ${w}`));
     }
 
     return validation;

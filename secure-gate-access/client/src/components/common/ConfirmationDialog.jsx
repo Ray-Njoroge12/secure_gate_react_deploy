@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
+
 import Button from '../ui/Button';
 
 const variants = {
@@ -154,7 +155,7 @@ const ConfirmationDialog = ({
   if (!isOpen) return null;
 
   const dialog = (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-[10000] overflow-y-auto">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"

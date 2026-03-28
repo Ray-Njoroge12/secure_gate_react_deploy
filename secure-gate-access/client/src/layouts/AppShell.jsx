@@ -4,10 +4,12 @@ import Topbar from '../components/Topbar';
 import { BottomNav, FAB } from '../components/ui';
 import PanicButton from '../components/guard/PanicButton';
 import { NavigationProvider, useNavigation } from '../contexts/NavigationContext';
+import EnhancedBreadcrumbs from '../components/ui/EnhancedBreadcrumbs';
 import { useAuth } from '../contexts/AuthContext';
 import { navigateToLogin } from '../utils/authNavigation';
 
 import { LogoutConfirmation } from '../components/common/ConfirmationDialog';
+import RouteAnnouncer from '../components/accessibility/RouteAnnouncer';
 
 export default function AppShell({
   role,
@@ -98,6 +100,7 @@ export default function AppShell({
         >
           Skip to main content
         </a>
+        <RouteAnnouncer />
 
         <Sidebar
           role={role}
@@ -115,8 +118,13 @@ export default function AppShell({
           />
 
           <main id="main-content" className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-900 ${className}`} role="main">
+            {/* Breadcrumb navigation */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-0">
+              <EnhancedBreadcrumbs userRole={role} size="sm" />
+            </div>
+
             {/* Add bottom padding on mobile for bottom nav */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-24 md:pb-6">
               {children}
             </div>
           </main>

@@ -5,8 +5,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import Icon from '../ui/Icon';
+
 import { Button, Card } from '../ui';
+import Icon from '../ui/Icon';
 
 // Default widget configuration
 const DEFAULT_WIDGETS = [

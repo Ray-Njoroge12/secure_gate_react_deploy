@@ -4,9 +4,6 @@ import logger from './logger';
 // Higher-order component for performance optimization
 export const withPerformanceOptimization = (WrappedComponent, options = {}) => {
   const {
-    enableMemo = true,
-    enableCallback = true,
-    enableRef = true,
     trackRenders = false,
     logPerformance = false
   } = options;
@@ -91,8 +88,7 @@ export const useThrottledValue = (value, delay) => {
 export const useIntersectionObserver = (options = {}) => {
   const {
     threshold = 0.1,
-    rootMargin = '0px',
-    triggerOnce = true
+    rootMargin = '0px'
   } = options;
 
   const [isIntersecting, setIsIntersecting] = React.useState(false);
@@ -207,7 +203,6 @@ export const useLazyImage = (src, options = {}) => {
 export const usePerformanceMonitor = (componentName, options = {}) => {
   const {
     trackRenders = true,
-    trackProps = false,
     logToConsole = false
   } = options;
 
@@ -260,7 +255,7 @@ export const usePerformanceMonitor = (componentName, options = {}) => {
 };
 
 // Utility for creating optimized selectors
-export const createOptimizedSelector = (selector, equalityFn) => {
+export const createOptimizedSelector = (selector, _equalityFn) => {
   let lastResult;
   let lastArgs;
 

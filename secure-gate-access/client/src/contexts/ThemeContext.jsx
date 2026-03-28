@@ -3,6 +3,7 @@
 // Created: November 26, 2025
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
 import { useAuth } from './AuthContext.js';
 
 const ThemeContext = createContext(undefined);

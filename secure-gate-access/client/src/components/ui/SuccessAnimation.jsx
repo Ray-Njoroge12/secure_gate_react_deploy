@@ -14,6 +14,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+
 import Icon from './Icon.jsx';
 
 const SuccessAnimation = ({
@@ -25,13 +26,9 @@ const SuccessAnimation = ({
   autoClose = true,
   className = ''
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    // Trigger animation on mount
-    setTimeout(() => setIsVisible(true), 10);
-
     if (autoClose) {
       // Start exit animation
       const exitTimer = setTimeout(() => {

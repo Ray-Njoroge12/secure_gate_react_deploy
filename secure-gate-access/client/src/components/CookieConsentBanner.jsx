@@ -7,11 +7,15 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import logger from 'utils/logger';
 
+import api from '../utils/apiClient';
+
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { Checkbox } from './ui/Checkbox';
 import Icon from './ui/Icon';
 import { Label } from './ui/Label';
+
+const CONSENT_VERSION = '1.1';
 
 const CookieConsentBanner = () => {
   const location = useLocation();
@@ -40,7 +44,13 @@ const CookieConsentBanner = () => {
     } else {
       try {
         const parsedConsent = JSON.parse(savedConsent);
-        setConsent(parsedConsent);
+        if (parsedConsent.version !== CONSENT_VERSION) {
+          // Privacy policy text has been updated — re-prompt user
+          localStorage.removeItem('cookieConsent');
+          setShowBanner(true);
+        } else {
+          setConsent(parsedConsent);
+        }
       } catch (error) {
         logger.error('Failed to parse saved consent:', error);
         setShowBanner(true);
@@ -78,25 +88,18 @@ const CookieConsentBanner = () => {
     try {
       setLoading(true);
       
-      // Save to localStorage
-      localStorage.setItem('cookieConsent', JSON.stringify(consentData));
+      // Save to localStorage with version so future policy updates can re-prompt
+      localStorage.setItem('cookieConsent', JSON.stringify({ ...consentData, version: CONSENT_VERSION }));
       localStorage.setItem('cookieConsentDate', new Date().toISOString());
       
       // Send to backend if user is authenticated (uses httpOnly cookies)
       try {
-        await fetch('/api/compliance/consent', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+        await api.post('/api/compliance/consent', {
             type: 'all',
             granted: true,
             version: '1.0',
             preferences: consentData
-          })
-        });
+          });
       } catch (error) {
         logger.error('Failed to save consent to backend:', error);
       }

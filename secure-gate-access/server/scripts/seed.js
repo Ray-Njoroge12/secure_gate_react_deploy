@@ -264,8 +264,8 @@ async function run() {
   if (!estateId) {
     // Create a default estate if none exists
     const estateRes = await dbManager.query(`
-        INSERT INTO estates(name, email, username, role, password_hash, created_at, updated_at)
-VALUES('Secure Gate Estate', 'estate@securegate.com', 'estate_admin', 'estate_admin', 'hash_placeholder', NOW(), NOW())
+    INSERT INTO estates(name, slug, timezone, created_at, updated_at)
+  VALUES('Secure Gate Estate', 'secure-gate-estate', 'UTC', NOW(), NOW())
         RETURNING id
   `);
     estateId = estateRes.rows[0].id;
@@ -389,6 +389,7 @@ VALUES('Secure Gate Estate', 'estate@securegate.com', 'estate_admin', 'estate_ad
     check_in_time, check_out_time, invite_code,
     created_at, updated_at
   ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+    ON CONFLICT DO NOTHING
       `;
 
       await dbManager.query(query, [
@@ -458,6 +459,7 @@ VALUES('Secure Gate Estate', 'estate@securegate.com', 'estate_admin', 'estate_ad
         date_of_visit, status, host_id, estate_id, 
         invite_code, created_at, updated_at
       ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      ON CONFLICT DO NOTHING
       RETURNING id, name, estate_id, date_of_visit, created_by
     `, [
       testVisitorName,
@@ -472,25 +474,60 @@ VALUES('Secure Gate Estate', 'estate@securegate.com', 'estate_admin', 'estate_ad
       'inv_test_active_2026'
     ]);
 
-    const testVisitor = testVisitorRes.rows[0];
+    let testVisitor = testVisitorRes.rows[0];
+    if (!testVisitor) {
+      const existingTestVisitorRes = await dbManager.query(
+        `SELECT id, name, estate_id, date_of_visit, created_by
+         FROM visitors
+         WHERE estate_id = $1 AND invite_code = $2
+         ORDER BY id DESC
+         LIMIT 1`,
+        [estateId, 'inv_test_active_2026']
+      );
+      testVisitor = existingTestVisitorRes.rows[0];
+    }
+
+    if (testVisitor?.id) {
+      const refreshedTestVisitorRes = await dbManager.query(
+        `UPDATE visitors
+         SET date_of_visit = NOW(),
+             status = 'otp_sent',
+             host_id = $2,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, name, estate_id, date_of_visit, created_by`,
+        [testVisitor.id, testHost.id]
+      );
+      testVisitor = refreshedTestVisitorRes.rows[0] || testVisitor;
+    }
 
     // Generate valid QR and OTP using the service
     try {
-      const qrServiceModule = await import('../src/services/qrCodeService.js');
-      const qrCodeService = qrServiceModule.default;
+      if (!testVisitor?.id || !testVisitor?.estate_id) {
+        console.warn('[db:seed] Skipping test visitor credential generation: visitor record missing required fields');
+      } else {
+        const qrServiceModule = await import('../src/services/qrCodeService.js');
+        const qrCodeService = qrServiceModule.default;
 
-      const qrResult = await qrCodeService.generateVisitorQR(
-        { ...testVisitor, createdBy: testHost.id },
-        { generateOtp: true }
-      );
+        const qrResult = await qrCodeService.generateVisitorQR(
+          { ...testVisitor, createdBy: testHost.id },
+          { generateOtp: true }
+        );
 
-      console.log('\n=============================================');
-      console.log('✅ TEST VISITOR CREDENTIALS GENERATED');
-      console.log(`👤 Name: ${testVisitorName}`);
-      console.log(`🔐 OTP: ${qrResult.data.otp} (Use this for manual check-in)`);
-      console.log(`📱 QR Token: ${qrResult.data.token}`);
-      console.log('=============================================\n');
-
+        if (qrResult?.success && qrResult?.data) {
+          console.log('\n=============================================');
+          console.log('✅ TEST VISITOR CREDENTIALS GENERATED');
+          console.log(`👤 Name: ${testVisitorName}`);
+          console.log(`🔐 OTP: ${qrResult.data.otp ?? 'N/A'} (Use this for manual check-in)`);
+          console.log(`📱 QR Token: ${qrResult.data.token ?? 'N/A'}`);
+          console.log('=============================================\n');
+        } else {
+          console.warn('[db:seed] Failed to generate test visitor QR/OTP', {
+            error: qrResult?.error || 'Unknown QR generation failure',
+            code: qrResult?.code || 'N/A'
+          });
+        }
+      }
     } catch (e) {
       console.error('Failed to generate test visitor QR/OTP:', e);
     }
@@ -592,6 +629,8 @@ VALUES('Secure Gate Estate', 'estate@securegate.com', 'estate_admin', 'estate_ad
   console.log('[db:seed] Admin:', admin);
   console.log('[db:seed] Resident:', mainResident); // use existing variable from loop or mainResident
   console.log('[db:seed] Guard:', guard);
+
+  await dbManager.disconnect();
 }
 
 run().catch(async (error) => {

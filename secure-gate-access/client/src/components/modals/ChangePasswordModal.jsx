@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import Modal from '../ui/Modal';
-import GradientButton from '../ui/GradientButton';
+
+import api from '../../utils/apiClient';
 import { handleApiError } from '../../utils/errorMapper';
 import Button from '../ui/Button';
+import GradientButton from '../ui/GradientButton';
+import Modal from '../ui/Modal';
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
     const [formData, setFormData] = useState({
@@ -45,22 +47,10 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         setError(null);
 
         try {
-            const response = await fetch('/api/auth/change-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    currentPassword: formData.currentPassword,
-                    newPassword: formData.newPassword
-                })
+            await api.post('/api/auth/change-password', {
+                currentPassword: formData.currentPassword,
+                newPassword: formData.newPassword
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to change password');
-            }
 
             setSuccess(true);
             setTimeout(() => {

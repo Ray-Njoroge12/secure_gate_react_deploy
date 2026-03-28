@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   getIncidents,
   getIncidentStats,
   updateIncidentStatus,
   assignIncident,
-  escalateIncident
+  escalateIncident,
+  getUsers
 } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import Table from '../../components/Table';
 import Button from '../../components/ui/Button';
@@ -14,15 +14,42 @@ import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 import { format } from 'date-fns';
+import { formatIncidentDateTime } from '../../utils/incidentDisplay';
 
 export default function IncidentManagement({ estateId }) {
-  const { user } = useAuth();
   const { showError, showSuccess } = useError();
   const [activeTab, setActiveTab] = useState('open'); // open, assigned, resolved, all
   const [incidents, setIncidents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+
+  // Guards list for assignment dropdown
+  const [guards, setGuards] = useState([]);
+  const [assignDropdownOpen, setAssignDropdownOpen] = useState(null); // incident id or null
+  const [assignSearch, setAssignSearch] = useState('');
+  const assignDropdownRef = useRef(null);
+
+  // Search
+  const [incidentSearch, setIncidentSearch] = useState('');
+  const [debouncedIncidentSearch, setDebouncedIncidentSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedIncidentSearch(incidentSearch), 300);
+    return () => clearTimeout(timer);
+  }, [incidentSearch]);
+
+  const filteredIncidents = useMemo(() => {
+    if (!debouncedIncidentSearch.trim()) return incidents;
+    const q = debouncedIncidentSearch.toLowerCase();
+    return incidents.filter(inc =>
+      (inc.type || '').toLowerCase().includes(q) ||
+      (inc.reported_by_name || '').toLowerCase().includes(q) ||
+      (inc.description || '').toLowerCase().includes(q) ||
+      (inc.notes || '').toLowerCase().includes(q) ||
+      (inc.location || '').toLowerCase().includes(q)
+    );
+  }, [incidents, debouncedIncidentSearch]);
 
   // Confirmation Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,6 +85,46 @@ export default function IncidentManagement({ estateId }) {
       fetchData();
     }
   }, [fetchData, estateId]);
+
+  // Fetch guards for assignment dropdown
+  useEffect(() => {
+    if (!estateId) return;
+    const fetchGuards = async () => {
+      try {
+        const data = await getUsers({ role: 'guard', estate_id: estateId });
+        const guardList = Array.isArray(data) ? data : data?.users || data?.data || [];
+        setGuards(guardList.filter(u => u.status === 'active' || !u.status));
+      } catch {
+        // Silently fail - dropdown will just be empty
+        setGuards([]);
+      }
+    };
+    fetchGuards();
+  }, [estateId]);
+
+  // Close assign dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (assignDropdownRef.current && !assignDropdownRef.current.contains(e.target)) {
+        setAssignDropdownOpen(null);
+        setAssignSearch('');
+      }
+    };
+    if (assignDropdownOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [assignDropdownOpen]);
+
+  const filteredGuards = guards.filter(g => {
+    const label = `${g.full_name || g.name || ''} (${g.username || ''})`.toLowerCase();
+    return label.includes(assignSearch.toLowerCase());
+  });
+
+  const getGuardDisplayName = (guardId) => {
+    const guard = guards.find(g => g.id === guardId);
+    return guard ? `${guard.full_name || guard.name || guard.username}` : null;
+  };
 
   const handleAction = (incident, action, payload = {}) => {
     setDialogConfig({
@@ -119,21 +186,72 @@ export default function IncidentManagement({ estateId }) {
     { key: 'priority', label: 'Priority' },
     { key: 'reported_by', label: 'Reported By' },
     { key: 'assigned_to', label: 'Assigned To' },
-    { key: 'created_at', label: 'Date', render: (row) => format(new Date(row.created_at), 'MMM d, HH:mm') },
+    {
+      key: 'created_at',
+      label: 'Date',
+      render: (row) => {
+        const value = formatIncidentDateTime(row.created_at, '');
+        if (!value) return 'N/A';
+
+        try {
+          return format(new Date(row.created_at), 'MMM d, HH:mm');
+        } catch {
+          return value;
+        }
+      }
+    },
     {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
         <div className="flex gap-2">
           {row.status === 'open' && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleAction(row, 'assign', { assignee_id: user.id })}
-              loading={actionLoading === row.id}
-            >
-              Assign to Me
-            </Button>
+            <div className="relative" ref={assignDropdownOpen === row.id ? assignDropdownRef : undefined}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setAssignDropdownOpen(assignDropdownOpen === row.id ? null : row.id);
+                  setAssignSearch('');
+                }}
+                loading={actionLoading === row.id}
+              >
+                Assign
+              </Button>
+              {assignDropdownOpen === row.id && (
+                <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-slate-800 shadow-lg rounded-md border border-gray-200 dark:border-slate-600 overflow-hidden">
+                  <div className="p-2 border-b border-gray-200 dark:border-slate-600">
+                    <input
+                      type="text"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-slate-500 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      placeholder="Search guards..."
+                      value={assignSearch}
+                      onChange={(e) => setAssignSearch(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <ul className="max-h-48 overflow-y-auto py-1">
+                    {filteredGuards.length === 0 ? (
+                      <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No guards found</li>
+                    ) : (
+                      filteredGuards.map(guard => (
+                        <li
+                          key={guard.id}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-900 dark:text-gray-100"
+                          onClick={() => {
+                            setAssignDropdownOpen(null);
+                            setAssignSearch('');
+                            handleAction(row, 'assign', { assignee_id: guard.id });
+                          }}
+                        >
+                          {guard.full_name || guard.name || guard.username} ({guard.username})
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
           {row.status !== 'resolved' && row.status !== 'closed' && (
             <Button
@@ -200,16 +318,36 @@ export default function IncidentManagement({ estateId }) {
         ))}
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <input
+          type="search"
+          placeholder="Search incidents by type, reporter, description..."
+          value={incidentSearch}
+          onChange={(e) => setIncidentSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+        />
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      </div>
+      {debouncedIncidentSearch && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Showing {filteredIncidents.length} of {incidents.length} incidents
+          {filteredIncidents.length === 0 && (
+            <button onClick={() => setIncidentSearch('')} className="ml-2 text-brand-600 hover:underline">Clear search</button>
+          )}
+        </p>
+      )}
+
       {/* Table */}
       <Card className="overflow-hidden">
         <Table
           headers={headers}
-          rows={incidents.map(i => ({
+          rows={filteredIncidents.map(i => ({
             ...i,
             status: getStatusBadge(i.status),
             priority: getPriorityBadge(i.priority),
             reported_by: i.reported_by_name || 'Unknown',
-            assigned_to: i.assigned_to_name || 'Unassigned'
+            assigned_to: i.assigned_to_name || getGuardDisplayName(i.assigned_to) || (i.assigned_to ? `ID: ${i.assigned_to}` : 'Unassigned')
           }))}
           loading={loading}
           emptyMessage="No incidents found."

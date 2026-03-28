@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import LoginPage from '../../pages/Login.jsx';
 import { renderWithAuth } from '../../test-utils';
 import { __mockHandlers as errorHandlers } from '../../contexts/ErrorContext.jsx';
+import api from '../../utils/apiClient';
 
 jest.mock('../../contexts/ErrorContext.jsx', () => {
   const mockErrorContext = {
@@ -28,9 +29,17 @@ jest.mock('../../contexts/ErrorContext.jsx', () => {
   };
 });
 
+jest.mock('../../utils/apiClient', () => ({
+  __esModule: true,
+  default: {
+    post: jest.fn()
+  }
+}));
+
 describe('LoginPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    api.post.mockReset();
   });
 
   test('validates email and password on blur', async () => {
@@ -219,15 +228,11 @@ describe('LoginPage', () => {
   });
 
   test('forgot password flow calls API and returns to sign in', async () => {
-    jest.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup();
 
-    const fetchSpy = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ message: 'ok' })
-      });
+    api.post.mockResolvedValueOnce({
+      data: { message: 'ok' }
+    });
 
     renderWithAuth(
       <Routes>
@@ -245,12 +250,9 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Send Reset Link' }));
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/auth/forgot-password'),
-        expect.objectContaining({
-          method: 'POST',
-          credentials: 'include'
-        })
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/auth/forgot-password',
+        { email: 'test@example.com' }
       );
     });
 
@@ -261,9 +263,28 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Welcome Back')).toBeInTheDocument();
     });
+  });
 
-    fetchSpy.mockRestore();
-    jest.useRealTimers();
+  test('forgot password API error is shown inline', async () => {
+    const user = userEvent.setup();
+    api.post.mockRejectedValueOnce({
+      response: {
+        data: { message: 'Reset request failed' }
+      }
+    });
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/forgot-password" element={<LoginPage />} />
+      </Routes>,
+      { route: '/forgot-password', auth: { isAuthenticated: false, user: null } }
+    );
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send Reset Link' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Reset request failed');
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
   });
 
   test('forgot password API error is shown inline', async () => {

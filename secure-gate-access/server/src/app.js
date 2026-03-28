@@ -25,6 +25,8 @@ import { responseMiddleware } from './utils/responseUtils.js';
 import swaggerMiddleware from './config/swagger.js';
 import { debugMiddleware, timeoutMiddleware } from './middleware/debugMiddleware.js';
 
+const isEnvFlagEnabled = (value) => ['true', '1', 'yes', 'on'].includes(String(value || '').trim().toLowerCase());
+
 // Import logging and monitoring middleware
 import { requestLogger, errorLogger } from './config/logger.js';
 import { performanceMonitoring } from './middleware/performanceMonitoring.js';
@@ -45,6 +47,9 @@ import systemDomain from './routes/domains/system.domain.js';
 // Remaining standalone routes not covered by domains
 import devRoutes from './routes/devRoutes.js';
 
+// Rate limiting
+import { rateLimiters, speedLimiters } from './config/rateLimits.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +69,9 @@ app.disable('x-powered-by');
 app.use(requestIdMiddleware);
 app.use(requestLogger);
 
+// 2. State & Protection
+app.use(sessionMiddleware);
+
 // 2. Security Stack (Transport, Headers, Nonce, CSRF)
 initializeTransportSecurity();
 app.use(...securityStack);
@@ -73,9 +81,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(compression());
-
-// 5. State & Protection
-app.use(sessionMiddleware);
 
 // 6. Outcome Monitoring (One pass for all audit/security events)
 app.use(unifiedAuditMiddleware());
@@ -162,7 +167,7 @@ const corsOptionsDelegate = (req, callback) => {
 app.use(cors(corsOptionsDelegate));
 
 // Enhanced rate limiting
-if (process.env.NODE_ENV !== 'development' || process.env.ENABLE_RATE_LIMIT === 'true') {
+if (process.env.NODE_ENV !== 'development' || isEnvFlagEnabled(process.env.ENABLE_RATE_LIMIT)) {
   app.use('/api', rateLimiters.general);
   app.use('/api/auth', rateLimiters.auth);
   app.use('/api/admin', rateLimiters.admin);

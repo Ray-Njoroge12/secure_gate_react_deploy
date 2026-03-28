@@ -11,6 +11,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import Icon from '../ui/Icon';
+import api from '../../utils/apiClient';
 import intelligentNotificationService from '../../services/intelligentNotificationService';
 import logger from '../../utils/logger';
 
@@ -54,15 +55,8 @@ const NotificationAnalyticsDashboard = () => {
    */
   const loadInsights = async () => {
     try {
-      const response = await fetch(`/api/intelligent-notifications/insights?days=${selectedPeriod}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load insights');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`/api/intelligent-notifications/insights?days=${selectedPeriod}`);
+      const data = response.data;
       return data.success ? data.data : null;
     } catch (err) {
       logger.error('Failed to load insights', err);

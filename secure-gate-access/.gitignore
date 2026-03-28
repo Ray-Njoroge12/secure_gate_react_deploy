@@ -13,6 +13,8 @@ Thumbs.db
 # Never commit files with secrets
 .env
 .env.local
+.env.test
+.env.staging
 .env.*.local
 .env.development.local
 .env.test.local
@@ -20,13 +22,14 @@ Thumbs.db
 
 # Exception: Allow template/example files without secrets
 !.env.development
-!.env.staging
 !.env.example
 !.env.staging.example
 !.env.production.template
 
 # SECURITY: Explicitly block production env files with secrets
 server/.env
+server/.env.test
+server/.env.staging
 server/.env.production
 server/.env.local
 

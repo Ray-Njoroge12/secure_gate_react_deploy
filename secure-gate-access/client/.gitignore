@@ -1,1 +1,19 @@
 .vercel
+.DS_Store
+
+# Build and test artifacts
+build/
+coverage/
+playwright-report/
+playwright-results*.json
+test-results/
+e2e/.auth/*.json
+*.log
+
+# Dependencies
+node_modules/
+
+# Local environment files
+.env.local
+.env.*.local
+.env.production

@@ -101,9 +101,9 @@ class WebSocketService {
         ]);
 
         adapter = createAdapter(pubClient, subClient);
-        console.log('✅ Redis Adapter configured for WebSocket');
+        logger.info('Redis Adapter configured for WebSocket');
       } catch (err) {
-        console.warn('⚠️ Failed to connect Redis for WebSocket adapter:', err.message);
+        logger.warn('Failed to connect Redis for WebSocket adapter', { error: err.message });
         // Fallback to in-memory adapter
       }
     }
@@ -134,7 +134,7 @@ class WebSocketService {
     this.dashboardEvents = new DashboardEvents(this);
 
     logger.info('WebSocket service initialized');
-    console.log('🔌 WebSocket service initialized with real-time capabilities');
+    logger.info('WebSocket service initialized with real-time capabilities');
   }
 
   /**
@@ -208,7 +208,6 @@ class WebSocketService {
       role: socket.userRole,
       estateId: socket.estateId
     });
-    console.log(`🟢 WebSocket: user ${socket.userId} (${socket.userRole}, estate:${socket.estateId || 'none'}) connected`);
 
     // Handle disconnection
     socket.on('disconnect', () => {
@@ -369,7 +368,6 @@ class WebSocketService {
       role: socket.userRole,
       estateId: socket.estateId
     });
-    console.log(`🔴 WebSocket: user ${socket.userId} (${socket.userRole}, estate:${socket.estateId || 'none'}) disconnected`);
   }
 
   /**

@@ -30,7 +30,6 @@ const BrowserCompatibilityWarning = memo(({
 
   const {
     browserInfo,
-    compatibility,
     warnings,
     recommendations,
     isCompatible,

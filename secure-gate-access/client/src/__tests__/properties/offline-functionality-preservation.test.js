@@ -1,10 +1,10 @@
-import fc from 'fast-check';
 import { jest } from '@jest/globals';
+import fc from 'fast-check';
 
 // Test configuration and utilities
 import { 
   TEST_CONFIG
-} from './constants/offline-test-config.js';
+} from './constants/index.js';
 
 // Create a simple mock factory inline for now
 const createSyncMock = (actions, options = {}) => {

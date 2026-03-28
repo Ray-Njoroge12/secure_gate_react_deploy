@@ -9,13 +9,14 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Icon from './Icon';
-import Card from './Card';
+
 import { useNavigation } from '../../contexts/NavigationContext';
+
+import Card from './Card';
+import Icon from './Icon';
 
 const NavigationAnalytics = ({
   showDetailed = false,
-  showCharts = true,
   className = ''
 }) => {
   const { getNavigationAnalytics, navigationHistory, currentRoute } = useNavigation();

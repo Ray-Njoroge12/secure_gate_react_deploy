@@ -137,6 +137,29 @@ class PerformanceAlertingService extends EventEmitter {
   }
 
   /**
+   * Backward-compatible alias used by health and system services.
+   */
+  async sendAlert(alert = {}) {
+    const parsedTimestamp = typeof alert.timestamp === 'number'
+      ? alert.timestamp
+      : Date.parse(alert.timestamp || '') || Date.now();
+
+    const normalizedAlert = {
+      id: alert.id || `alert_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      type: alert.type || 'health_check',
+      severity: alert.severity || 'info',
+      message: alert.message || 'Alert triggered',
+      currentValue: alert.currentValue,
+      threshold: alert.threshold,
+      component: alert.component,
+      timestamp: parsedTimestamp
+    };
+
+    await this.processAlert(normalizedAlert);
+    return normalizedAlert;
+  }
+
+  /**
    * Send immediate notifications for an alert
    */
   async sendImmediateNotifications(alert, channels) {

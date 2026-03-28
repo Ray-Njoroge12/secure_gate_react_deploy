@@ -190,7 +190,7 @@ export const processApproval = async (visitorId, approved, reason = '') => {
   }
 };
 
-export default {
+const guardService = {
   getVisitorHistory,
   verifyVisitor,
   manualCheckIn,
@@ -203,3 +203,5 @@ export default {
   getPendingApprovals,
   processApproval
 };
+
+export default guardService;

@@ -1,7 +1,8 @@
-import React from 'react';
 import { renderHook, act } from '@testing-library/react';
-import { useSearchData } from '../../hooks/useSearch';
+import React from 'react';
+
 import SearchContext from '../../contexts/SearchContext';
+import { useSearchData } from '../../hooks/useSearch';
 
 describe('useSearchData', () => {
     let mockGetPaginatedData;

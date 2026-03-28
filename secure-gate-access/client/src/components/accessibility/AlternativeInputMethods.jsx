@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
 import './AlternativeInputMethods.css';
 import Button from '../ui/Button';
+import logger from 'utils/logger';
 
 /**
  * Alternative Input Methods Manager
@@ -106,7 +107,7 @@ export const AlternativeInputMethods = ({
       inputMethods.eyeTracking.enabled = false;
 
     } catch (error) {
-      console.warn('Error checking available input methods:', error);
+      logger.warn('Error checking available input methods:', error);
     }
   }, []);
 
@@ -263,7 +264,7 @@ export const AlternativeInputMethods = ({
     // - MediaPipe
     // - Custom computer vision solutions
     
-    console.log('Head tracking setup - requires camera access and computer vision library');
+    logger.info('Head tracking setup - requires camera access and computer vision library');
     
     // Placeholder implementation
     announce('Head tracking mode activated. Move your head to control the cursor.', 'polite');

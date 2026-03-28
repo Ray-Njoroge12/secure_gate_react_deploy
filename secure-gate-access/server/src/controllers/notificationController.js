@@ -13,6 +13,7 @@
 
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import logger from '../config/logger.js';
+import { AppError } from '../middleware/standardizedErrorHandler.js';
 import {
   sendInviteEmail,
   sendSms,
@@ -70,15 +71,15 @@ export async function sendTemplatedNotification(options) {
     const recipient = await getRecipientContactInfo(recipientType, recipientId);
 
     if (!recipient) {
-      throw new Error(`Recipient not found: ${recipientType} ${recipientId}`);
+     throw new AppError(`Recipient not found: ${recipientType} ${recipientId}`, 404, 'RECIPIENT_NOT_FOUND');
     }
 
     // Validate channel availability
     if (channel === 'email' && !recipient.email) {
-      throw new Error('Recipient has no email address');
+       throw new AppError('Recipient has no email address', 400, 'INVALID_RECIPIENT');
     }
     if (channel === 'sms' && !recipient.phone) {
-      throw new Error('Recipient has no phone number');
+       throw new AppError('Recipient has no phone number', 400, 'INVALID_RECIPIENT');
     }
 
     // 2. Check notification preferences
@@ -112,7 +113,7 @@ export async function sendTemplatedNotification(options) {
       template = await loadTemplate(templateName, channel, preferredLanguage);
 
       if (!template) {
-        throw new Error(`Template not found: ${templateName} (${channel}, ${preferredLanguage})`);
+         throw new AppError(`Template not found: ${templateName} (${channel}, ${preferredLanguage})`, 404, 'TEMPLATE_NOT_FOUND');
       }
 
       // 4. Render template with variables
@@ -158,7 +159,7 @@ export async function sendTemplatedNotification(options) {
         providerInfo.provider = process.env.SMS_PROVIDER || 'africastalking';
       } else if (channel === 'push') {
         if (recipientType === 'visitor') {
-          throw new Error('Push notifications are not supported for visitors');
+           throw new AppError('Push notifications are not supported for visitors', 400, 'UNSUPPORTED_NOTIFICATION_TYPE');
         }
 
         const pushPayload = {
@@ -259,7 +260,7 @@ async function getRecipientContactInfo(recipientType, recipientId) {
     } else if (['resident', 'guard', 'admin'].includes(recipientType)) {
       query = 'SELECT id, name, email, phone FROM users WHERE id = $1';
     } else {
-      throw new Error(`Invalid recipient type: ${recipientType}`);
+       throw new AppError(`Invalid recipient type: ${recipientType}`, 400, 'INVALID_INPUT');
     }
 
     const result = await dbManager.query(query, [recipientId]);

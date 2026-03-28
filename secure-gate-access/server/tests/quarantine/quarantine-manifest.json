@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "updated_on": "2026-03-21",
+  "entries": [
+    {
+      "id": "INT-QUAR-001",
+      "path": "tests/quarantine/app-route-mounting.integration.test.js",
+      "status": "quarantined",
+      "reason": "Route mounting contract instability in integration harness; excluded from stable integration lane.",
+      "owner": "backend-qa",
+      "exit_criteria": "Route mounting behavior stabilized and suite passes under active integration harness with no quarantine-only setup.",
+      "gating_impact": "Non-blocking integration lane only; critical lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "INT-QUAR-002",
+      "path": "tests/quarantine/intelligent-notification-basic.integration.test.js",
+      "status": "quarantined",
+      "reason": "Legacy notification route assumptions diverge from stable integration contract.",
+      "owner": "backend-qa",
+      "exit_criteria": "Suite aligned to current notification contracts and passes in stable integration lane.",
+      "gating_impact": "Non-blocking integration lane only; critical lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "INT-QUAR-003",
+      "path": "tests/quarantine/intelligent-notification-routes.integration.test.js",
+      "status": "quarantined",
+      "reason": "Legacy route-mount expectations incompatible with current app composition.",
+      "owner": "backend-qa",
+      "exit_criteria": "Routes and assertions updated to current mount contracts and passing in stable lane.",
+      "gating_impact": "Non-blocking integration lane only; critical lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "INT-QUAR-004",
+      "path": "tests/quarantine/intelligent-notification-routes-mounting.test.js",
+      "status": "quarantined",
+      "reason": "Legacy mounting checks are brittle against current route registration flow.",
+      "owner": "backend-qa",
+      "exit_criteria": "Suite migrated to robust mounting assertions under active harness.",
+      "gating_impact": "Non-blocking integration lane only; critical lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-MOD-001",
+      "path": "tests/quarantine/legacy-missing-modules/auditLogger.legacy.quarantined.js",
+      "status": "quarantined",
+      "reason": "Imports missing legacy module src/middleware/auditLogger.js; active middleware is auditLogging.js.",
+      "owner": "backend-security",
+      "exit_criteria": "Test migrated to active middleware contracts or approved for retirement.",
+      "gating_impact": "Excluded from blocking unit/security lanes; critical integration lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-MOD-002",
+      "path": "tests/quarantine/legacy-missing-modules/autoScalingService.legacy.quarantined.js",
+      "status": "quarantined",
+      "reason": "Imports missing legacy module src/services/autoScalingService.js.",
+      "owner": "backend-platform",
+      "exit_criteria": "Feature/service restored with active contracts or test retired by owner approval.",
+      "gating_impact": "Excluded from blocking unit/security lanes; critical integration lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-MOD-003",
+      "path": "tests/quarantine/legacy-missing-modules/iso27001CertificationService.legacy.quarantined.js",
+      "status": "quarantined",
+      "reason": "Imports missing legacy module src/services/iso27001CertificationService.js.",
+      "owner": "backend-security",
+      "exit_criteria": "Service contracts reintroduced and tested under active harness, or suite retired with approval.",
+      "gating_impact": "Excluded from blocking unit/security lanes; critical integration lane unchanged.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-SEC-001",
+      "path": "tests/security/qr-tokenization.test.js",
+      "status": "reactivated",
+      "reason": "Previously quarantined due to CommonJS/require harness incompatibility; migrated to active ESM test harness.",
+      "owner": "backend-security",
+      "exit_criteria": "Remain under active security lane and continue passing in audit baseline.",
+      "gating_impact": "Blocking security audit lane coverage restored.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-SEC-002",
+      "path": "tests/security/data-retention.test.js",
+      "status": "reactivated",
+      "reason": "Previously quarantined due to CommonJS/require harness incompatibility; migrated to active ESM test harness.",
+      "owner": "backend-security",
+      "exit_criteria": "Remain under active security lane and continue passing in audit baseline.",
+      "gating_impact": "Blocking security audit lane coverage restored.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-SEC-003",
+      "path": "tests/security/data-minimization.test.js",
+      "status": "reactivated",
+      "reason": "Previously quarantined due to CommonJS/require harness incompatibility; migrated to active ESM test harness.",
+      "owner": "backend-security",
+      "exit_criteria": "Remain under active security lane and continue passing in audit baseline.",
+      "gating_impact": "Blocking security audit lane coverage restored.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-SEC-004",
+      "path": "tests/security/security-integration.test.js",
+      "status": "reactivated",
+      "reason": "Previously quarantined due to CommonJS/require harness incompatibility; migrated to active ESM test harness.",
+      "owner": "backend-security",
+      "exit_criteria": "Remain under active security lane and continue passing in audit baseline.",
+      "gating_impact": "Blocking security audit lane coverage restored.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-SEC-005",
+      "path": "tests/security/id-encryption.test.js",
+      "status": "reactivated",
+      "reason": "Previously quarantined due to CommonJS/require harness incompatibility; migrated to active ESM test harness.",
+      "owner": "backend-security",
+      "exit_criteria": "Remain under active security lane and continue passing in audit baseline.",
+      "gating_impact": "Blocking security audit lane coverage restored.",
+      "introduced_on": "2026-03-21",
+      "last_reviewed_on": "2026-03-21"
+    },
+    {
+      "id": "LEG-MOD-004",
+      "path": "tests/quarantine/legacy-missing-modules/securityHeadersMiddleware.legacy.quarantined.js",
+      "status": "quarantined",
+      "reason": "Imports removed module src/middleware/securityHeadersMiddleware.js; its exports (requestSizeLimit, securityResponseMiddleware, securityEventLogger, securityMiddlewareStack) have no equivalent in current middleware.",
+      "owner": "backend-security",
+      "exit_criteria": "Security headers middleware consolidated and suite updated to match current export contracts.",
+      "gating_impact": "Excluded from blocking unit/security lanes; critical integration lane unchanged.",
+      "introduced_on": "2026-03-24",
+      "last_reviewed_on": "2026-03-24"
+    }
+  ]
+}

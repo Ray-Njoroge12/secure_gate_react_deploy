@@ -1,6 +1,7 @@
 // client/src/components/ui/PageLayout.jsx
 // Unified page layout component for consistent structure across all pages
 import React from 'react';
+
 import PageHeader from './PageHeader';
 
 /**

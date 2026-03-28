@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Toast from './Toast';
+
 import notificationService from '../services/notificationService';
+
+import Toast from './Toast';
 
 const ToastContainer = () => {
   const [toasts, setToasts] = useState([]);

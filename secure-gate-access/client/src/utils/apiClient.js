@@ -4,9 +4,10 @@
  */
 
 import axios from 'axios';
-import logger from './logger';
+
 import { navigateToEstateRequired, navigateToLogin } from './authNavigation';
 import { authStateMachine } from './authStateMachine';
+import logger from './logger';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -20,6 +21,8 @@ const apiClient = axios.create({
 });
 
 let refreshPromise = null;
+let refreshFailureCount = 0;
+const MAX_REFRESH_FAILURES = 3;
 
 const waitForOnline = () => {
   if (navigator.onLine !== false) {
@@ -143,7 +146,7 @@ apiClient.interceptors.response.use(
     // Handle 401 - Unauthorized
     if (error.response.status === 401) {
       const isAuthEndpoint = originalRequest?.url?.includes('/api/auth/');
-      if (!isAuthEndpoint && !originalRequest._retry) {
+      if (!isAuthEndpoint && !originalRequest._retry && refreshFailureCount < MAX_REFRESH_FAILURES) {
         originalRequest._retry = true;
         try {
           if (!refreshPromise) {
@@ -152,10 +155,12 @@ apiClient.interceptors.response.use(
           }
           await refreshPromise;
           refreshPromise = null;
+          refreshFailureCount = 0;
           authStateMachine.transition('REFRESH_SUCCESS');
           return apiClient(originalRequest);
         } catch (refreshError) {
           refreshPromise = null;
+          refreshFailureCount++;
           logger.warn('🔒 Token refresh failed', refreshError);
           authStateMachine.transition('REFRESH_FAILURE', { reason: 'refresh_failed' });
         }
@@ -165,7 +170,17 @@ apiClient.interceptors.response.use(
       // No need to clear localStorage tokens
       // Don't redirect if already on login page OR if this was an auth check (e.g. /api/auth/me)
       if (!isAuthEndpoint && !window.location.pathname.includes('/login')) {
+        authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
+        window.dispatchEvent(new CustomEvent('session-expired', {
+          detail: {
+            status: 401,
+            code: 'UNAUTHORIZED',
+            message: 'Your session has expired. Please log in again.'
+          }
+        }));
         navigateToLogin();
+      } else {
+        authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
       }
       authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
       window.dispatchEvent(new CustomEvent('session-expired', {
@@ -191,7 +206,9 @@ apiClient.interceptors.response.use(
       if (errorCode === 'MFA_SETUP_REQUIRED') {
         logger.warn('🔐 MFA setup required');
         const returnUrl = window.location.pathname;
-        window.location.href = `/mfa/setup?returnUrl=${encodeURIComponent(returnUrl)}`;
+        // Only allow relative paths (no protocol/host) to prevent open redirect
+        const safeReturn = returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/dashboard';
+        window.location.href = `/mfa/setup?returnUrl=${encodeURIComponent(safeReturn)}`;
         return Promise.reject({
           message: error.response.data?.message || 'Multi-Factor Authentication setup required.',
           code: 'MFA_SETUP_REQUIRED'
@@ -276,11 +293,17 @@ function generateRequestId() {
 // Helper function to refresh CSRF token
 async function refreshCSRFToken() {
   try {
+    const baseURL = apiClient.defaults.baseURL;
     const response = await axios.get('/api/auth/csrf-token', {
+      baseURL,
       withCredentials: true
     });
 
-    const csrfToken = response.data.csrfToken || response.headers['x-csrf-token'];
+    const csrfToken =
+      response?.data?.csrfToken ||
+      response?.data?.data?.csrfToken ||
+      response?.headers?.['x-csrf-token'] ||
+      response?.headers?.['X-CSRF-Token'];
 
     if (csrfToken) {
       // Update meta tag
@@ -294,6 +317,8 @@ async function refreshCSRFToken() {
 
       return csrfToken;
     }
+
+    throw new Error('Missing CSRF token in response');
   } catch (error) {
     throw error;
   }

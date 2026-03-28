@@ -4,6 +4,7 @@
  */
 
 import apiClient from '../utils/apiClient.js';
+import logger from '../utils/logger';
 
 class SystemHealthService {
   constructor() {
@@ -30,7 +31,7 @@ class SystemHealthService {
       return response.data;
 
     } catch (error) {
-      console.error('Failed to fetch system health:', error);
+      logger.error('Failed to fetch system health:', error);
       throw new Error(`Failed to fetch system health: ${error.message}`);
     }
   }
@@ -43,7 +44,7 @@ class SystemHealthService {
       const response = await apiClient.get(`${this.baseUrl}/detailed`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch detailed health report:', error);
+      logger.error('Failed to fetch detailed health report:', error);
       throw new Error(`Failed to fetch detailed health report: ${error.message}`);
     }
   }
@@ -58,7 +59,7 @@ class SystemHealthService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch health history:', error);
+      logger.error('Failed to fetch health history:', error);
       throw new Error(`Failed to fetch health history: ${error.message}`);
     }
   }
@@ -81,7 +82,7 @@ class SystemHealthService {
       return response.data;
 
     } catch (error) {
-      console.error('Failed to fetch system metrics:', error);
+      logger.error('Failed to fetch system metrics:', error);
       throw new Error(`Failed to fetch system metrics: ${error.message}`);
     }
   }
@@ -99,7 +100,7 @@ class SystemHealthService {
       const response = await apiClient.get(`${this.baseUrl}/alerts`, { params });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch performance alerts:', error);
+      logger.error('Failed to fetch performance alerts:', error);
       throw new Error(`Failed to fetch performance alerts: ${error.message}`);
     }
   }
@@ -112,7 +113,7 @@ class SystemHealthService {
       const response = await apiClient.post(`${this.baseUrl}/alerts/${alertId}/acknowledge`);
       return response.data;
     } catch (error) {
-      console.error('Failed to acknowledge alert:', error);
+      logger.error('Failed to acknowledge alert:', error);
       throw new Error(`Failed to acknowledge alert: ${error.message}`);
     }
   }
@@ -125,7 +126,7 @@ class SystemHealthService {
       const response = await apiClient.get(`${this.baseUrl}/launch-readiness`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch launch readiness status:', error);
+      logger.error('Failed to fetch launch readiness status:', error);
       throw new Error(`Failed to fetch launch readiness status: ${error.message}`);
     }
   }
@@ -142,7 +143,7 @@ class SystemHealthService {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to trigger health check:', error);
+      logger.error('Failed to trigger health check:', error);
       throw new Error(`Failed to trigger health check: ${error.message}`);
     }
   }
@@ -155,7 +156,7 @@ class SystemHealthService {
       const response = await apiClient.get(`${this.baseUrl}/components/${componentName}`);
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch ${componentName} health:`, error);
+      logger.error(`Failed to fetch ${componentName} health:`, error);
       throw new Error(`Failed to fetch ${componentName} health: ${error.message}`);
     }
   }
@@ -165,7 +166,7 @@ class SystemHealthService {
    */
   subscribeToHealthUpdates(callback) {
     if (!window.EventSource) {
-      console.warn('EventSource not supported, falling back to polling');
+      logger.warn('EventSource not supported, falling back to polling');
       return this.startPolling(callback);
     }
 
@@ -177,12 +178,12 @@ class SystemHealthService {
           const data = JSON.parse(event.data);
           callback(data);
         } catch (error) {
-          console.error('Failed to parse health update:', error);
+          logger.error('Failed to parse health update:', error);
         }
       };
 
       eventSource.onerror = (error) => {
-        console.error('Health update stream error:', error);
+        logger.error('Health update stream error:', error);
         eventSource.close();
 
         // Fallback to polling
@@ -196,7 +197,7 @@ class SystemHealthService {
       };
 
     } catch (error) {
-      console.error('Failed to establish health update stream:', error);
+      logger.error('Failed to establish health update stream:', error);
       return this.startPolling(callback);
     }
   }
@@ -210,7 +211,7 @@ class SystemHealthService {
         const health = await this.getSystemHealth();
         callback(health);
       } catch (error) {
-        console.error('Health polling error:', error);
+        logger.error('Health polling error:', error);
       }
     };
 

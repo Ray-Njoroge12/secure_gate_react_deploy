@@ -12,6 +12,10 @@
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext.jsx';
+import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
+import logger from '../../utils/logger.js';
+import api from '../../utils/apiClient';
 import './IntegrationsHub.css';
 
 const IntegrationsHub = () => {
@@ -25,6 +29,8 @@ const IntegrationsHub = () => {
   const [editingItem, setEditingItem] = useState(null);
   const closeModal = () => setShowModal(false);
   const { modalRef } = useModalAccessibility(showModal, closeModal);
+  const { toast } = useToast();
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
 
   // Webhook form data
   const [webhookForm, setWebhookForm] = useState({
@@ -56,6 +62,8 @@ const IntegrationsHub = () => {
   });
 
   const [newApiKey, setNewApiKey] = useState(null);
+  const [testResults, setTestResults] = useState({}); // keyed by webhook ID
+  const [testingWebhookId, setTestingWebhookId] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'webhooks') {
@@ -70,13 +78,10 @@ const IntegrationsHub = () => {
   const fetchWebhooks = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/webhooks', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setWebhooks(data.data || []);
-      }
+      const response = await api.get('/api/integrations/webhooks');
+      setWebhooks(response.data.data || []);
     } catch (err) {
-      console.error('Error:', err);
+      logger.error('IntegrationsHub:', err);
     } finally {
       setLoading(false);
     }
@@ -85,13 +90,10 @@ const IntegrationsHub = () => {
   const fetchAutomationRules = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/automations', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setAutomationRules(data.data || []);
-      }
+      const response = await api.get('/api/integrations/automations');
+      setAutomationRules(response.data.data || []);
     } catch (err) {
-      console.error('Error:', err);
+      logger.error('IntegrationsHub:', err);
     } finally {
       setLoading(false);
     }
@@ -100,13 +102,10 @@ const IntegrationsHub = () => {
   const fetchAPIKeys = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/api-keys', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setApiKeys(data.data || []);
-      }
+      const response = await api.get('/api/integrations/api-keys');
+      setApiKeys(response.data.data || []);
     } catch (err) {
-      console.error('Error:', err);
+      logger.error('IntegrationsHub:', err);
     } finally {
       setLoading(false);
     }
@@ -116,28 +115,25 @@ const IntegrationsHub = () => {
     e.preventDefault();
     try {
       const url = editingItem 
-        ? `/api/admin/webhooks/${editingItem.id}`
-        : '/api/admin/webhooks';
+        ? `/api/integrations/webhooks/${editingItem.id}`
+        : '/api/integrations/webhooks';
       
-      const method = editingItem ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...webhookForm,
-          headers: JSON.parse(webhookForm.headers)
-        })
-      });
+      const payload = {
+        ...webhookForm,
+        headers: JSON.parse(webhookForm.headers)
+      };
 
-      if (!response.ok) throw new Error('Failed to save webhook');
+      if (editingItem) {
+        await api.put(url, payload);
+      } else {
+        await api.post(url, payload);
+      }
 
       await fetchWebhooks();
       setShowModal(false);
       resetForms();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
@@ -145,104 +141,123 @@ const IntegrationsHub = () => {
     e.preventDefault();
     try {
       const url = editingItem 
-        ? `/api/admin/automations/${editingItem.id}`
-        : '/api/admin/automations';
+        ? `/api/integrations/automations/${editingItem.id}`
+        : '/api/integrations/automations';
       
-      const method = editingItem ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...automationForm,
-          conditions: JSON.parse(automationForm.conditions),
-          actions: JSON.parse(automationForm.actions)
-        })
-      });
+      const payload = {
+        ...automationForm,
+        conditions: JSON.parse(automationForm.conditions),
+        actions: JSON.parse(automationForm.actions)
+      };
 
-      if (!response.ok) throw new Error('Failed to save automation');
+      if (editingItem) {
+        await api.put(url, payload);
+      } else {
+        await api.post(url, payload);
+      }
 
       await fetchAutomationRules();
       setShowModal(false);
       resetForms();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const handleAPIKeyGenerate = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/admin/api-keys', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiKeyForm)
-      });
-
-      if (!response.ok) throw new Error('Failed to generate API key');
-
-      const data = await response.json();
-      setNewApiKey(data.data.api_key);
+      const response = await api.post('/api/integrations/api-keys', apiKeyForm);
+      setNewApiKey(response.data.data.api_key);
       await fetchAPIKeys();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const deleteWebhook = async (id) => {
-    if (!window.confirm('Delete this webhook?')) return;
+    const confirmed = await confirm({ variant: 'danger', title: 'Delete Webhook', message: 'Are you sure you want to delete this webhook?', confirmText: 'Delete' });
+    if (!confirmed) return;
     try {
-      const response = await fetch(`/api/admin/webhooks/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to delete webhook');
+      await api.delete(`/api/integrations/webhooks/${id}`);
       await fetchWebhooks();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const deleteAutomation = async (id) => {
-    if (!window.confirm('Delete this automation rule?')) return;
+    const confirmed = await confirm({ variant: 'danger', title: 'Delete Automation', message: 'Are you sure you want to delete this automation rule?', confirmText: 'Delete' });
+    if (!confirmed) return;
     try {
-      const response = await fetch(`/api/admin/automations/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to delete automation');
+      await api.delete(`/api/integrations/automations/${id}`);
       await fetchAutomationRules();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const revokeAPIKey = async (id) => {
-    if (!window.confirm('Revoke this API key? This cannot be undone.')) return;
+    const confirmed = await confirm({ variant: 'danger', title: 'Revoke API Key', message: 'Revoke this API key? This cannot be undone.', confirmText: 'Revoke' });
+    if (!confirmed) return;
     try {
-      const response = await fetch(`/api/admin/api-keys/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to revoke API key');
+      await api.delete(`/api/integrations/api-keys/${id}`);
       await fetchAPIKeys();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
+  const getTestResultColor = (status) => {
+    if (!status) return 'gray';
+    if (status >= 200 && status < 300) return 'green';
+    if (status >= 300 && status < 500) return 'yellow';
+    return 'red'; // 5xx or timeout/error
+  };
+
   const testWebhook = async (id) => {
+    setTestingWebhookId(id);
+    const startTime = Date.now();
     try {
-      const response = await fetch(`/api/admin/webhooks/${id}/test`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Test failed');
-      alert('Webhook test successful!');
+      const response = await api.post(`/api/integrations/webhooks/${id}/test`);
+      const elapsed = Date.now() - startTime;
+      const result = response.data?.data || {};
+      const httpStatus = result.status_code || result.statusCode || response.status || 200;
+      const body = typeof result.response_body === 'string'
+        ? result.response_body
+        : JSON.stringify(result.response_body || result.body || response.data?.message || 'OK');
+
+      setTestResults(prev => ({
+        ...prev,
+        [id]: {
+          status: httpStatus,
+          responseTime: result.response_time_ms || elapsed,
+          body: body.length > 500 ? body.slice(0, 500) + '...' : body,
+          timestamp: new Date().toISOString(),
+          error: false
+        }
+      }));
+      toast.success('Webhook test successful!');
     } catch (err) {
-      alert('Test failed: ' + err.message);
+      const elapsed = Date.now() - startTime;
+      const errStatus = err.response?.status || 0;
+      const errBody = err.response?.data?.message || err.message || 'Request failed';
+
+      setTestResults(prev => ({
+        ...prev,
+        [id]: {
+          status: errStatus,
+          responseTime: elapsed,
+          body: typeof errBody === 'string'
+            ? (errBody.length > 500 ? errBody.slice(0, 500) + '...' : errBody)
+            : JSON.stringify(errBody).slice(0, 500),
+          timestamp: new Date().toISOString(),
+          error: true
+        }
+      }));
+      toast.error('Test failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setTestingWebhookId(null);
     }
   };
 
@@ -366,29 +381,69 @@ const IntegrationsHub = () => {
           </div>
 
           <div className="items-grid">
-            {webhooks.map(webhook => (
-              <div key={webhook.id} className="item-card">
-                <div className="card-header">
-                  <h3>{webhook.name}</h3>
-                  <span className={`status-badge ${webhook.enabled ? 'active' : 'inactive'}`}>
-                    {webhook.enabled ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                <div className="card-body">
-                  <p className="item-url">{webhook.url}</p>
-                  <p className="item-event">Event: {webhook.event_type}</p>
-                  <div className="item-stats">
-                    <span>✓ {webhook.success_count || 0}</span>
-                    <span>✗ {webhook.failure_count || 0}</span>
+            {webhooks.map(webhook => {
+              const lastTest = testResults[webhook.id];
+              const testColor = lastTest ? getTestResultColor(lastTest.status) : null;
+              return (
+                <div key={webhook.id} className="item-card">
+                  <div className="card-header">
+                    <h3>
+                      {webhook.name}
+                      {lastTest && (
+                        <span
+                          className={`test-badge test-badge--${testColor}`}
+                          title={`Last test: ${lastTest.status || 'ERR'} at ${new Date(lastTest.timestamp).toLocaleTimeString()}`}
+                        >
+                          {lastTest.status || 'ERR'}
+                        </span>
+                      )}
+                    </h3>
+                    <span className={`status-badge ${webhook.enabled ? 'active' : 'inactive'}`}>
+                      {webhook.enabled ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
+                  <div className="card-body">
+                    <p className="item-url">{webhook.url}</p>
+                    <p className="item-event">Event: {webhook.event_type}</p>
+                    <div className="item-stats">
+                      <span>✓ {webhook.success_count || 0}</span>
+                      <span>✗ {webhook.failure_count || 0}</span>
+                    </div>
+                  </div>
+                  <div className="card-actions">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="btn-sm btn-test"
+                      onClick={() => testWebhook(webhook.id)}
+                      disabled={testingWebhookId === webhook.id}
+                    >
+                      {testingWebhookId === webhook.id ? 'Testing...' : 'Test'}
+                    </Button>
+                    <Button variant="outlined" size="sm" className="btn-sm btn-edit" onClick={() => openModal('webhook', webhook)}>Edit</Button>
+                    <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => deleteWebhook(webhook.id)}>Delete</Button>
+                  </div>
+                  {lastTest && (
+                    <div className={`webhook-test-result webhook-test-result--${testColor}`}>
+                      <div className="test-result-header">
+                        <span className="test-result-status">
+                          Status: {lastTest.status || 'ERR'}
+                        </span>
+                        <span className="test-result-time">
+                          {lastTest.responseTime}ms
+                        </span>
+                        <span className="test-result-timestamp">
+                          {new Date(lastTest.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      {lastTest.body && (
+                        <pre className="test-result-body">{lastTest.body}</pre>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="card-actions">
-                  <Button variant="secondary" size="sm" className="btn-sm btn-test" onClick={() => testWebhook(webhook.id)}>Test</Button>
-                  <Button variant="outlined" size="sm" className="btn-sm btn-edit" onClick={() => openModal('webhook', webhook)}>Edit</Button>
-                  <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => deleteWebhook(webhook.id)}>Delete</Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -610,7 +665,7 @@ const IntegrationsHub = () => {
                         <code>{newApiKey}</code>
                         <Button variant="secondary" className="btn-copy" onClick={() => {
                           navigator.clipboard.writeText(newApiKey);
-                          alert('Copied to clipboard!');
+                          toast.success('Copied!');
                         }}>Copy</Button>
                       </div>
                       <Button variant="primary" className="btn-primary" onClick={() => { closeModal(); resetForms(); }}>
@@ -664,6 +719,8 @@ const IntegrationsHub = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 };

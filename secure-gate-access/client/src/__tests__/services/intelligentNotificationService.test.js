@@ -5,15 +5,15 @@
 
 import { jest } from '@jest/globals';
 
+import intelligentNotificationService from '../../services/intelligentNotificationService';
+import apiClient from '../../utils/apiClient';
+import logger from '../../utils/logger';
+
 // Mock apiClient before importing the service
 jest.mock('../../utils/apiClient');
 
 // Mock logger
 jest.mock('../../utils/logger');
-
-import intelligentNotificationService from '../../services/intelligentNotificationService';
-import apiClient from '../../utils/apiClient';
-import logger from '../../utils/logger';
 
 // Cast to jest mocks
 const mockApiClient = apiClient;
@@ -206,7 +206,10 @@ describe('IntelligentNotificationService', () => {
 
   describe('Behavior Tracking', () => {
     test('tracks behavior locally', () => {
+      // Stub syncBehaviorQueue so 'clicked' action doesn't drain the queue immediately
+      const syncSpy = jest.spyOn(intelligentNotificationService, 'syncBehaviorQueue').mockResolvedValue();
       intelligentNotificationService.trackBehavior('notif-123', 'VISITOR_ARRIVAL', 'clicked');
+      syncSpy.mockRestore();
 
       expect(intelligentNotificationService.behaviorQueue).toHaveLength(1);
       expect(intelligentNotificationService.behaviorQueue[0]).toMatchObject({
@@ -227,9 +230,12 @@ describe('IntelligentNotificationService', () => {
     test('syncs behavior queue when online', async () => {
       mockApiClient.post.mockResolvedValue({ data: { success: true } });
 
+      // Stub syncBehaviorQueue to prevent immediate drain during trackBehavior
+      const syncSpy = jest.spyOn(intelligentNotificationService, 'syncBehaviorQueue').mockResolvedValue();
       // Add behavior to queue
       intelligentNotificationService.trackBehavior('notif-123', 'VISITOR_ARRIVAL', 'clicked');
       intelligentNotificationService.trackBehavior('notif-456', 'SECURITY_ALERT', 'dismissed');
+      syncSpy.mockRestore();
 
       await intelligentNotificationService.syncBehaviorQueue();
 
@@ -250,8 +256,11 @@ describe('IntelligentNotificationService', () => {
       const error = new Error('Sync failed');
       mockApiClient.post.mockRejectedValue(error);
 
+      // Stub syncBehaviorQueue to prevent immediate drain during trackBehavior
+      const syncSpy = jest.spyOn(intelligentNotificationService, 'syncBehaviorQueue').mockResolvedValue();
       // Add behavior to queue
       intelligentNotificationService.trackBehavior('notif-123', 'VISITOR_ARRIVAL', 'clicked');
+      syncSpy.mockRestore();
 
       await intelligentNotificationService.syncBehaviorQueue();
 
@@ -813,7 +822,7 @@ describe('IntelligentNotificationService', () => {
       
       mockApiClient.get.mockResolvedValue(mockResponse);
 
-      const result = await intelligentNotificationService.getRelevanceScore('VISITOR_ARRIVAL');
+      const result = await intelligentNotificationService.fetchRelevanceScore('VISITOR_ARRIVAL');
 
       expect(mockApiClient.get).toHaveBeenCalledWith('/intelligent-notifications/relevance/VISITOR_ARRIVAL');
       expect(result).toEqual(mockRelevance);

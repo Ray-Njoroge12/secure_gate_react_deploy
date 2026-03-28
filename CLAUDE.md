@@ -15,60 +15,60 @@ Secure Gate Access Control System - A full-stack visitor management platform for
 
 ## Architecture
 
-### Monorepo Structure
+### Repository Structure
 
 ```
-secure-gate-access/
-├── client/          # React frontend (port 3000 dev)
-│   ├── src/
-│   │   ├── pages/      # Role-specific pages (admin/, guard/, resident/, public/)
-│   │   ├── components/ # Reusable UI components
-│   │   ├── contexts/   # React Context providers (Auth, Navigation)
-│   │   ├── hooks/      # Custom React hooks
-│   │   ├── services/   # API clients and business logic
-│   │   └── utils/      # Helper functions and utilities
-├── server/          # Express backend (port 5000 prod, 3001 dev proxy)
-│   ├── src/
-│   │   ├── routes/        # API route definitions (60+ route files)
-│   │   ├── controllers/   # Request handlers
-│   │   ├── middleware/    # Auth, validation, error handling
-│   │   ├── services/      # Business logic layer
-│   │   ├── database/      # DB connection, migrations
-│   │   └── config/        # Environment and app config
-│   ├── tests/         # Unit, integration, E2E, performance tests
-│   └── scripts/       # Migration, seeding, utility scripts
-└── docs/            # Documentation, runbooks, procedures
+repo root/
+├── .github/workflows/   # CI/CD (ci.yml, deploy.yml, security-scan.yml)
+├── e2e/                 # Root-level Playwright E2E tests (system-wide)
+│   ├── admin/, auth/, guard/, resident/, visitor/
+│   ├── accessibility/, performance/
+│   └── comprehensive-integration.spec.js
+├── infra/               # Infrastructure as Code
+│   ├── main.tf, variables.tf   # Terraform
+│   └── aws/             # CloudFormation templates, deploy scripts
+├── scripts/             # Root maintenance/deployment/testing scripts
+├── production-readiness-tests/  # Production readiness suite
+├── documentation/guides/  # Deployment, security, DB optimization guides
+├── secure-gate-access/  # Main application monorepo
+│   ├── client/          # React frontend (port 3000 dev, proxies to 3001)
+│   │   ├── src/
+│   │   │   ├── pages/       # Role-specific: admin/, guard/, resident/, public/
+│   │   │   ├── components/  # Reusable UI components
+│   │   │   ├── contexts/    # React Context providers (Auth, Navigation)
+│   │   │   ├── hooks/       # Custom React hooks
+│   │   │   ├── services/    # API clients and business logic
+│   │   │   ├── utils/       # Helper functions (apiClient.js, etc.)
+│   │   │   ├── design-system/ # Design system components
+│   │   │   ├── layouts/     # Layout components
+│   │   │   ├── routes/      # Route definitions (ProtectedRoute.jsx)
+│   │   │   ├── i18n/        # Internationalization
+│   │   │   └── config/, constants/, styles/, tours/
+│   │   └── e2e/         # Client-level Playwright tests
+│   ├── server/          # Express backend (port 5000 prod, 3001 dev)
+│   │   ├── src/
+│   │   │   ├── routes/       # API route definitions (64 route files)
+│   │   │   ├── controllers/  # Request handlers
+│   │   │   ├── middleware/   # Auth, validation, error handling
+│   │   │   ├── services/     # Business logic layer
+│   │   │   ├── database/     # DB connection, migrations
+│   │   │   ├── config/       # Environment and app config
+│   │   │   ├── jobs/         # Scheduled jobs (cron, retention)
+│   │   │   ├── events/       # Event handlers
+│   │   │   ├── providers/    # External service integrations
+│   │   │   ├── templates/    # Email/document templates
+│   │   │   ├── validation/   # Input validation schemas
+│   │   │   └── utils/, constants/
+│   │   ├── tests/        # Unit, integration, E2E, performance, security,
+│   │   │                 # chaos, contracts, smoke, regression, mutation
+│   │   └── scripts/      # Migration, seeding, utility scripts
+│   └── docs/            # Ops procedures, testing guides
+└── playwright.config.js # Root Playwright config for e2e/
 ```
 
 ### Role-Based Architecture
 
-The system has three primary user roles with distinct functionality:
-
-**1. Resident:**
-
-- Generate visitor invitations (single, bulk, recurring)
-- Manage favorite visitors
-- View visitor history and delivery logs
-- Set auto-approval rules
-- Receive real-time notifications
-
-**2. Guard:**
-
-- Scan QR codes for visitor entry
-- Manual visitor check-in/check-out
-- Walk-in registration
-- View pending approvals queue
-- Report incidents and emergencies
-- Shift handover management
-
-**3. Admin/Super Admin:**
-
-- Manage users (residents, guards)
-- View system analytics and reports
-- Configure estates/sites
-- Incident workflow management
-- Compliance and audit logs
-- Integrations hub
+Four user roles: `resident`, `guard`, `admin`, `super_admin` (stored in `users.role` column). Each role has dedicated pages in `client/src/pages/{role}/` and role-gated API routes via `requireRole()` middleware.
 
 ### Estate/Site Scoping
 
@@ -93,8 +93,15 @@ requireEstate  // Throws error if user.estate_id is null
 npm install
 
 # Start backend server
-npm start                    # Production mode
+npm start                    # Production mode (cd secure-gate-access/server && npm start)
 cd secure-gate-access/server && npm run dev  # Development with nodemon
+
+# Root-level E2E tests (Playwright, uses ./playwright.config.js)
+npx playwright test          # Run root e2e/ tests
+npx playwright test --ui     # Playwright UI mode
+
+# Canonical Playwright surface map (root/client/server)
+# See secure-gate-access/PLAYWRIGHT_TESTING_MATRIX.md
 ```
 
 ### Client Commands
@@ -165,13 +172,24 @@ npm run retention:run        # Run GDPR data retention
 
 Located in: `server/src/database/migrations/`
 
-**Key migrations:**
+**Key migrations (001–092):**
 
 - `001_initial_schema.sql` - Core tables (users, visitors, estates)
 - `002_compliance_tables.sql` - GDPR/KDPA compliance
 - `006_logging_monitoring.sql` - Audit and monitoring
 - `007_refresh_tokens_user_enhancements.sql` - JWT refresh tokens
-- `061_privacy_compliance_system.sql` - Privacy features
+- `010_dpa_compliance_enhancements.sql` - DPA/privacy enhancements
+- `020_phase2_delivery_directions_autoapproval.sql` - Phase 2 features
+- `068_create_user_sessions.sql` - User sessions table
+- `079_collaboration_system.sql` - Collaboration features
+- `080_enhanced_security_system.sql` - Enhanced security
+- `081_privacy_compliance_system.sql` - Privacy compliance
+- `082_create_incidents_tables.sql` - Incidents tracking
+- `087_add_guard_management_tables.sql` - Guard management
+- `088_add_event_management_tables.sql` - Event management
+- `089_create_watchlist_tables.sql` - Watchlist
+- `090_create_admin_policies_table.sql` - Admin policies
+- `092_refresh_event_analytics_with_estate_location.sql` - Latest migration (estate-scoped analytics)
 
 **Running migrations:**
 
@@ -225,7 +243,7 @@ requireEstate           // Ensures user has estate_id
 
 ### Security Features
 
-- CSRF protection (disabled in dev unless `ENABLE_CSRF=true`)
+- CSRF protection (disabled in dev when `DISABLE_CSRF=true`; enabled by default)
 - Rate limiting (configurable, disabled in dev unless `ENABLE_RATE_LIMIT=true`)
 - Helmet.js security headers
 - Session management with connect-redis
@@ -250,14 +268,20 @@ requireEstate           // Ensures user has estate_id
 
 ### E2E Tests
 
-- Playwright tests in `client/e2e/` and `server/tests/e2e/`
-- Test user flows across roles
-- Run: `npm run test:playwright` or `npm run test:e2e`
+- **Root-level:** `e2e/` — System-wide Playwright tests (admin, auth, guard, resident, visitor, accessibility, performance)
+- **Client:** `client/e2e/` — Client-specific Playwright tests
+- **Server:** `server/tests/e2e/` — Mixed surface: Playwright specs plus Jest-based E2E tests
+- Run: `npx playwright test` (root), `npm run test:playwright` (client), `npm run test:e2e` (server Jest E2E), `npx playwright test --config=secure-gate-access/server/tests/e2e/playwright.config.js` (server Playwright specs)
+- Canonical matrix: `secure-gate-access/PLAYWRIGHT_TESTING_MATRIX.md`
 
-### Performance Tests
+### Additional Test Types (Server)
 
-- k6 load testing scripts in `server/tests/performance/`
-- Run: `npm run test:performance:load`, `:stress`, `:spike`
+- **Smoke:** `npm run test:smoke` — Quick sanity checks
+- **Regression:** `npm run test:regression` — Regression suite
+- **Security:** `npm run test:security` — Security audit tests
+- **Contracts:** `npm run test:contracts` — API contract tests
+- **Performance:** `npm run test:performance:load`, `:stress`, `:spike` — k6 load testing
+- **Mutation:** `npm run test:mutation` — Stryker mutation testing
 
 ## Key Concepts
 
@@ -280,7 +304,7 @@ const visitors = await dbManager.query('SELECT * FROM visitors');
 
 - Server: `server/src/services/websocketService.js`
 - Client: `client/src/hooks/useWebSocket.js`
-- Namespaces: `/guards`, `/residents`, `/admin`
+- Uses estate-scoped rooms (not Socket.io namespaces): `dashboard`, `guards`; all roles connect to one server and join rooms based on role + estate
 - Events: visitor updates, emergency alerts, notifications
 - Requires authentication via socket.io middleware
 
@@ -318,7 +342,8 @@ res.error({ message: 'Not found', statusCode: 404 });
 
 - Auth: `AuthContext` (JWT, user, estate)
 - Navigation: `NavigationContext` (breadcrumbs, history)
-- No Redux - Context + hooks pattern
+- Server state: TanStack React Query (`@tanstack/react-query`) for API data fetching/caching
+- No Redux — Context + hooks + React Query pattern
 
 ### API Client
 
@@ -388,8 +413,33 @@ npm run test:e2e               # Full system E2E tests
 - Data retention scheduler for GDPR compliance
 - WebSocket service must be initialized after server.listen()
 
+## CI/CD & Infrastructure
+
+### GitHub Actions (`.github/workflows/`)
+
+- `ci.yml` — Continuous integration (lint, test, build)
+- `security-scan.yml` — Security scanning
+
+### Infrastructure (`infra/`)
+
+- Terraform: `main.tf`, `variables.tf` — AWS infrastructure provisioning
+- Security baseline assets: `secure-gate-access/infrastructure/aws/` — supplemental CloudFormation and IAM templates consumed/documented alongside Terraform
+- AWS deployment strategy scripts are intentionally deferred while deployment approach is finalized
+
 ## Documentation
 
-- Runbooks: `docs/ops/runbooks/`
-- Deployment: `documentation/guides/DEPLOYMENT_GUIDE.md` (Primary AWS Guide)
-- Testing guides: `docs/testing/`
+- Canonical guides index: `documentation/guides/README.md`
+- Deployment: `documentation/guides/DEPLOYMENT_GUIDE.md`
+- Security: `documentation/guides/SECURITY_IMPLEMENTATION_GUIDE.md`
+- Database: `documentation/guides/DATABASE_OPTIMIZATION_GUIDE.md`
+
+## Gotchas
+
+- **Node engine mismatch:** Root `package.json` says `node >= 18`, server requires `>= 20.11.0`. Always use Node 20.11.0+ to avoid issues.
+- **Audit middleware rename:** `auditLogger.js` is **archived** in `server/src/archive/zombie-services/`. The live middleware is `server/src/middleware/auditLogging.js`. All route imports must use `import { attachRequestAudit } from '../middleware/auditLogging.js'`. Using the old path crashes the server with `ERR_MODULE_NOT_FOUND`.
+- **Archived/dead code:** `server/src/archive/` contains deprecated services removed from active paths. Do not import from there.
+- **Migration 021:** Only one file exists: `021_add_estate_settings.sql`. Historical duplicates were resolved. When adding a new migration, check the actual directory — latest is `092`.
+- **Migration numbering gaps:** Migrations skip 003–004 and 027–029 (historical gaps). At range 033, only `033_00_add_estates_table.sql` exists (`033_01` is missing). The only `.disabled` file in the migrations directory is `add-performance-indexes.sql.disabled` (no sequential prefix).
+- **Three E2E test locations:** Root `e2e/` (system-wide Playwright), `client/e2e/` (client Playwright), and `server/tests/e2e/` (server Jest E2E). Each has its own config.
+- **Jest requires ES module flag:** All server Jest commands need `--experimental-vm-modules` (already configured in package.json scripts).
+- **Client proxy:** Dev server proxies API requests to `localhost:3001` (configured in `client/package.json` `"proxy"` field and `setupProxy.js`).

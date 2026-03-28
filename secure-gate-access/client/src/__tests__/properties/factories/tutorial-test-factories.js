@@ -6,6 +6,7 @@
  */
 
 import fc from 'fast-check';
+
 import { GENERATION_CONSTRAINTS, ROLE_FEATURE_REQUIREMENTS, ROLE_ESSENTIAL_ACTIONS } from '../constants/tutorial-test-config.js';
 
 /**

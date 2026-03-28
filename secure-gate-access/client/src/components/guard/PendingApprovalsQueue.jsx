@@ -5,6 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
+import api from '../../utils/apiClient';
 import { Icon, Card, Badge } from '../ui';
 
 const PendingApprovalsQueue = () => {
@@ -21,15 +23,9 @@ const PendingApprovalsQueue = () => {
   const fetchPendingApprovals = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/visitors?status=pending_approval&limit=20', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setPendingVisitors(result.data?.data || []);
-      }
+      const response = await api.get('/api/visitors?status=pending_approval&limit=20');
+      const result = response.data;
+      setPendingVisitors(result.data?.data || []);
     } catch (error) {
       console.error('Failed to fetch pending approvals:', error);
     } finally {

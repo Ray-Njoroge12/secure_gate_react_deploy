@@ -5,6 +5,7 @@
 import { randomBytes } from 'crypto';
 import { userService } from '../services/userService.js';
 import { tokenService } from '../services/tokenService.js';
+import { dbManager } from '../database/db.enhanced.js';
 import loggingService from '../services/loggingService.js';
 import emailService from '../services/emailService.js';
 import { maskEmail } from '../utils/redaction.js';
@@ -63,7 +64,7 @@ export const register = async (req, res) => {
         username, first_name, last_name, email, password, phone,
         role: 'resident',
         account_status: 'pending',
-        estate_id: estate_id || null
+        estate_id
     });
 
     loggingService.info('User created successfully - pending approval', {
@@ -106,7 +107,12 @@ export const login = async (req, res) => {
 
     const user = await userService.authenticateUser(identifier, password, estate_id);
 
-    if (user.mfa_enabled) {
+    const isLocalSuperAdminMfaBypass =
+        process.env.NODE_ENV === 'development' &&
+        user.email === 'superadmin@securegate.com' &&
+        user.role === 'super_admin';
+
+    if (user.mfa_enabled && !isLocalSuperAdminMfaBypass) {
         loggingService.info('MFA required for user', {
             event: 'auth.login.mfa_required',
             user_id: user.id,
@@ -123,9 +129,17 @@ export const login = async (req, res) => {
         return successResponse(res, { requiresMFA: true, mfaSessionId, userId: user.id, expiresIn: 300 }, 'MFA verification required');
     }
 
+    if (isLocalSuperAdminMfaBypass) {
+        loggingService.warn('Development-only local super admin MFA bypass applied', {
+            event: 'auth.login.local_mfa_bypass',
+            user_id: user.id,
+            request_id: req.requestId
+        });
+    }
+
     const platform = getClientPlatform(req);
     const isWeb = platform === 'web';
-    const { accessToken, refreshToken, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
+    const { accessToken, refreshToken, jti, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
 
     const refreshInfo = tokenService.getTokenInfo(refreshToken);
     const refreshExpiresAt = refreshInfo?.exp ? new Date(refreshInfo.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -135,10 +149,31 @@ export const login = async (req, res) => {
         ipAddress: req.ip
     });
 
+    // Track session in user_sessions for admin visibility
+    try {
+        const accessExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+        await dbManager.query(
+            `INSERT INTO user_sessions (user_id, token_id, ip_address, user_agent, expires_at)
+             VALUES ($1, $2, $3::INET, $4, $5)
+             ON CONFLICT (token_id) DO NOTHING`,
+            [
+                user.id,
+                jti,
+                req.ip || null,
+                req.get('User-Agent') || null,
+                accessExpiry
+            ]
+        );
+    } catch (sessionErr) {
+        // Non-fatal: session tracking failure should not block login
+        loggingService.warn('Failed to record session in user_sessions', { error: sessionErr.message, userId: user.id });
+    }
+
     if (isWeb) {
         const cookieOptions = getCookieOptions();
+        const refreshCookieOptions = { ...cookieOptions, path: '/api/auth/refresh' };
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-        res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+        res.cookie('refreshToken', refreshToken, { ...refreshCookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
     }
 
     loggingService.info('Login successful', {
@@ -215,8 +250,9 @@ export const refresh = async (req, res) => {
 
     if (isWebClient) {
         const cookieOptions = getCookieOptions();
+        const refreshCookieOptions = { ...cookieOptions, path: '/api/auth/refresh' };
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-        res.cookie('refreshToken', nextRefreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+        res.cookie('refreshToken', nextRefreshToken, { ...refreshCookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
     }
 
     return successResponse(res, {
@@ -288,14 +324,27 @@ export const getCsrfToken = async (req, res) => {
  */
 export const logout = async (req, res) => {
     const cookieOptions = getCookieOptions();
+    const refreshCookieOptions = { ...cookieOptions, path: '/api/auth/refresh' };
     const accessToken = getBearerToken(req) || req.cookies?.accessToken;
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
     if (accessToken) await tokenService.revokeToken(accessToken);
     if (refreshToken) await tokenService.revokeRefreshToken(refreshToken);
 
+    // Remove session from user_sessions if tracked
+    try {
+        if (req.user?.jti) {
+            await dbManager.query(
+                'DELETE FROM user_sessions WHERE token_id = $1',
+                [req.user.jti]
+            );
+        }
+    } catch (sessionErr) {
+        loggingService.warn('Failed to remove session from user_sessions', { error: sessionErr.message });
+    }
+
     res.clearCookie('accessToken', cookieOptions);
-    res.clearCookie('refreshToken', cookieOptions);
+    res.clearCookie('refreshToken', refreshCookieOptions);
 
     return successResponse(res, {}, 'Logout successful');
 };

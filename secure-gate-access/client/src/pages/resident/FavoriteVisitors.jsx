@@ -26,17 +26,19 @@ import {
 } from '../../components/ui';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
+import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
+import logger from '../../utils/logger';
 
 // Relationship type options
 const RELATIONSHIP_TYPES = [
-  { value: 'Family', label: 'Family Member', icon: '👨‍👩‍👧‍👦' },
-  { value: 'Friend', label: 'Friend', icon: '🤝' },
-  { value: 'Colleague', label: 'Colleague', icon: '💼' },
-  { value: 'Service Provider', label: 'Service Provider', icon: '🔧' },
-  { value: 'Delivery', label: 'Delivery Person', icon: '📦' },
-  { value: 'Guest', label: 'General Guest', icon: '👤' },
-  { value: 'Other', label: 'Other', icon: '❓' }
+  { value: 'Family', label: 'Family Member', iconName: 'Users' },
+  { value: 'Friend', label: 'Friend', iconName: 'Heart' },
+  { value: 'Colleague', label: 'Colleague', iconName: 'Building' },
+  { value: 'Service Provider', label: 'Service Provider', iconName: 'Settings' },
+  { value: 'Delivery', label: 'Delivery Person', iconName: 'Package' },
+  { value: 'Guest', label: 'General Guest', iconName: 'User' },
+  { value: 'Other', label: 'Other', iconName: 'HelpCircle' }
 ];
 
 /**
@@ -77,33 +79,18 @@ const FavoriteVisitors = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/resident/favorites', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await api.get('/api/resident/favorites');
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          setFavorites([]);
-          return;
-        }
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Your session has expired. Please log in again.');
-        }
-        
-        // For any other error (including database errors), show empty state instead of error
-        console.error('Error fetching favorites:', await response.text());
+      const data = response.data;
+      setFavorites(data.data?.favorites || []);
+    } catch (err) {
+      logger.error('Error fetching favorites:', err);
+      if (err.response?.status === 404) {
         setFavorites([]);
         return;
       }
-
-      const data = await response.json();
-      setFavorites(data.data?.favorites || []);
-    } catch (err) {
-      console.error('Error fetching favorites:', err);
-      // Only show error for auth issues, otherwise show empty state
-      if (err.message.includes('session has expired') || err.message.includes('log in')) {
-        setError(err.message);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Your session has expired. Please log in again.');
       } else {
         setFavorites([]);
       }
@@ -115,18 +102,14 @@ const FavoriteVisitors = () => {
   const fetchHistory = async () => {
     try {
       setHistoryLoading(true);
-      const res = await fetch('/api/visitors', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors');
+      const json = res.data;
       if (json?.success) {
         const visitors = Array.isArray(json.data) ? json.data : (json.data?.visitors || []);
         setHistoryVisitors(visitors);
       }
     } catch (err) {
-      console.error('Error fetching history:', err);
+      logger.error('Error fetching history:', err);
     } finally {
       setHistoryLoading(false);
     }
@@ -207,23 +190,13 @@ const FavoriteVisitors = () => {
         ? `/api/resident/favorites/${editingFavorite.id}`
         : '/api/resident/favorites';
 
-      const response = await fetch(url, {
-        method: editingFavorite ? 'PUT' : 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save favorite');
-      }
+      await (editingFavorite ? api.put(url, formData) : api.post(url, formData));
 
       setIsModalOpen(false);
       fetchFavorites(); // Refresh list
     } catch (err) {
-      console.error('Error saving favorite:', err);
-      toast.error(err.message);
+      logger.error('Error saving favorite:', err);
+      toast.error(err.response?.data?.message || err.message);
     } finally {
       setSubmitting(false);
     }
@@ -232,21 +205,13 @@ const FavoriteVisitors = () => {
   // Handle delete
   const handleDelete = async (favoriteId) => {
     try {
-      const response = await fetch(`/api/resident/favorites/${favoriteId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete favorite');
-      }
+      await api.delete(`/api/resident/favorites/${favoriteId}`);
 
       setDeleteConfirm(null);
       fetchFavorites(); // Refresh list
     } catch (err) {
-      console.error('Error deleting favorite:', err);
-      toast.error(err.message);
+      logger.error('Error deleting favorite:', err);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
@@ -273,10 +238,10 @@ const FavoriteVisitors = () => {
     });
   };
 
-  // Get relationship icon
-  const getRelationshipIcon = (relationship) => {
+  // Get relationship icon name
+  const getRelationshipIconName = (relationship) => {
     const found = RELATIONSHIP_TYPES.find(r => r.value === relationship);
-    return found?.icon || '👤';
+    return found?.iconName || 'User';
   };
 
 
@@ -393,9 +358,9 @@ const FavoriteVisitors = () => {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
                         }`}>
-                        {getRelationshipIcon(favorite.relationship)}
+                        <Icon name={getRelationshipIconName(favorite.relationship)} className="w-6 h-6 text-gray-600 dark:text-gray-300" aria-hidden="true" />
                       </div>
                       <div>
                         <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
@@ -685,7 +650,7 @@ const FavoriteVisitors = () => {
                   >
                     {RELATIONSHIP_TYPES.map(type => (
                       <option key={type.value} value={type.value}>
-                        {type.icon} {type.label}
+                        {type.label}
                       </option>
                     ))}
                   </select>

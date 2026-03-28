@@ -1,10 +1,12 @@
 // PWA Settings Component
 import React, { useState, useEffect, useContext } from 'react';
-import { PWAContext } from './PWAManager';
-import pushNotificationService from '../../services/pushNotificationService';
+
 import backgroundSyncService from '../../services/backgroundSyncService';
 import offlineService from '../../services/offlineService';
+import pushNotificationService from '../../services/pushNotificationService';
 import Button from '../ui/Button';
+
+import { PWAContext } from './PWAManager';
 
 const PWASettings = () => {
   const { pwaStatus, installApp, enableNotifications } = useContext(PWAContext);
@@ -53,7 +55,7 @@ const PWASettings = () => {
       const notificationPrefs = await pushNotificationService.getNotificationPreferences();
       
       // Load offline capabilities
-      const offlineCapabilities = await offlineService.getOfflineCapabilities();
+        await offlineService.getOfflineCapabilities();
       
       // Get cache info
       const cacheInfo = await getCacheInfo();

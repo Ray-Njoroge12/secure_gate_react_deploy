@@ -12,15 +12,17 @@
  * - Export functionality
  */
 
+import { format, subDays } from 'date-fns';
 import React, { useState, useEffect } from 'react';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+
 import './AdminOperationsDashboard.css';
-import { COLORS, CHART_PALETTE } from '../../utils/designTokens';
 import Button from '../../components/ui/Button';
+import api from '../../utils/apiClient';
+import { COLORS, CHART_PALETTE } from '../../utils/designTokens';
 
 const AdminOperationsDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -51,27 +53,16 @@ const AdminOperationsDashboard = () => {
       });
 
       const [overviewRes, visitorsRes, incidentsRes, guardsRes] = await Promise.all([
-        fetch(`/api/admin/analytics/overview?${params}`, { credentials: 'include' }),
-        fetch(`/api/admin/analytics/visitors?${params}`, { credentials: 'include' }),
-        fetch(`/api/admin/analytics/incidents?${params}`, { credentials: 'include' }),
-        fetch(`/api/admin/analytics/guards?${params}`, { credentials: 'include' })
+        api.get(`/api/admin/analytics/overview?${params}`),
+        api.get(`/api/admin/analytics/visitors?${params}`),
+        api.get(`/api/admin/analytics/incidents?${params}`),
+        api.get(`/api/admin/analytics/guards?${params}`)
       ]);
 
-      if (!overviewRes.ok || !visitorsRes.ok || !incidentsRes.ok || !guardsRes.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-
-      const [overviewData, visitorsData, incidentsData, guardsData] = await Promise.all([
-        overviewRes.json(),
-        visitorsRes.json(),
-        incidentsRes.json(),
-        guardsRes.json()
-      ]);
-
-      setOverview(overviewData.data);
-      setVisitorMetrics(visitorsData.data);
-      setIncidentMetrics(incidentsData.data);
-      setGuardMetrics(guardsData.data);
+      setOverview(overviewRes.data.data);
+      setVisitorMetrics(visitorsRes.data.data);
+      setIncidentMetrics(incidentsRes.data.data);
+      setGuardMetrics(guardsRes.data.data);
 
     } catch (err) {
       setError(err.message);

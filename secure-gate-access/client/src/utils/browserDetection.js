@@ -1,4 +1,3 @@
-import logger from './logger';
 /**
  * @fileoverview Browser detection and feature detection utilities
  * @description Comprehensive browser compatibility detection and feature support checking
@@ -15,6 +14,9 @@ import logger from './logger';
  * Provides comprehensive browser information and feature support detection
  */
 export const browserDetection = {
+  _featureSupportCache: null,
+  _featureSupportCacheUA: null,
+
   /**
    * Get detailed browser information including name, version, device type, and OS
    * 
@@ -128,7 +130,12 @@ export const browserDetection = {
    * @returns {Object} Feature support object
    */
   getFeatureSupport() {
-    return {
+    const currentUserAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    if (this._featureSupportCache && this._featureSupportCacheUA === currentUserAgent) {
+      return this._featureSupportCache;
+    }
+
+    const featureSupport = {
       // ES6+ Features - using safe feature detection without eval
       arrowFunctions: (() => {
         try {
@@ -136,6 +143,7 @@ export const browserDetection = {
           const arrow = () => {};
           return typeof arrow === 'function';
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -145,6 +153,7 @@ export const browserDetection = {
           const test = `template`;
           return typeof test === 'string' && test === 'template';
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -155,6 +164,7 @@ export const browserDetection = {
           const {a} = obj;
           return a === 1;
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -165,6 +175,7 @@ export const browserDetection = {
           const spread = [...arr];
           return Array.isArray(spread) && spread.length === 2;
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -174,10 +185,11 @@ export const browserDetection = {
           const asyncFn = async () => {};
           return typeof asyncFn === 'function' && asyncFn.constructor.name === 'AsyncFunction';
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
-      
+
       // Web APIs
       fetch: typeof fetch !== 'undefined',
       promises: typeof Promise !== 'undefined',
@@ -207,6 +219,7 @@ export const browserDetection = {
           const canvas = document.createElement('canvas');
           return !!(canvas && canvas.getContext);
         } catch (e) {
+          // Expected: feature detection — return false when canvas API unavailable
           return false;
         }
       })(),
@@ -217,6 +230,7 @@ export const browserDetection = {
           const context = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
           return !!context;
         } catch (e) {
+          // Expected: feature detection — return false when WebGL unavailable
           return false;
         }
       })(),
@@ -227,10 +241,11 @@ export const browserDetection = {
           const context = canvas.getContext('webgl2');
           return !!context;
         } catch (e) {
+          // Expected: feature detection — return false when WebGL2 unavailable
           return false;
         }
       })(),
-      
+
       // Touch and Input
       touch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
       pointerEvents: 'onpointerdown' in window,
@@ -245,7 +260,9 @@ export const browserDetection = {
           });
           window.addEventListener('testPassive', null, opts);
           window.removeEventListener('testPassive', null, opts);
-        } catch (e) {}
+        } catch (e) {
+          // Expected: browser does not support passive event listeners — graceful degradation
+        }
         return supportsPassive;
       })(),
       
@@ -263,9 +280,21 @@ export const browserDetection = {
       requestAnimationFrame: typeof requestAnimationFrame !== 'undefined',
       cancelAnimationFrame: typeof cancelAnimationFrame !== 'undefined',
       matchMedia: typeof matchMedia !== 'undefined',
-      intersectionObserver: typeof IntersectionObserver !== 'undefined',
       mutationObserver: typeof MutationObserver !== 'undefined'
     };
+
+    this._featureSupportCacheUA = currentUserAgent;
+    this._featureSupportCache = featureSupport;
+
+    return featureSupport;
+  },
+
+  /**
+   * Clear cached feature support data (primarily for tests and explicit refreshes)
+   */
+  clearFeatureSupportCache() {
+    this._featureSupportCache = null;
+    this._featureSupportCacheUA = null;
   },
 
   /**

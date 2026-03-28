@@ -1,6 +1,7 @@
-import React from 'react';
 import { render } from '@testing-library/react';
+import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+
 import { AuthContext } from './contexts/AuthContext.js';
 import { ErrorProvider } from './contexts/ErrorContext.jsx';
 

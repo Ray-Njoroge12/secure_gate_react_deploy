@@ -5,22 +5,26 @@
  * @version 1.0.0
  */
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './AuthContext.js';
-import { ErrorProvider } from './ErrorContext.jsx';
-import { NavigationProvider } from './NavigationContext.jsx';
-import AppNavigationBridge from './AppNavigationBridge.jsx';
-import AuthNavigationBridge from './AuthNavigationBridge.jsx';
-import { LoadingProvider } from './LoadingContext.jsx';
-import { SearchProvider } from './SearchContext.jsx';
-import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx';
-import { ThemeProvider } from './ThemeContext.jsx';
-import { PreferenceProvider } from './PreferenceContext.jsx';
-import { ToastProvider } from './ToastContext.jsx';
-import { UndoProvider } from './UndoContext.jsx';
+
 import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider.jsx';
+import { I18nProvider } from '../i18n/index.js';
+
+import AppNavigationBridge from './AppNavigationBridge.jsx';
+import { AuthProvider } from './AuthContext.js';
+import AuthNavigationBridge from './AuthNavigationBridge.jsx';
+import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx';
+import { ErrorProvider } from './ErrorContext.jsx';
+import { LoadingProvider } from './LoadingContext.jsx';
+import { NavigationProvider } from './NavigationContext.jsx';
+import { PreferenceProvider } from './PreferenceContext.jsx';
+import { SearchProvider } from './SearchContext.jsx';
+import { ThemeProvider } from './ThemeContext.jsx';
+import { ToastProvider } from './ToastContext.jsx';
+
+// UndoProvider removed — no consumer uses it (P2-09)
 
 /**
  * React Query client configuration
@@ -77,10 +81,10 @@ export const RootProvider = ({ children }) => {
           <ThemeProvider>
             <PreferenceProvider>
               <AccessibilityProvider>
+                <I18nProvider defaultLanguage="en">
                 <BrowserCompatibilityProvider>
                   <LoadingProvider>
                     <ToastProvider position="top-right" maxVisible={4}>
-                      <UndoProvider maxHistory={10}>
                         <SearchProvider>
                           <Router
                             future={{
@@ -95,10 +99,10 @@ export const RootProvider = ({ children }) => {
                             </NavigationProvider>
                           </Router>
                         </SearchProvider>
-                      </UndoProvider>
                     </ToastProvider>
                   </LoadingProvider>
                 </BrowserCompatibilityProvider>
+                </I18nProvider>
               </AccessibilityProvider>
             </PreferenceProvider>
           </ThemeProvider>

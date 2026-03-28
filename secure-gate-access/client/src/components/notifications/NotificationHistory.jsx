@@ -11,6 +11,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, subDays, startOfDay, endOfDay } from 'date-fns';
 import Icon from '../ui/Icon';
+import api from '../../utils/apiClient';
 import intelligentNotificationService from '../../services/intelligentNotificationService';
 import logger from '../../utils/logger';
 import Button from '../ui/Button';
@@ -56,24 +57,13 @@ const NotificationHistory = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/intelligent-notifications/history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+      const response = await api.post('/api/intelligent-notifications/history', {
           startDate: dateRange.start,
           endDate: dateRange.end,
           limit: 1000 // Load more for client-side filtering
-        })
-      });
+        });
       
-      if (!response.ok) {
-        throw new Error('Failed to load notification history');
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         setNotifications(data.data.notifications || []);

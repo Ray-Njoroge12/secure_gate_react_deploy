@@ -1,7 +1,9 @@
+import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import logger from 'utils/logger';
-import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
+
+import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
 import './ErrorBoundary.css';
 import Button from '../ui/Button';
@@ -19,7 +21,7 @@ class ErrorBoundary extends Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Update state so the next render will show the fallback UI
     return {
       hasError: true,
@@ -107,14 +109,7 @@ class ErrorBoundary extends Component {
 
     try {
       // Send to backend logging service using httpOnly cookies
-      await fetch('/api/logs/error', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(errorData)
-      });
+      await api.post('/api/logs/error', errorData);
     } catch (logError) {
       logger.error('Failed to log error:', logError);
     }
@@ -198,7 +193,7 @@ class ErrorBoundary extends Component {
   }
 
   renderComponentError = () => {
-    const { error, errorId, isRetrying } = this.state;
+    const { error, isRetrying } = this.state;
 
     return (
       <div 

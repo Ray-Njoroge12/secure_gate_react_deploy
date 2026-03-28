@@ -60,6 +60,7 @@ import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.j
 import { strictRateLimit } from '../middleware/rateLimitMiddleware.js';
 import mfaService from '../services/mfaService.js';
 import { userService } from '../services/userService.js';
+import { tokenService } from '../services/tokenService.js';
 
 const router = express.Router();
 
@@ -189,7 +190,6 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
   }
 
   // Generate tokens
-  const { tokenService } = await import('../services/tokenService.js');
   const { getCookieOptions } = await import('../utils/cookies.js');
   const { accessToken, refreshToken, refreshJti, expiresIn } = tokenService.generateTokens(user);
   const refreshInfo = tokenService.getTokenInfo(refreshToken);
@@ -237,18 +237,29 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
  */
 router.post('/disable', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { password } = req.body;
+  const { password, token } = req.body;
 
   if (!password) {
     throw new AppError('Password is required to disable MFA', 400, 'VALIDATION_ERROR');
   }
 
+  if (!token) {
+    throw new AppError('Authenticator code or backup code is required to disable MFA', 400, 'TOTP_REQUIRED');
+  }
+
   // Verify password
-  const user = await userService.getUserById(userId);
-  const isPasswordValid = await userService.verifyPassword(password, user.password);
+  const isPasswordValid = await userService.verifyPassword(userId, password);
 
   if (!isPasswordValid) {
-    throw new AppError('Invalid password', 401, 'INVALID_CREDENTIALS');
+    throw new AppError('Invalid password', 401, 'INVALID_PASSWORD');
+  }
+
+  // Verify TOTP token or backup code
+  const isTokenValid = await mfaService.verifyTOTPToken(userId, token);
+  const isBackupCode = !isTokenValid && await mfaService.verifyBackupCode(userId, token);
+
+  if (!isTokenValid && !isBackupCode) {
+    throw new AppError('Invalid authenticator code or backup code', 401, 'INVALID_TOTP');
   }
 
   // Disable MFA
@@ -358,31 +369,24 @@ router.post('/verify-operation', authenticateToken, strictRateLimit(), asyncHand
   }
 
   // Generate a short-lived operation token (5 minutes)
-  const { tokenService } = await import('../services/tokenService.js');
   const crypto = await import('crypto');
   const operationToken = crypto.randomBytes(32).toString('hex');
 
-  // Store operation token (in memory/cache - expires in 5 minutes)
-  // In production, use Redis or similar
-  if (!global.operationTokens) {
-    global.operationTokens = new Map();
-  }
-
-  global.operationTokens.set(operationToken, {
-    userId,
-    operation,
-    operationDetails,
-    reason,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
-  });
-
-  // Clean up expired tokens
-  for (const [token, data] of global.operationTokens) {
-    if (data.expiresAt < Date.now()) {
-      global.operationTokens.delete(token);
-    }
-  }
+  // Store in Redis with a 5-minute TTL — cluster-safe and restart-durable.
+  // Falls back to in-process memory automatically when Redis is unavailable.
+  const now = Date.now();
+  await tokenService.redisService.set(
+    `mfa:op:${operationToken}`,
+    {
+      userId,
+      operation,
+      operationDetails,
+      reason,
+      createdAt: now,
+      expiresAt: now + 5 * 60 * 1000
+    },
+    300 // TTL in seconds (5 minutes)
+  );
 
   // Log successful verification
   const { auditLogService } = await import('../services/auditLogService.js');

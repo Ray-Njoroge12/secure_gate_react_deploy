@@ -4,9 +4,12 @@
  * Phase A3: Policy Engine & Watchlists
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
+import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
+import { DeleteConfirmation } from '../../components/common/ConfirmationDialog';
 import './WatchlistManagement.css';
 
 const WatchlistManagement = () => {
@@ -16,6 +19,9 @@ const WatchlistManagement = () => {
   const [activeTab, setActiveTab] = useState('entries'); // 'entries' or 'matches'
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const closeModal = () => setShowModal(false);
   const { modalRef } = useModalAccessibility(showModal, closeModal);
   const [formData, setFormData] = useState({
@@ -33,6 +39,27 @@ const WatchlistManagement = () => {
     active: true
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredEntries = useMemo(() => {
+    if (!debouncedSearch.trim()) return entries;
+    const q = debouncedSearch.toLowerCase();
+    return entries.filter(e =>
+      (e.name || '').toLowerCase().includes(q) ||
+      (e.phone || '').toLowerCase().includes(q) ||
+      (e.vehicle_plate || '').toLowerCase().includes(q) ||
+      (e.company_name || '').toLowerCase().includes(q) ||
+      (e.reason || '').toLowerCase().includes(q) ||
+      (e.email || '').toLowerCase().includes(q)
+    );
+  }, [entries, debouncedSearch]);
+
   useEffect(() => {
     fetchWatchlist();
     if (activeTab === 'matches') {
@@ -43,13 +70,10 @@ const WatchlistManagement = () => {
   const fetchWatchlist = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/watchlist', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch watchlist');
-      
-      const data = await response.json();
-      setEntries(data.data || []);
+      const response = await api.get('/api/admin/watchlist');
+      setEntries(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching watchlist:', err);
+      logger.error('Error fetching watchlist:', err);
     } finally {
       setLoading(false);
     }
@@ -57,13 +81,10 @@ const WatchlistManagement = () => {
 
   const fetchMatches = async () => {
     try {
-      const response = await fetch('/api/admin/watchlist/matches', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch matches');
-      
-      const data = await response.json();
-      setMatches(data.data || []);
+      const response = await api.get('/api/admin/watchlist/matches');
+      setMatches(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching matches:', err);
+      logger.error('Error fetching matches:', err);
     }
   };
 
@@ -75,54 +96,42 @@ const WatchlistManagement = () => {
         ? `/api/admin/watchlist/${editingEntry.id}`
         : '/api/admin/watchlist';
       
-      const method = editingEntry ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('Failed to save watchlist entry');
+      if (editingEntry) {
+        await api.put(url, formData);
+      } else {
+        await api.post(url, formData);
+      }
 
       await fetchWatchlist();
       setShowModal(false);
       resetForm();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
   const deleteEntry = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this entry from the watchlist?')) return;
+    setEntryToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
     try {
-      const response = await fetch(`/api/admin/watchlist/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to delete entry');
+      await api.delete(`/api/admin/watchlist/${entryToDelete}`);
       await fetchWatchlist();
+      setDeleteConfirmOpen(false);
+      setEntryToDelete(null);
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
   const toggleEntry = async (entry) => {
     try {
-      const response = await fetch(`/api/admin/watchlist/${entry.id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...entry, active: !entry.active })
-      });
-
-      if (!response.ok) throw new Error('Failed to toggle entry');
+      await api.put(`/api/admin/watchlist/${entry.id}`, { ...entry, active: !entry.active });
       await fetchWatchlist();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
@@ -190,6 +199,12 @@ const WatchlistManagement = () => {
 
   return (
     <div className="watchlist-management">
+      {actionError && (
+        <div className="px-4 py-2 mb-4 bg-red-50 text-red-700 text-sm rounded border border-red-200" role="alert">
+          {actionError}
+          <button onClick={() => setActionError(null)} className="ml-2 underline text-xs">Dismiss</button>
+        </div>
+      )}
       <div className="watchlist-header">
         <div className="header-left">
           <h1>🛡️ Security Watchlist</h1>
@@ -228,15 +243,38 @@ const WatchlistManagement = () => {
         </Button>
       </div>
 
+      {/* Search */}
+      {activeTab === 'entries' && (
+        <div className="mb-4">
+          <input
+            type="search"
+            placeholder="Search by name, phone, vehicle plate, company..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+          />
+          {debouncedSearch && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Showing {filteredEntries.length} of {entries.length} entries
+              {filteredEntries.length === 0 && (
+                <button onClick={() => setSearchTerm('')} className="ml-2 text-brand-600 hover:underline">Clear search</button>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Entries Tab */}
       {activeTab === 'entries' && (
         <div className="watchlist-content">
-          {entries.length === 0 ? (
+          {filteredEntries.length === 0 ? (
             <div className="empty-state">
-              <p>No watchlist entries yet.</p>
-              <Button className="btn-primary" onClick={() => setShowModal(true)}>
-                Add First Entry
-              </Button>
+              <p>{debouncedSearch ? 'No entries match your search.' : 'No watchlist entries yet.'}</p>
+              {debouncedSearch ? (
+                <Button className="btn-primary" onClick={() => setSearchTerm('')}>Clear Search</Button>
+              ) : (
+                <Button className="btn-primary" onClick={() => setShowModal(true)}>Add First Entry</Button>
+              )}
             </div>
           ) : (
             <div className="entries-table-container">
@@ -253,7 +291,7 @@ const WatchlistManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map(entry => (
+                  {filteredEntries.map(entry => (
                     <tr key={entry.id} className={!entry.active ? 'inactive' : ''}>
                       <td>
                         <span className="entry-type-badge">
@@ -508,6 +546,16 @@ const WatchlistManagement = () => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmation
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setEntryToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        itemName="this watchlist entry"
+      />
     </div>
   );
 };

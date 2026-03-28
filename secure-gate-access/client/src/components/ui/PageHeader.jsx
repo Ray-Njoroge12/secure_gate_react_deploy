@@ -2,6 +2,7 @@
 // Consistent page header component with back navigation
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
 import Icon from './Icon';
 
 /**

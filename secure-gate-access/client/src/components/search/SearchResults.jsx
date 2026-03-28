@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { sanitizeHighlight } from '../../utils/sanitize';
 import './SearchResults.css';
 import Button from '../ui/Button';
 
@@ -236,7 +237,7 @@ const SearchResults = ({
                       {result.highlights.map((highlight, idx) => (
                         <div key={idx} className="result-highlight-item">
                           <strong>{highlight.field}:</strong> 
-                          <span dangerouslySetInnerHTML={{ __html: highlight.text }} />
+                          <span dangerouslySetInnerHTML={{ __html: sanitizeHighlight(highlight.text) }} />
                         </div>
                       ))}
                     </div>
@@ -267,7 +268,6 @@ const SearchResults = ({
             className="btn btn-outline load-more-btn"
             onClick={() => {
               // Handle load more - this would be passed from parent
-              console.log('Load more results');
             }}
           >
             Load More Results

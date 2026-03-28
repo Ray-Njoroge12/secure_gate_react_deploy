@@ -1,20 +1,32 @@
 // Offline-capable Visitor List Component
 import React, { useState, useEffect, useContext } from 'react';
 import { PWAContext } from './PWAManager';
+import api from '../../utils/apiClient';
 import offlineService from '../../services/offlineService';
 import backgroundSyncService from '../../services/backgroundSyncService';
 import Button from '../ui/Button';
 
-const OfflineVisitorList = ({ 
-  filters = {}, 
+const OfflineVisitorList = ({
+  filters = {},
   onVisitorAction,
-  showOfflineIndicator = true 
+  showOfflineIndicator = true
 }) => {
   const { pwaStatus } = useContext(PWAContext);
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pendingActions, setPendingActions] = useState(new Set());
+  const [cacheTimestamp, setCacheTimestamp] = useState(null);
+
+  const formatStaleness = (timestamp) => {
+    if (!timestamp) return null;
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return 'Last updated just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `Last updated ${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    return `Last updated ${hours}h ${minutes % 60}m ago`;
+  };
 
   useEffect(() => {
     loadVisitors();
@@ -30,26 +42,26 @@ const OfflineVisitorList = ({
       if (pwaStatus.isOnline) {
         // Try to fetch from API first
         try {
-          const response = await fetch('/api/visitors?' + new URLSearchParams(filters), {
-            credentials: 'include'
-          });
+          const response = await api.get('/api/visitors?' + new URLSearchParams(filters));
+          const data = response.data;
+          visitorData = data.data?.visitors || data.visitors || [];
 
-          if (response.ok) {
-            const data = await response.json();
-            visitorData = data.data?.visitors || data.visitors || [];
-            
-            // Cache the data for offline use
-            await offlineService.cacheVisitors(visitorData);
-          } else {
-            throw new Error('API request failed');
-          }
+          // Cache the data for offline use
+          await offlineService.cacheVisitors(visitorData);
+          setCacheTimestamp(Date.now());
         } catch (apiError) {
           console.warn('API request failed, falling back to cache:', apiError);
           visitorData = await offlineService.getCachedVisitors(filters);
+          if (visitorData.length > 0 && visitorData[0].cached_at) {
+            setCacheTimestamp(visitorData[0].cached_at);
+          }
         }
       } else {
         // Offline mode - use cached data
         visitorData = await offlineService.getCachedVisitors(filters);
+        if (visitorData.length > 0 && visitorData[0].cached_at) {
+          setCacheTimestamp(visitorData[0].cached_at);
+        }
       }
 
       setVisitors(visitorData);
@@ -68,22 +80,13 @@ const OfflineVisitorList = ({
       if (pwaStatus.isOnline) {
         // Try immediate action
         try {
-          const response = await fetch(`/api/visitors/${visitorId}/${action}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(data)
-          });
+          await api.post(`/api/visitors/${visitorId}/${action}`, data);
 
-          if (response.ok) {
-            // Update local state immediately
-            updateVisitorLocally(visitorId, action);
-            
-            if (onVisitorAction) {
-              onVisitorAction(visitorId, action, data);
-            }
-          } else {
-            throw new Error('Action failed');
+          // Update local state immediately
+          updateVisitorLocally(visitorId, action);
+          
+          if (onVisitorAction) {
+            onVisitorAction(visitorId, action, data);
           }
         } catch (apiError) {
           console.warn('API action failed, queuing for sync:', apiError);
@@ -204,7 +207,14 @@ const OfflineVisitorList = ({
       {showOfflineIndicator && !pwaStatus.isOnline && (
         <div className="offline-indicator">
           <span className="offline-icon">📡</span>
-          <span>Offline Mode - Showing cached data</span>
+          <span>
+            Offline Mode - Showing cached data
+            {cacheTimestamp && (
+              <span style={{ display: 'block', fontSize: '12px', opacity: 0.8 }}>
+                {formatStaleness(cacheTimestamp)}
+              </span>
+            )}
+          </span>
         </div>
       )}
 

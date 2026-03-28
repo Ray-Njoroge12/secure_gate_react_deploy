@@ -2,9 +2,10 @@
 // UI component for comprehensive user preference management
 
 import React, { useState } from 'react';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+
 import { usePreferences } from '../../contexts/PreferenceContext.jsx';
-import { THEME_OPTIONS, DENSITY_OPTIONS, FREQUENCY_OPTIONS } from '../../services/preferenceService.js';
+import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { THEME_OPTIONS, DENSITY_OPTIONS } from '../../services/preferenceService.js';
 import Button from '../ui/Button';
 
 const PreferencePanel = () => {
@@ -132,7 +133,7 @@ const PreferencePanel = () => {
         </h2>
         {error && (
           <div className="flex items-center space-x-2">
-            <span className="text-red-600 text-sm">{error}</span>
+            <span className="text-red-700 text-sm">{error}</span>
             <Button
               onClick={clearError}
               className="text-red-600 hover:text-red-800"

@@ -1,5 +1,6 @@
 // AdminMetrics - Displays real metrics from API
 import React from 'react';
+
 import Icon from '../ui/Icon';
 
 const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {

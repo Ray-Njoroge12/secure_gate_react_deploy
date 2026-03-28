@@ -259,6 +259,7 @@ const dailyBulkInviteLimit = rateLimit({
 router.post('/',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
+  requireRolePolicy('adminOrResident'),
   validateRequest(ValidationSchemas.visitorCreation),
   attachRequestAudit,
   createVisitor
@@ -590,13 +591,13 @@ router.post('/:id/resend-otp',
 );
 
 // QR Code Regeneration (BULK-005: Allow visitors to regenerate failed QR codes)
-router.post('/:id/regenerate-qr', rateLimit({
+router.post('/:id/regenerate-qr', authenticateToken, requireEstate, rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 regeneration attempts per hour
   message: 'Too many QR regeneration attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false
-}), qrCodeController.regenerateQR);
+}), attachRequestAudit, qrCodeController.regenerateQR);
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
 router.delete('/:id', authenticateToken, attachRequestAudit, cancelVisitor);

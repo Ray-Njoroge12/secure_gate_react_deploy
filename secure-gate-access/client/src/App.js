@@ -8,29 +8,30 @@
 
 import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
+
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles/accessibility.css"; // WCAG 2.1 AA compliance styles
 import "./styles.css"; // Additional app styles
-// BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
-// import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
-import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
+import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
+import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
+import SessionExpiryToast from "./components/common/SessionExpiryToast.jsx";
+import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
+import SyncConflictListener from "./components/common/SyncConflictListener.jsx";
 import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
+import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
 import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
 import ErrorQueue from "./components/ErrorQueue.jsx";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
-import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
-import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
-import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
-import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
-import Loading from "./components/ui/Loading.jsx";
-import ToastContainer from "./components/ToastContainer.jsx";
-import RootProvider from "./contexts/RootProvider.jsx";
 import PWAManager from "./components/pwa/PWAManager.jsx"; // Added for Task 4.4
+import ToastContainer from "./components/ToastContainer.jsx";
+import GlobalStyles from "./components/ui/GlobalStyles.jsx";
+import Loading from "./components/ui/Loading.jsx";
+import RootProvider from "./contexts/RootProvider.jsx";
+import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
 import { refreshCSRFToken } from "./utils/apiClient.js";
 import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 
@@ -63,6 +64,7 @@ const ResidentDashboard = lazy(() => import("./pages/resident/ResidentDashboard.
 
 // GeneratePass removed - using QuickInvite instead
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
+const VisitorPass = lazy(() => import("./pages/resident/VisitorPass.jsx"));
 const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
 const DeliveryList = lazy(() => import("./components/resident/DeliveryList.jsx"));
 const ResidentApprovalsPanel = lazy(() => import("./pages/resident/ResidentApprovalsPanel.jsx")); // Phase 3: Walk-in approvals
@@ -79,26 +81,24 @@ const IncidentList = lazy(() => import("./pages/guard/IncidentList.jsx"));
 const ShiftHandover = lazy(() => import("./pages/guard/ShiftHandover.jsx")); // Phase 3: Shift handover management
 const ActivityLog = lazy(() => import("./pages/guard/ActivityLog.jsx")); // Phase 3: Guard activity log
 const BulkCheckout = lazy(() => import("./pages/guard/BulkCheckout.jsx")); // Phase 3: Bulk checkout & EOD operations
-const MFASetupGuide = lazy(() => import("./pages/guard/MFASetupGuide.jsx")); // Guard in-app documentation
+// MFASetupGuide removed (P1-12) — redundant with Settings → Security tab
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
 // MessageViewer removed - file missing // Dev Tool
 const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard.jsx"));
-const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
-const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
-const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
-const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
-const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
-const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
-// NotificationPreferences and ActivityDashboard removed - files missing
-// const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
-// const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
+const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement.jsx"));
+const RoleManagement = lazy(() => import("./pages/admin/RoleManagement.jsx"));
+const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
+const PolicyManagement = lazy(() => import("./pages/admin/PolicyManagement.jsx"));
+const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
+const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
+const AdminOperationsDashboard = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
+const AuditLogs = lazy(() => import("./pages/admin/AuditLogs.jsx"));
 
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 // SelfCheckInKiosk removed - file missing
-const VisitorConfirmation = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 
 // Resident additional pages
 const QuickInvite = lazy(() => import("./pages/resident/QuickInvite.jsx"));
@@ -192,6 +192,8 @@ function App() {
 
             {/* Session Timeout Warning - Global (uses role-based configuration) */}
             <SessionTimeoutWarning />
+            <SessionExpiryToast />
+            <SyncConflictListener />
             <OfflineRetryBanner />
             <RateLimitIndicator threshold={15} position="bottom-right" />
             <ErrorBoundary level="page">
@@ -252,6 +254,16 @@ function App() {
                           <ProtectedRoute allowedRoles={["resident"]}>
                             <AppShell role="resident" title="Visitor History">
                               <VisitorHistory />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/resident/visitor-pass/:visitorId"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident"]}>
+                            <AppShell role="resident" title="Visitor Pass">
+                              <VisitorPass />
                             </AppShell>
                           </ProtectedRoute>
                         }
@@ -455,13 +467,7 @@ function App() {
                       />
                       <Route
                         path="/dashboard/guard/help/mfa-setup"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="MFA Setup Guide">
-                              <MFASetupGuide />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
+                        element={<Navigate to="/dashboard/guard/settings?tab=security" replace />}
                       />
                       <Route
                         path="/dashboard/guard/walk-in"
@@ -615,13 +621,7 @@ function App() {
                       {/* NotificationPreferences and ActivityDashboard routes removed */}
                       <Route
                         path="/dashboard/admin/help/security"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Security Help">
-                              <MFASetupGuide />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
+                        element={<Navigate to="/dashboard/admin/settings?tab=security" replace />}
                       />
                       {/* Other admin routes that might be separate pages eventually, mapping to dashboard for now if they exist as tabs */}
 
@@ -754,6 +754,48 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+
+                      {/* Admin management pages */}
+                      <Route path="/admin/watchlist" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Watchlist Management"><WatchlistManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/roles" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Role Management"><RoleManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/access-control" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Access Control"><AccessControl /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/policies" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Policy Management"><PolicyManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/sites" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Site Management"><SiteManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/incidents" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Incident Management"><IncidentManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/operations" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Operations Dashboard"><AdminOperationsDashboard /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/audit-logs" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Audit Logs"><AuditLogs /></AppShell>
+                        </ProtectedRoute>
+                      } />
 
                       {/* Catch-all route for unmatched paths */}
                       <Route path="*" element={<Navigate to="/login" replace />} />

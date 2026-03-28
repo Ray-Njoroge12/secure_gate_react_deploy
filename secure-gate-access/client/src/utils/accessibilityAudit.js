@@ -97,7 +97,7 @@ export const ACCESSIBILITY_ISSUES = {
  */
 export function auditElement(element, options = {}) {
   const issues = [];
-  const { strict = false, includeWarnings = true } = options;
+  const { strict = false } = options;
 
   if (!element || !element.nodeType) return issues;
 
@@ -431,6 +431,9 @@ export function autoFixAccessibilityIssues(element, issues) {
           element.setAttribute('alt', '');
           fixed.push(issue);
         }
+        break;
+
+      default:
         break;
     }
   });

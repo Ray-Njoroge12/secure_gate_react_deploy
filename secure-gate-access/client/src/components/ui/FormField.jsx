@@ -66,7 +66,7 @@ const FormField = memo(({
   }, [name, formValidation, props.onFocus]);
 
   // Handle validation change
-  const handleValidationChange = useCallback((validationResult) => {
+    const handleValidationChange = useCallback((_validationResult) => {
     // This is called by ValidatedInput when validation state changes
     // We can use this to update form-level validation state if needed
   }, []);

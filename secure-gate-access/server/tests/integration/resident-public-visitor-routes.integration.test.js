@@ -147,7 +147,8 @@ describe('Resident/public visitor routes integration', () => {
       });
 
     expect(response.status).toBe(403);
-    expect(response.body.message).toContain('Only residents and admins');
+    expect(response.body.error.code).toBe('AUTH_FORBIDDEN');
+    expect(response.body.message).toContain('Insufficient permissions');
   });
 
   it('creates resident invites and keeps public invite lookup privacy-safe', async () => {
@@ -189,16 +190,15 @@ describe('Resident/public visitor routes integration', () => {
     expect(response.body.data.pagination).toEqual(expect.objectContaining({ page: 1, limit: 10, totalPages: expect.any(Number) }));
   });
 
-  it('enforces estate context on resident visitor listing', async () => {
-    await dbManager.query('UPDATE users SET estate_id = NULL WHERE id = $1', [testUsers.resident.id]);
+  it('rejects resident visitor listing when token estate context is missing', async () => {
     const noEstateToken = await signAccessToken({ ...testUsers.resident, estate_id: null }, null);
 
     const response = await request(app)
       .get('/api/visitors')
       .set('Authorization', `Bearer ${noEstateToken}`);
 
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe('ESTATE_REQUIRED');
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('AUTH_USER_NOT_FOUND');
   });
 
   it('soft-cancels a resident-owned visitor invite', async () => {
@@ -213,6 +213,23 @@ describe('Resident/public visitor routes integration', () => {
 
     const updated = await dbManager.query('SELECT status FROM visitors WHERE id = $1', [visitor.id]);
     expect(updated.rows[0].status).toBe('cancelled');
+  });
+
+  it('rejects resident delete on non-eligible visitor status', async () => {
+    const visitor = await createTestVisitor(testUsers.resident.id, {
+      name: 'Already Checked In',
+      status: 'checked_in'
+    });
+
+    const response = await request(app)
+      .delete(`/api/visitors/${visitor.id}`)
+      .set('Authorization', `Bearer ${residentToken}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.message).toMatch(/only pending or unadmitted/i);
+
+    const unchanged = await dbManager.query('SELECT status FROM visitors WHERE id = $1', [visitor.id]);
+    expect(unchanged.rows[0].status).toBe('checked_in');
   });
 
   it('returns a stable 400 for invalid resident cancel IDs', async () => {
@@ -250,6 +267,7 @@ describe('Resident/public visitor routes integration', () => {
       .send({ eventName: 'Guard Blocked', date: visitDate(2), time: '11:00', numGuests: 2 });
 
     expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('FORBIDDEN');
     expect(response.body.message).toContain('Only residents and admins');
   });
 

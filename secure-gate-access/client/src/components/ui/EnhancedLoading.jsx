@@ -10,6 +10,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+
 import { useLoadingStates, LOADING_TYPES, LOADING_PRIORITIES } from '../../hooks/useLoadingStates';
 
 // Loading animation variants

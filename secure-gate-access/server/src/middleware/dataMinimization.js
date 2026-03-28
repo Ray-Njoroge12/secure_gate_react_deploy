@@ -22,6 +22,7 @@ const dataSchemas = {
     resident: [
       'id', 'name', 'phone', 'email', 'vehicle_plate', 'purpose',
       'date_of_visit', 'time_of_visit', 'status', 'invite_code',
+      'visitor_token', 'token_expires_at',
       'check_in', 'check_out', 'qr_code', 'created_at',
       'host_id', 'resident_id'
       // EXCLUDED: id_number (unless own visitor), otp_hash, consent details

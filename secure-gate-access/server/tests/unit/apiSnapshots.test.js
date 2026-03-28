@@ -22,15 +22,8 @@ jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/auditService.js', () => ({
-  auditLog: jest.fn()
-}));
-
-jest.unstable_mockModule('../../src/services/auditLogger.js', () => ({
-  default: {
-    logLoginAttempt: jest.fn(),
-    logAccountLockout: jest.fn(),
-    logAuditEvent: jest.fn()
-  }
+  auditLog: jest.fn().mockResolvedValue(undefined),
+  default: { auditLog: jest.fn().mockResolvedValue(undefined) }
 }));
 
 jest.unstable_mockModule('../../src/services/loggingService.js', () => ({

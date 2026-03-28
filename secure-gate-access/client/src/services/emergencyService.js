@@ -165,7 +165,7 @@ export const getCurrentLocation = () => {
           accuracy: position.coords.accuracy
         });
       },
-      (error) => {
+      (_error) => {
         // Privacy: Never block panic button if location is denied
         logger.info('Location permission denied - proceeding without location');
         resolve(null);
@@ -179,7 +179,7 @@ export const getCurrentLocation = () => {
   });
 };
 
-export default {
+const emergencyService = {
   triggerPanicButton,
   cancelPanicAlert,
   acknowledgeEmergency,
@@ -190,3 +190,5 @@ export default {
   getPanicPrivacyInfo,
   getCurrentLocation
 };
+
+export default emergencyService;

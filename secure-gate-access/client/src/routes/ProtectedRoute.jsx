@@ -1,5 +1,6 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+
 import { useAuth } from "../contexts/AuthContext.js";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
@@ -25,7 +26,6 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     switch (user?.role) {
       case "resident":
         return <Navigate to="/dashboard/resident" replace />;
-      case "security":
       case "guard":
         return <Navigate to="/dashboard/guard" replace />;
       case "admin":

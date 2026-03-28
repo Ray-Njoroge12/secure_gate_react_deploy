@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { expectNoGlobalErrorShell } = require('../utils/test-helpers');
 
 const TEST_ORIGIN = 'http://127.0.0.1:3000';
 
@@ -232,11 +233,6 @@ async function mockDashboardApi(page, role) {
   });
 }
 
-async function expectNoGlobalErrorShell(page) {
-  await expect(page.locator('text=Access Restricted')).toHaveCount(0);
-  await expect(page.locator('text=Application Error')).toHaveCount(0);
-}
-
 test.describe('Dashboard role verification smoke', () => {
   test('resident dashboard renders and blocks admin dashboard access', async ({ page }) => {
     await mockDashboardApi(page, 'resident');
@@ -263,8 +259,8 @@ test.describe('Dashboard role verification smoke', () => {
     await expect(learnMore).toBeVisible();
     await learnMore.dispatchEvent('click');
 
-    await expect(page).toHaveURL(/\/dashboard\/guard\/help\/mfa-setup/);
-    await expect(page.getByRole('heading', { name: /MFA Setup Guide/i }).first()).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/guard\/settings\?tab=security/);
+    await expect(page.getByRole('heading', { name: /Security Settings/i }).first()).toBeVisible();
 
     await page.goto('/dashboard/guard/scan-qr');
     await expect(page.getByRole('heading', { name: /Scan QR Code/i }).first()).toBeVisible();

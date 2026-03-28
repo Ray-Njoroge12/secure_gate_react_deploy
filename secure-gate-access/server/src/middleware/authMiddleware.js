@@ -2,6 +2,7 @@
 import { dbManager } from '../database/db.enhanced.js';
 import { tokenService } from '../services/tokenService.js';
 import loggingService from '../services/loggingService.js';
+import logger from '../config/logger.js';
 import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 
 const DEBUG_AUTH = process.env.DEBUG_AUTH === 'true' &&
@@ -15,7 +16,7 @@ const withSiteAlias = (user) => ({
 // Enhanced authentication middleware with secure token verification
 export const authenticateToken = asyncHandler(async (req, res, next) => {
   if (DEBUG_AUTH) {
-    console.log('🔍 MIDDLEWARE DEBUG - authenticateToken called for:', req.method, req.originalUrl);
+    logger.debug('authenticateToken called', { method: req.method, url: req.originalUrl });
   }
   try {
     // Try to get token from Authorization header first (for API clients)
@@ -31,9 +32,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
 
     // DEBUG: Temporary logging for debugging auth issues
     if (DEBUG_AUTH) {
-      console.log('🔍 AUTH DEBUG:', {
+      logger.debug('Auth token sources', {
         hasAuthHeader: !!authHeader,
-        // Security: Do not log token values, only presence
         hasHeaderToken: !!headerToken,
         hasCookieToken: !!cookieToken,
         hasToken: !!token
@@ -153,7 +153,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       email: dbUser.email,
       username: dbUser.username,
       role: dbUser.role,
-      estate_id: dbUser.estate_id ?? payload.estate_id ?? null
+      estate_id: dbUser.estate_id ?? payload.estate_id ?? null,
+      jti: payload.jti ?? null  // token ID — used by logout to remove user_sessions row
     });
 
     return next();
@@ -170,8 +171,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     } else {
       // Log the actual error for debugging in test/development
       if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
-        console.error('Auth middleware unexpected error:', {
-          message: err.message,
+        logger.error('Auth middleware unexpected error', {
+          error: err.message,
           stack: err.stack,
           name: err.name
         });
@@ -218,7 +219,7 @@ export async function attachUserFromToken(req, res, next) {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE LOWER(email) = LOWER($1)
-           AND estate_id = $2`,
+           AND estate_id IS NOT DISTINCT FROM $2`,
         [userIdentifier, estateId]
       );
     } else {
@@ -227,7 +228,7 @@ export async function attachUserFromToken(req, res, next) {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE id = $1
-           AND estate_id = $2`,
+           AND estate_id IS NOT DISTINCT FROM $2`,
         [parseInt(userIdentifier, 10), estateId]
       );
     }

@@ -6,6 +6,9 @@
  */
 
 // Base network condition types for testing
+// Import deep freeze utility
+import { deepFreeze } from './immutable-utils.js';
+
 const BASE_NETWORK_CONDITIONS = {
   ONLINE_WIFI: {
     isOnline: true,
@@ -297,9 +300,6 @@ export function createCustomNetworkCondition(overrides = {}, baseCondition = 'ON
     capabilities: getConnectionCapabilities(overrides.connectionType || base.connectionType)
   };
 }
-
-// Import deep freeze utility
-import { deepFreeze } from './immutable-utils.js';
 
 // Freeze all exported objects to prevent mutation
 export const NETWORK_CONDITIONS = deepFreeze(

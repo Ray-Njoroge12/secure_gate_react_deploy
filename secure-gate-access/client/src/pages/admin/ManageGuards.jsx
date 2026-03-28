@@ -17,6 +17,8 @@ import {
   updateGuardShift
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
+import { useConfirmation } from "../../components/common/ConfirmationDialog";
+import { useToast } from "../../contexts/ToastContext";
 import logger from '../../utils/logger';
 import Icon from "../../components/ui/Icon";
 import Button from "../../components/ui/Button";
@@ -62,10 +64,16 @@ const getDefaultShiftDates = () => {
 };
 
 export default function ManageGuards({ estateId }) {
+  const { toast } = useToast();
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const [guards, setGuards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   // Tabs
   const [activeTab, setActiveTab] = useState('team');
@@ -143,6 +151,81 @@ export default function ManageGuards({ estateId }) {
     label: `${guard.username || 'Guard'} (${guard.email || guard.phone || 'ID ' + guard.id})`
   })), [guards]);
 
+  // Search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredGuards = useMemo(() => {
+    if (!debouncedSearch.trim()) return guards;
+    const q = debouncedSearch.toLowerCase();
+    return guards.filter(g =>
+      (g.username || '').toLowerCase().includes(q) ||
+      (g.email || '').toLowerCase().includes(q) ||
+      (g.phone || '').toLowerCase().includes(q) ||
+      (g.first_name || '').toLowerCase().includes(q) ||
+      (g.last_name || '').toLowerCase().includes(q)
+    );
+  }, [guards, debouncedSearch]);
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredGuards.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredGuards.map(g => g.id)));
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    const count = selectedIds.size;
+    const actionLabel = action === 'delete' ? 'remove' : action;
+    const ok = await confirm({
+      title: `${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)} ${count} guard${count > 1 ? 's' : ''}?`,
+      message: action === 'delete'
+        ? `This will permanently remove ${count} guard account${count > 1 ? 's' : ''}. This cannot be undone.`
+        : `This will ${actionLabel} ${count} guard${count > 1 ? 's' : ''}.`,
+      variant: action === 'delete' ? 'danger' : 'warning',
+      confirmText: actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1),
+    });
+    if (!ok) return;
+
+    setBulkLoading(true);
+    let successes = 0;
+    let failures = 0;
+
+    for (const id of selectedIds) {
+      try {
+        if (action === 'delete') {
+          await deleteGuard(id);
+        } else {
+          await updateGuard(id, { account_status: action === 'activate' ? 'active' : 'inactive' });
+        }
+        successes++;
+      } catch {
+        failures++;
+      }
+    }
+
+    setBulkLoading(false);
+    setSelectedIds(new Set());
+
+    if (failures === 0) {
+      toast.success(`${successes} guard${successes > 1 ? 's' : ''} ${actionLabel}d successfully.`);
+    } else {
+      toast.error(`${successes} succeeded, ${failures} failed.`);
+    }
+    await loadGuards();
+  };
+
   const loadGuards = useCallback(async () => {
     try {
       const params = estateId ? { siteId: estateId } : {};
@@ -152,6 +235,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to load guards');
       logger.error('Failed to load guards:', e);
     } finally {
       setLoading(false);
@@ -204,7 +288,7 @@ export default function ManageGuards({ estateId }) {
         ...shiftForm,
         guard_id: Number(shiftForm.guard_id)
       });
-      setNotice('Shift created successfully.');
+      toast.success('Shift created successfully.');
       setShiftForm({
         guard_id: '',
         shift_type: 'morning',
@@ -217,6 +301,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to create shift');
       logger.error('Failed to create shift:', e);
     }
   };
@@ -242,12 +327,13 @@ export default function ManageGuards({ estateId }) {
         notes: editingShift.notes,
         status: editingShift.status
       });
-      setNotice('Shift updated successfully.');
+      toast.success('Shift updated successfully.');
       setEditingShift(null);
       await loadShifts();
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to update shift');
       logger.error('Failed to update shift:', e);
     }
   };
@@ -261,6 +347,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to load handover notes');
       logger.error('Failed to load handover notes:', e);
     }
   };
@@ -277,7 +364,7 @@ export default function ManageGuards({ estateId }) {
         shift_id: performanceForm.shift_id ? Number(performanceForm.shift_id) : null,
         rating: Number(performanceForm.rating)
       });
-      setNotice('Performance metric recorded.');
+      toast.success('Performance metric recorded.');
       setPerformanceForm({
         guard_id: '',
         shift_id: '',
@@ -288,6 +375,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to record performance');
       logger.error('Failed to record performance:', e);
     }
   };
@@ -304,6 +392,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to fetch performance data');
       logger.error('Failed to fetch performance:', e);
     }
   };
@@ -319,7 +408,7 @@ export default function ManageGuards({ estateId }) {
         guard_id: Number(equipmentForm.guard_id),
         shift_id: equipmentForm.shift_id ? Number(equipmentForm.shift_id) : null
       });
-      setNotice('Equipment checked out successfully.');
+      toast.success('Equipment checked out successfully.');
       setEquipmentForm({
         guard_id: '',
         shift_id: '',
@@ -331,6 +420,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to checkout equipment');
       logger.error('Failed to checkout equipment:', e);
     }
   };
@@ -344,11 +434,12 @@ export default function ManageGuards({ estateId }) {
         guard_id: checkout.guard_id,
         condition: 'good'
       });
-      setNotice('Equipment returned successfully.');
+      toast.success('Equipment returned successfully.');
       await loadEquipment();
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to return equipment');
       logger.error('Failed to return equipment:', e);
     }
   };
@@ -367,7 +458,7 @@ export default function ManageGuards({ estateId }) {
         certificate_number: trainingForm.certificate_number || null,
         notes: trainingForm.notes || null
       });
-      setNotice('Training record added.');
+      toast.success('Training record added.');
       setTrainingForm({
         guard_id: '',
         training_type: 'security_basics',
@@ -383,6 +474,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to add training record');
       logger.error('Failed to add training record:', e);
     }
   };
@@ -396,6 +488,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to load training records');
       logger.error('Failed to load training records:', e);
     }
   };
@@ -415,7 +508,7 @@ export default function ManageGuards({ estateId }) {
           account_status: guardForm.status
         };
         await updateGuard(editingGuard.id, payload);
-        setNotice('Guard updated successfully.');
+        toast.success('Guard updated successfully.');
       } else {
         // Create new guard
         await addGuard({
@@ -423,7 +516,7 @@ export default function ManageGuards({ estateId }) {
           first_name: guardForm.first_name,
           last_name: guardForm.last_name
         });
-        setNotice('Guard created successfully.');
+        toast.success('Guard created successfully.');
       }
 
       setShowGuardModal(false);
@@ -443,6 +536,7 @@ export default function ManageGuards({ estateId }) {
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast.error(msg || 'Failed to save guard');
     } finally {
       setLoading(false);
     }
@@ -464,16 +558,23 @@ export default function ManageGuards({ estateId }) {
   };
 
   const confirmDeleteGuard = async (guardId) => {
-    if (!window.confirm('Are you sure you want to remove this guard account? This action cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Remove Guard Account',
+      message: 'Are you sure you want to remove this guard account? This action cannot be undone.',
+      variant: 'danger',
+      confirmText: 'Remove',
+    });
+    if (!ok) return;
 
     setLoading(true);
     try {
       await deleteGuard(guardId);
-      setNotice('Guard removed successfully.');
+      toast.success('Guard removed successfully.');
       await loadGuards();
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast.error(msg || 'Failed to remove guard');
     } finally {
       setLoading(false);
     }
@@ -553,11 +654,49 @@ export default function ManageGuards({ estateId }) {
                 </Button>
               </div>
 
+              {/* Search */}
+              <div className="relative">
+                <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  placeholder="Search guards by name, email, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                />
+              </div>
+              {debouncedSearch && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Showing {filteredGuards.length} of {guards.length} guards
+                </p>
+              )}
+
+              {/* Bulk Action Bar */}
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-700 rounded-lg">
+                  <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selectedIds.size} selected</span>
+                  <Button variant="ghost" size="sm" onClick={() => handleBulkAction('activate')} disabled={bulkLoading}>Activate</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleBulkAction('deactivate')} disabled={bulkLoading}>Deactivate</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleBulkAction('delete')} disabled={bulkLoading}>Delete</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>Clear</Button>
+                  {bulkLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-600" />}
+                </div>
+              )}
+
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300">
                       <tr>
+                        <th className="px-3 py-4 w-10">
+                          <input
+                            type="checkbox"
+                            checked={filteredGuards.length > 0 && selectedIds.size === filteredGuards.length}
+                            onChange={toggleSelectAll}
+                            className="rounded border-gray-300 dark:border-slate-500"
+                            aria-label="Select all guards"
+                          />
+                        </th>
                         <th className="px-6 py-4 font-medium">Username</th>
                         <th className="px-6 py-4 font-medium">Contact</th>
                         <th className="px-6 py-4 font-medium">Status</th>
@@ -566,15 +705,29 @@ export default function ManageGuards({ estateId }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                      {guards.length === 0 ? (
+                      {filteredGuards.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-gray-300">
-                            No guards found. Add your first guard to get started.
+                          <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-gray-300">
+                            {debouncedSearch ? (
+                              <div>
+                                <p>No guards match your search.</p>
+                                <button onClick={() => setSearchTerm('')} className="text-brand-600 hover:underline text-sm mt-1">Clear search</button>
+                              </div>
+                            ) : 'No guards found. Add your first guard to get started.'}
                           </td>
                         </tr>
                       ) : (
-                        guards.map((guard) => (
-                          <tr key={guard.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+                        filteredGuards.map((guard) => (
+                          <tr key={guard.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition ${selectedIds.has(guard.id) ? 'bg-brand-50 dark:bg-brand-900/10' : ''}`}>
+                            <td className="px-3 py-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(guard.id)}
+                                onChange={() => toggleSelect(guard.id)}
+                                className="rounded border-gray-300 dark:border-slate-500"
+                                aria-label={`Select ${guard.username || 'guard'}`}
+                              />
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 font-bold">
@@ -1452,6 +1605,7 @@ export default function ManageGuards({ estateId }) {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

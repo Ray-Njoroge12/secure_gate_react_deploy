@@ -6,11 +6,14 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import Icon from './Icon';
-import Button from './Button';
-import SearchBar from './SearchBar';
-import FilterPanel from './FilterPanel';
+
 import { useSearch } from '../../hooks/useSearch';
+
+import Button from './Button';
+import FilterPanel from './FilterPanel';
+import Icon from './Icon';
+import SearchBar from './SearchBar';
+
 
 /**
  * SearchFilter component combining search and filtering functionality
@@ -51,7 +54,6 @@ const SearchFilter = memo(({
   placeholder = 'Search...',
   showAdvanced = false,
   enableSorting = true,
-  enablePagination = true,
   className = '',
   ...props
 }) => {

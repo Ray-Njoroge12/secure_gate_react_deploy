@@ -245,51 +245,31 @@ module.exports = {
         'xl': '1280px',
         '2xl': '1536px',
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideIn: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 200ms ease-out',
+        'slide-in': 'slideIn 200ms ease-out',
+        'scale-in': 'scaleIn 200ms ease-out',
+      },
     },
   },
   plugins: [
     // Custom utilities for design system
     function({ addUtilities }) {
       const newUtilities = {
-        '.touch-target': {
-          'min-height': '44px',
-          'min-width': '44px',
-        },
-        '.focus-ring': {
-          'outline': '2px solid #10b981',
-          'outline-offset': '2px',
-        },
-        '.text-balance': {
-          'text-wrap': 'balance',
-        },
-        '.scrollbar-hide': {
-          '-ms-overflow-style': 'none',
-          'scrollbar-width': 'none',
-          '&::-webkit-scrollbar': {
-            display: 'none',
-          },
-        },
-        '.shadow-brand': {
-          'box-shadow': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        },
-        '.rounded-smooth': {
-          'border-radius': '8px',
-        },
-        '.bg-app': {
-          'background-color': '#0f172a',
-        },
-        '.bg-panel': {
-          'background-color': '#1e293b',
-        },
-        '.text-app': {
-          'color': '#e2e8f0',
-        },
-        '.text-muted': {
-          'color': '#94a3b8',
-        },
-        '.border-app': {
-          'border-color': '#334155',
-        },
         '.bg-accent': {
           'background-color': '#10b981',
         },
@@ -408,19 +388,4 @@ module.exports = {
       addUtilities(newUtilities);
     },
   ],
-  // Add keyframes for animations
-  keyframes: {
-    fadeIn: {
-      '0%': { opacity: '0' },
-      '100%': { opacity: '1' },
-    },
-    slideIn: {
-      '0%': { transform: 'translateY(-10px)', opacity: '0' },
-      '100%': { transform: 'translateY(0)', opacity: '1' },
-    },
-    scaleIn: {
-      '0%': { transform: 'scale(0.95)', opacity: '0' },
-      '100%': { transform: 'scale(1)', opacity: '1' },
-    },
-  },
 };

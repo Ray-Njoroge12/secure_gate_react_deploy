@@ -5,9 +5,8 @@
  * @version 1.0.0
  */
 
-import { createStandardError, retryOperation, ERROR_TYPES } from './errorHandling';
-import { handleApiError } from './errorMapper';
 import { navigateToLogin } from './authNavigation';
+import { createStandardError, retryOperation, ERROR_TYPES } from './errorHandling';
 import logger from './logger';
 
 /**
@@ -91,7 +90,7 @@ export class ApiErrorHandler {
    * @param {Object} context - Call context
    * @returns {Promise} API call result
    */
-  async executeApiCall(apiCall, context) {
+  async executeApiCall(apiCall, _context) {
     if (!apiCall || typeof apiCall !== 'function') {
       throw new Error('API call function is required');
     }
@@ -353,7 +352,7 @@ export async function withErrorHandling(apiCall, context = {}, options = {}) {
  * @returns {Function} Wrapped API call with retry logic
  */
 export function createRetryableApiCall(apiCall, retryConfig = {}) {
-  return async (context = {}) => {
+  return async (_context = {}) => {
     return await retryOperation(
       () => apiCall(),
       {

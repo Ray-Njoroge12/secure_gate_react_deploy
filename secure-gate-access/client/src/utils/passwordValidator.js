@@ -174,4 +174,6 @@ class PasswordValidator {
 }
 
 // Export singleton instance
-export default new PasswordValidator();
+const passwordValidator = new PasswordValidator();
+
+export default passwordValidator;

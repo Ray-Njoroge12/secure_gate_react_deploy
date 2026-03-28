@@ -1,4 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
+
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import errorQueueService from '../../services/errorQueueService';
 

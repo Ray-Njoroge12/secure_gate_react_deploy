@@ -9,17 +9,18 @@
  * can take to resolve the issue.
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import * as fc from 'fast-check';
+import React from 'react';
+
+import HelpDeskModal from '../../components/error/HelpDeskModal';
+import ValidationFeedback from '../../components/error/ValidationFeedback';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 import errorManagementService, { 
   ERROR_CATEGORIES, 
   ERROR_SEVERITY, 
   RECOVERY_ACTIONS 
 } from '../../services/errorManagementService';
-import { useErrorHandler } from '../../hooks/useErrorHandler';
-import HelpDeskModal from '../../components/error/HelpDeskModal';
-import ValidationFeedback from '../../components/error/ValidationFeedback';
 import TestErrorBoundary from '../utils/ErrorBoundary';
 
 // Mock dependencies
@@ -50,7 +51,7 @@ jest.mock('utils/logger', () => ({
 
 // Test component that uses error handling
 const TestErrorComponent = ({ error, onRetry, showHelpDesk = false }) => {
-  const { handleError, handleSuccess } = useErrorHandler();
+  const { handleError } = useErrorHandler();
   const [helpDeskOpen, setHelpDeskOpen] = React.useState(showHelpDesk);
 
   React.useEffect(() => {

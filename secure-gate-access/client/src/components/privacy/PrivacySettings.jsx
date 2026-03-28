@@ -5,15 +5,14 @@
  * Implements GDPR/KDPA compliance with immediate setting application and consent management.
  */
 
-import React, { useState, useEffect } from 'react';
-import privacyService from '../../services/privacyService';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useCallback, useEffect, useState } from 'react';
+
 import { useNotification } from '../../contexts/NotificationContext';
+import privacyService from '../../services/privacyService';
 import './PrivacySettings.css';
 import Button from '../ui/Button';
 
 const PrivacySettings = () => {
-  const { user } = useAuth();
   const { showNotification } = useNotification();
 
   const [settings, setSettings] = useState(null);
@@ -24,11 +23,7 @@ const PrivacySettings = () => {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [selectedConsent, setSelectedConsent] = useState(null);
 
-  useEffect(() => {
-    loadPrivacyData();
-  }, []);
-
-  const loadPrivacyData = async () => {
+  const loadPrivacyData = useCallback(async () => {
     try {
       setLoading(true);
       const [settingsData, consentData] = await Promise.all([
@@ -44,7 +39,11 @@ const PrivacySettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    loadPrivacyData();
+  }, [loadPrivacyData]);
 
   const handleSettingChange = async (settingName, value) => {
     try {
@@ -173,11 +172,11 @@ const PrivacySettings = () => {
         )}
 
         {activeTab === 'data-rights' && (
-          <DataRightsTab user={user} />
+          <DataRightsTab />
         )}
 
         {activeTab === 'audit-trail' && (
-          <AuditTrailTab user={user} />
+          <AuditTrailTab />
         )}
       </div>
 
@@ -340,7 +339,7 @@ const ConsentManagementTab = ({ consentStatus, onConsentClick, saving }) => {
   );
 };
 
-const DataRightsTab = ({ user }) => {
+const DataRightsTab = () => {
   const [requestType, setRequestType] = useState('');
   const [requestDetails, setRequestDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -466,7 +465,7 @@ const DataRightsTab = ({ user }) => {
   );
 };
 
-const AuditTrailTab = ({ user }) => {
+const AuditTrailTab = () => {
   const [auditTrail, setAuditTrail] = useState([]);
   const [loading, setLoading] = useState(true);
 

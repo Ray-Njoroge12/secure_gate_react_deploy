@@ -173,13 +173,35 @@ CREATE TRIGGER update_notification_channel_performance_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Add indexes to existing notification_interactions table for better performance
-CREATE INDEX IF NOT EXISTS idx_notification_interactions_user_action ON notification_interactions(user_id, action);
-CREATE INDEX IF NOT EXISTS idx_notification_interactions_timestamp ON notification_interactions(timestamp DESC);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'notification_interactions'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notification_interactions_user_action ON notification_interactions(user_id, action);
+        CREATE INDEX IF NOT EXISTS idx_notification_interactions_timestamp ON notification_interactions(timestamp DESC);
+    ELSE
+        RAISE NOTICE 'notification_interactions table not present yet; index creation deferred to later migration';
+    END IF;
+END $$;
 
 -- Add indexes to existing notification_log table for intelligent features
-CREATE INDEX IF NOT EXISTS idx_notification_log_type_recipient ON notification_log(notification_type, recipient_id);
-CREATE INDEX IF NOT EXISTS idx_notification_log_sent_at ON notification_log(sent_at DESC) WHERE sent_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_notification_log_read_at ON notification_log(read_at DESC) WHERE read_at IS NOT NULL;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'notification_log'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notification_log_type_recipient ON notification_log(notification_type, recipient_id);
+        CREATE INDEX IF NOT EXISTS idx_notification_log_sent_at ON notification_log(sent_at DESC) WHERE sent_at IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_notification_log_read_at ON notification_log(read_at DESC) WHERE read_at IS NOT NULL;
+    ELSE
+        RAISE NOTICE 'notification_log table not present yet; index creation deferred to later migration';
+    END IF;
+END $$;
 
 -- Function to calculate notification relevance score
 CREATE OR REPLACE FUNCTION calculate_notification_relevance_score(
@@ -261,39 +283,62 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger for notification analytics
-DROP TRIGGER IF EXISTS trigger_update_notification_analytics ON notification_log;
-CREATE TRIGGER trigger_update_notification_analytics
-    AFTER UPDATE ON notification_log
-    FOR EACH ROW EXECUTE FUNCTION update_notification_analytics();
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'notification_log'
+    ) THEN
+        DROP TRIGGER IF EXISTS trigger_update_notification_analytics ON notification_log;
+        CREATE TRIGGER trigger_update_notification_analytics
+            AFTER UPDATE ON notification_log
+            FOR EACH ROW EXECUTE FUNCTION update_notification_analytics();
+    ELSE
+        RAISE NOTICE 'notification_log table not present yet; trigger creation deferred to later migration';
+    END IF;
+END $$;
 
 -- Create view for notification insights
-CREATE OR REPLACE VIEW notification_insights AS
-SELECT 
-    nl.notification_type,
-    nl.channel,
-    COUNT(*) as total_notifications,
-    COUNT(CASE WHEN nl.status = 'sent' THEN 1 END) as successful_deliveries,
-    COUNT(CASE WHEN nl.status = 'failed' THEN 1 END) as failed_deliveries,
-    COUNT(CASE WHEN nl.read_at IS NOT NULL THEN 1 END) as read_notifications,
-    ROUND(
-        COUNT(CASE WHEN nl.status = 'sent' THEN 1 END)::DECIMAL / 
-        NULLIF(COUNT(*), 0) * 100, 2
-    ) as delivery_rate,
-    ROUND(
-        COUNT(CASE WHEN nl.read_at IS NOT NULL THEN 1 END)::DECIMAL / 
-        NULLIF(COUNT(CASE WHEN nl.status = 'sent' THEN 1 END), 0) * 100, 2
-    ) as read_rate,
-    AVG(
-        CASE 
-            WHEN nl.sent_at IS NOT NULL AND nl.created_at IS NOT NULL 
-            THEN EXTRACT(EPOCH FROM (nl.sent_at - nl.created_at))
-            ELSE NULL 
-        END
-    ) as avg_delivery_time_seconds
-FROM notification_log nl
-WHERE nl.created_at >= CURRENT_DATE - INTERVAL '30 days'
-GROUP BY nl.notification_type, nl.channel
-ORDER BY total_notifications DESC;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'notification_log'
+    ) THEN
+        EXECUTE $view$
+            CREATE OR REPLACE VIEW notification_insights AS
+            SELECT
+                nl.notification_type,
+                nl.channel,
+                COUNT(*) as total_notifications,
+                COUNT(CASE WHEN nl.status = 'sent' THEN 1 END) as successful_deliveries,
+                COUNT(CASE WHEN nl.status = 'failed' THEN 1 END) as failed_deliveries,
+                COUNT(CASE WHEN nl.read_at IS NOT NULL THEN 1 END) as read_notifications,
+                ROUND(
+                    COUNT(CASE WHEN nl.status = 'sent' THEN 1 END)::DECIMAL /
+                    NULLIF(COUNT(*), 0) * 100, 2
+                ) as delivery_rate,
+                ROUND(
+                    COUNT(CASE WHEN nl.read_at IS NOT NULL THEN 1 END)::DECIMAL /
+                    NULLIF(COUNT(CASE WHEN nl.status = 'sent' THEN 1 END), 0) * 100, 2
+                ) as read_rate,
+                AVG(
+                    CASE
+                        WHEN nl.sent_at IS NOT NULL AND nl.created_at IS NOT NULL
+                        THEN EXTRACT(EPOCH FROM (nl.sent_at - nl.created_at))
+                        ELSE NULL
+                    END
+                ) as avg_delivery_time_seconds
+            FROM notification_log nl
+            WHERE nl.created_at >= CURRENT_DATE - INTERVAL '30 days'
+            GROUP BY nl.notification_type, nl.channel
+            ORDER BY total_notifications DESC
+        $view$;
 
--- Grant permissions
-GRANT SELECT ON notification_insights TO PUBLIC;
+        GRANT SELECT ON notification_insights TO PUBLIC;
+    ELSE
+        RAISE NOTICE 'notification_log table not present yet; notification_insights view creation deferred to later migration';
+    END IF;
+END $$;

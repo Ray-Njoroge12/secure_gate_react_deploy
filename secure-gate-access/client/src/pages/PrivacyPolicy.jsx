@@ -5,11 +5,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+
 import { Badge } from '../components/ui/Badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Icon } from '../components/ui/Icon';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import logger from '../utils/logger';
 
 const PrivacyPolicy = () => {
   const [dpoInfo, setDpoInfo] = useState(null);
@@ -30,7 +32,7 @@ const PrivacyPolicy = () => {
         setOdpcInfo(odpcResponse.data.data);
         setPolicyMetadata(metadataResponse.data.data);
       } catch (error) {
-        console.error('Failed to fetch compliance information:', error);
+        logger.error('Failed to fetch compliance information:', error);
         // Fallback to default values
         setDpoInfo({
           name: 'To Be Appointed',

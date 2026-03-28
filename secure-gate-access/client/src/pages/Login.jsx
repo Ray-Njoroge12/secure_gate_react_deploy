@@ -4,6 +4,9 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { FloatingLabelInput, GradientButton, GradientCard, Checkbox, Icon, Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
+import api from "../utils/apiClient";
+import { getRoleBasedRedirect } from '../utils/navigationFlow';
+import { encodeSession } from '../utils/sessionCrypto';
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -119,11 +122,17 @@ export default function LoginPage() {
 
       // MFA-008 FIX: Check if MFA is required
       if (result?.requiresMFA || result?.mfaRequired) {
+        const fromPath = location.state?.from?.pathname;
+        const returnUrl = fromPath && fromPath !== '/login' && fromPath !== '/forgot-password'
+          ? fromPath
+          : '/dashboard';
+
         // Store MFA session info for verification
-        sessionStorage.setItem('mfa_session', JSON.stringify({
+        sessionStorage.setItem('mfa_session', encodeSession({
           mfaSessionId: result.mfaSessionId,
           userId: result.userId,
           expiresIn: result.expiresIn || 300,
+          returnUrl,
           timestamp: Date.now()
         }));
 
@@ -132,7 +141,8 @@ export default function LoginPage() {
           state: {
             mfaSessionId: result.mfaSessionId,
             userId: result.userId,
-            expiresIn: result.expiresIn || 300
+            expiresIn: result.expiresIn || 300,
+            returnUrl
           }
         });
         return;
@@ -160,9 +170,7 @@ export default function LoginPage() {
             state: { 
               required: true, 
               message: `Multi-Factor Authentication is required for ${result.user.role === 'super_admin' ? 'Super Admin' : result.user.role.charAt(0).toUpperCase() + result.user.role.slice(1)} accounts.`,
-              redirectTo: from || (result.user.role === "super_admin" ? "/dashboard/super-admin" : 
-                                   result.user.role === "admin" ? "/dashboard/admin" :
-                                   result.user.role === "guard" ? "/dashboard/guard" : "/")
+              redirectTo: from || getRoleBasedRedirect(result.user.role)
             }
           });
           return;
@@ -172,11 +180,7 @@ export default function LoginPage() {
           navigate(from, { replace: true });
         } else {
           // Default redirects based on role
-          if (result.user.role === "super_admin") navigate("/dashboard/super-admin");
-          else if (result.user.role === "admin") navigate("/dashboard/admin");
-          else if (result.user.role === "guard") navigate("/dashboard/guard");
-          else if (result.user.role === "resident") navigate("/dashboard/resident");
-          else navigate("/");
+          navigate(getRoleBasedRedirect(result.user.role));
         }
       }, 100);
     } catch (err) {
@@ -263,9 +267,7 @@ export default function LoginPage() {
           state: { 
             required: true, 
             message: `Multi-Factor Authentication is required for ${user.role === 'super_admin' ? 'Super Admin' : user.role.charAt(0).toUpperCase() + user.role.slice(1)} accounts.`,
-            redirectTo: from || (user.role === "super_admin" ? "/dashboard/super-admin" : 
-                                user.role === "admin" ? "/dashboard/admin" :
-                                user.role === "guard" ? "/dashboard/guard" : "/")
+            redirectTo: from || getRoleBasedRedirect(user.role)
           }
         });
         return;
@@ -275,11 +277,7 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       } else {
         // Default redirects based on role
-        if (user.role === "super_admin") navigate("/dashboard/super-admin");
-        else if (user.role === "admin") navigate("/dashboard/admin");
-        else if (user.role === "guard") navigate("/dashboard/guard");
-        else if (user.role === "resident") navigate("/dashboard/resident");
-        else navigate("/");
+        navigate(getRoleBasedRedirect(user.role));
       }
     }
   }, [isAuthenticated, user, navigate, location]);

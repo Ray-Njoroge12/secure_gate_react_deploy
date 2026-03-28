@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-
 import logger from 'utils/logger';
+
 import { navigateToLogin } from '../utils/authNavigation';
+
 import Button from './ui/Button';
 
 /**

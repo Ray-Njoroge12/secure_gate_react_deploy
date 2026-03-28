@@ -3,7 +3,7 @@
  * Provides comprehensive API capabilities including authentication, rate limiting, and monitoring
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { MemoryStore } from 'express-rate-limit';
 import { Redis } from 'ioredis';
 import jwt from 'jsonwebtoken';
 
@@ -32,7 +32,7 @@ class APIEnhancementMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      store: new rateLimit.MemoryStore(),
+      store: new MemoryStore(),
       keyGenerator: (req) => {
         return req.ip || req.connection.remoteAddress;
       }
@@ -436,7 +436,37 @@ class APIEnhancementMiddleware {
     await this.redis.set(`api_key:${apiKey}`, JSON.stringify(client));
     await this.redis.set(`api_client:${client.id}`, JSON.stringify(client));
 
+    // Track in registry for listing
+    await this.redis.sadd('api_clients:registry', client.id);
+
     return client;
+  }
+
+  /**
+   * Get all API clients from registry
+   */
+  async getAllApiClients() {
+    try {
+      const ids = await this.redis.smembers('api_clients:registry');
+      if (!ids || ids.length === 0) return [];
+
+      const clients = await Promise.all(
+        ids.map(async (id) => {
+          const data = await this.redis.get(`api_client:${id}`);
+          return data ? JSON.parse(data) : null;
+        })
+      );
+      return clients.filter(Boolean).map(c => ({
+        id: c.id,
+        name: c.name,
+        tier: c.tier,
+        status: c.isRevoked ? 'revoked' : 'active',
+        createdAt: c.createdAt,
+        lastUsed: c.lastUsed || null
+      }));
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -455,6 +485,8 @@ class APIEnhancementMiddleware {
 
         // Remove from cache
         this.apiClients.delete(client.apiKey);
+
+        await this.redis.srem('api_clients:registry', clientId);
 
         return true;
       }
@@ -498,4 +530,6 @@ class APIEnhancementMiddleware {
   }
 }
 
-export default new APIEnhancementMiddleware();
+const apiEnhancementMiddleware = new APIEnhancementMiddleware();
+export { apiEnhancementMiddleware };
+export default apiEnhancementMiddleware;

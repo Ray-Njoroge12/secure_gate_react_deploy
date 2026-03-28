@@ -4,8 +4,9 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+
 import { Badge } from '../components/ui/Badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Icon } from '../components/ui/Icon';
 
 const TermsOfService = () => {

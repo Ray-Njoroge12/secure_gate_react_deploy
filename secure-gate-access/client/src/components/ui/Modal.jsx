@@ -6,7 +6,9 @@
  */
 
 import React, { useEffect, useRef, useId, useCallback } from 'react';
+
 import { createFocusTrap, focusManager } from '../../utils/focusManagement';
+
 import Icon from './Icon.jsx';
 
 /**

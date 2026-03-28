@@ -11,6 +11,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+
 import { useAccessibility } from '../../hooks/useAccessibility.js';
 
 const AccessibilityContext = createContext(undefined);

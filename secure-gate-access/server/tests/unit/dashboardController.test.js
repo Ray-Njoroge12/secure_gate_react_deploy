@@ -20,7 +20,7 @@ jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
 }));
 
 // Import after mocks
-const { getDashboardStats } = await import('../../src/controllers/dashboardController-optimized.js');
+const { getDashboardStats } = await import('../../src/controllers/dashboardController.js');
 
 describe('Dashboard Controller', () => {
   let mockReq;

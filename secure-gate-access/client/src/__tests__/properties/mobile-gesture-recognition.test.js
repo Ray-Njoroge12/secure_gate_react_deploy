@@ -8,10 +8,11 @@
  * the system should respond with the appropriate action and provide visual feedback
  */
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import fc from 'fast-check';
-import { GestureHandler, MobileNavigation, MobileLayoutManager } from '../../components/mobile/index.js';
+import React from 'react';
+
+import { GestureHandler, MobileNavigation } from '../../components/mobile/index.js';
 
 // Mock the enhanced responsive hook to simulate mobile environment
 jest.mock('../../hooks/useEnhancedResponsive.js', () => ({
@@ -87,7 +88,7 @@ describe('Property 18: Mobile Gesture Recognition', () => {
       swipeDirectionGen,
       swipeDistanceGen,
       fc.integer({ min: 100, max: 500 }),
-      (startPoint, direction, distance, duration) => {
+      (startPoint, direction, distance, _duration) => {
         const onSwipe = jest.fn();
         const { container } = render(
           <GestureHandler onSwipe={onSwipe} enableSwipe={true} swipeThreshold={30}>

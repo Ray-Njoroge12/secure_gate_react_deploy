@@ -11,7 +11,29 @@ import * as crypto from 'crypto';
 
 class UserService {
   constructor() {
-    this.db = db;
+    this._db = null;
+  }
+
+  get db() {
+    if (this._db) {
+      return this._db;
+    }
+
+    try {
+      if (db && typeof db.query === 'function') {
+        this._db = db;
+      }
+    } catch (error) {
+      if (!(error instanceof ReferenceError)) {
+        throw error;
+      }
+    }
+
+    return this._db;
+  }
+
+  set db(value) {
+    this._db = value;
   }
 
   redactEmail(email) {
@@ -270,13 +292,13 @@ class UserService {
    */
   async authenticateUser(username, password, estateId = null) {
     if (!username || !password) {
-      throw new Error('Username and password required');
+       throw new AppError('Username and password required', 400, 'INVALID_INPUT');
     }
 
     // Check if account is locked
-    const lockoutInfo = accountSecurity.getLockoutInfo(username);
+    const lockoutInfo = await accountSecurity.getLockoutInfo(username);
     if (lockoutInfo && lockoutInfo.isLocked) {
-      throw new Error(`Account is locked until ${lockoutInfo.lockedUntil}`);
+       throw new AppError(`Account is locked until ${lockoutInfo.lockedUntil}`, 403, 'ACCOUNT_LOCKED');
     }
 
     try {
@@ -294,8 +316,8 @@ class UserService {
 
       if (result.rows.length === 0) {
         // Record failed attempt even for non-existent users (security)
-        accountSecurity.recordFailedAttempt(username, 'unknown');
-        throw new Error('Invalid credentials');
+        await accountSecurity.recordFailedAttempt(username, 'unknown');
+        throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
 
       const user = result.rows[0];
@@ -305,8 +327,8 @@ class UserService {
 
       if (!isValid) {
         // Record failed attempt
-        accountSecurity.recordFailedAttempt(username, 'unknown');
-        throw new Error('Invalid credentials');
+        await accountSecurity.recordFailedAttempt(username, 'unknown');
+        throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
 
       // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
@@ -323,17 +345,20 @@ class UserService {
       }
 
       // Clear failed attempts on successful login
-      accountSecurity.clearFailedAttempts(username);
+      await accountSecurity.clearFailedAttempts(username);
 
       // Remove password hash from response
       delete user.password_hash;
 
       return user;
     } catch (error) {
-      if (error.message.includes('Invalid credentials')) {
-        throw error; // Re-throw authentication errors
+      if (error instanceof AppError) {
+        throw error;
       }
-      throw new Error(`Authentication failed: ${error.message}`);
+      if (error.message?.includes('Invalid credentials')) {
+        throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
+      }
+       throw new AppError(`Authentication failed: ${error.message}`, 500, 'AUTH_FAILED');
     }
   }
 

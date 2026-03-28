@@ -2,22 +2,12 @@
 import { createClient } from 'redis';
 import { EventEmitter } from 'events';
 import MemoryCacheService from './memoryCacheService.js';
+import logger from '../config/logger.js';
 
 /**
  * Redis Service for caching and session management
  * Provides high-performance caching with fallback mechanisms
  */
-const SHOULD_LOG_REDIS = process.env.NODE_ENV !== 'test' || process.env.DEBUG_REDIS === 'true';
-const logRedis = (...args) => {
-  if (SHOULD_LOG_REDIS) {
-    console.log(...args);
-  }
-};
-const warnRedis = (...args) => {
-  if (SHOULD_LOG_REDIS) {
-    console.warn(...args);
-  }
-};
 
 class RedisService extends EventEmitter {
   constructor() {
@@ -42,11 +32,11 @@ class RedisService extends EventEmitter {
    * Initialize Redis connection with fallback
    */
   async initialize() {
-    logRedis('[REDIS] Initializing Redis service...');
+    logger.debug('[REDIS] Initializing Redis service...');
 
     // Quick check if Redis is available
     if (!process.env.REDIS_URL && process.env.NODE_ENV === 'development') {
-      logRedis('[REDIS] No REDIS_URL configured in development, using memory cache');
+      logger.debug('[REDIS] No REDIS_URL configured in development, using memory cache');
       return this.initializeFallback();
     }
 
@@ -62,14 +52,14 @@ class RedisService extends EventEmitter {
 
       // Set up event handlers
       this.client.on('connect', () => {
-        logRedis('[REDIS] Connected to Redis server');
+        logger.debug('[REDIS] Connected to Redis server');
         this.isConnected = true;
         this.reconnectAttempts = 0;
       });
 
       this.client.on('error', (error) => {
         if (!this.usingFallback) {
-          warnRedis('[REDIS] Connection error:', error.message);
+          logger.warn('[REDIS] Connection error:', error.message);
           this.isConnected = false;
           // Don't attempt reconnection immediately, fall back
           this.initializeFallback();
@@ -77,7 +67,7 @@ class RedisService extends EventEmitter {
       });
 
       this.client.on('end', () => {
-        logRedis('[REDIS] Connection ended');
+        logger.debug('[REDIS] Connection ended');
         this.isConnected = false;
       });
 
@@ -89,12 +79,12 @@ class RedisService extends EventEmitter {
 
       await Promise.race([connectPromise, timeoutPromise]);
 
-      logRedis('✅ Redis connected successfully');
+      logger.debug('✅ Redis connected successfully');
       return true;
 
     } catch (error) {
-      warnRedis(`[REDIS] Redis connection failed: ${error.message}`);
-      logRedis('[REDIS] Falling back to memory cache...');
+      logger.warn(`[REDIS] Redis connection failed: ${error.message}`);
+      logger.debug('[REDIS] Falling back to memory cache...');
       return this.initializeFallback();
     }
   }
@@ -106,7 +96,7 @@ class RedisService extends EventEmitter {
     this.fallbackCache = new MemoryCacheService();
     this.usingFallback = true;
     this.isConnected = false;
-    logRedis('✅ Memory cache fallback initialized');
+    logger.debug('✅ Memory cache fallback initialized');
     return true;
   }
 
@@ -157,7 +147,7 @@ class RedisService extends EventEmitter {
    */
   async handleReconnection() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[REDIS] Max reconnection attempts reached, switching to fallback');
+      logger.error('[REDIS] Max reconnection attempts reached, switching to fallback');
       await this.initializeFallback();
       this.emit('maxReconnectAttemptsReached');
       return;
@@ -166,7 +156,7 @@ class RedisService extends EventEmitter {
     this.reconnectAttempts++;
     const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 10000);
 
-    console.log(`[REDIS] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+    logger.debug(`[REDIS] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
 
     setTimeout(async () => {
       try {
@@ -174,7 +164,7 @@ class RedisService extends EventEmitter {
           await this.client.connect();
         }
       } catch (error) {
-        console.error('[REDIS] Reconnection failed:', error.message);
+        logger.error('[REDIS] Reconnection failed:', error.message);
         this.handleReconnection();
       }
     }, delay);
@@ -189,7 +179,7 @@ class RedisService extends EventEmitter {
     }
 
     if (!this.isConnected) {
-      console.warn('[REDIS] Cache set failed - Redis not connected');
+      logger.warn('[REDIS] Cache set failed - Redis not connected');
       return false;
     }
 
@@ -197,10 +187,10 @@ class RedisService extends EventEmitter {
       this.cacheStats.operations++;
       const serializedValue = JSON.stringify(value);
       await this.client.setEx(key, ttlSeconds, serializedValue);
-      console.log(`[REDIS] Cache set: ${key} (TTL: ${ttlSeconds}s)`);
+      logger.debug(`[REDIS] Cache set: ${key} (TTL: ${ttlSeconds}s)`);
       return true;
     } catch (error) {
-      console.error('[REDIS] Cache set error:', error.message);
+      logger.error('[REDIS] Cache set error:', error.message);
       this.cacheStats.errors++;
       return false;
     }
@@ -215,7 +205,7 @@ class RedisService extends EventEmitter {
     }
 
     if (!this.isConnected) {
-      console.warn('[REDIS] Cache get failed - Redis not connected');
+      logger.warn('[REDIS] Cache get failed - Redis not connected');
       this.cacheStats.misses++;
       return null;
     }
@@ -226,15 +216,15 @@ class RedisService extends EventEmitter {
 
       if (value === null) {
         this.cacheStats.misses++;
-        console.log(`[REDIS] Cache miss: ${key}`);
+        logger.debug(`[REDIS] Cache miss: ${key}`);
         return null;
       }
 
       this.cacheStats.hits++;
-      console.log(`[REDIS] Cache hit: ${key}`);
+      logger.debug(`[REDIS] Cache hit: ${key}`);
       return JSON.parse(value);
     } catch (error) {
-      console.error('[REDIS] Cache get error:', error.message);
+      logger.error('[REDIS] Cache get error:', error.message);
       this.cacheStats.errors++;
       this.cacheStats.misses++;
       return null;
@@ -250,17 +240,17 @@ class RedisService extends EventEmitter {
     }
 
     if (!this.isConnected) {
-      console.warn('[REDIS] Cache delete failed - Redis not connected');
+      logger.warn('[REDIS] Cache delete failed - Redis not connected');
       return false;
     }
 
     try {
       this.cacheStats.operations++;
       const result = await this.client.del(key);
-      console.log(`[REDIS] Cache deleted: ${key} (found: ${result > 0})`);
+      logger.debug(`[REDIS] Cache deleted: ${key} (found: ${result > 0})`);
       return result > 0;
     } catch (error) {
-      console.error('[REDIS] Cache delete error:', error.message);
+      logger.error('[REDIS] Cache delete error:', error.message);
       this.cacheStats.errors++;
       return false;
     }
@@ -275,7 +265,7 @@ class RedisService extends EventEmitter {
     }
 
     if (!this.isConnected) {
-      console.warn('[REDIS] Cache pattern delete failed - Redis not connected');
+      logger.warn('[REDIS] Cache pattern delete failed - Redis not connected');
       return 0;
     }
 
@@ -287,10 +277,10 @@ class RedisService extends EventEmitter {
       }
 
       const result = await this.client.del(keys);
-      console.log(`[REDIS] Cache pattern deleted: ${pattern} (${result} keys)`);
+      logger.debug(`[REDIS] Cache pattern deleted: ${pattern} (${result} keys)`);
       return result;
     } catch (error) {
-      console.error('[REDIS] Cache pattern delete error:', error.message);
+      logger.error('[REDIS] Cache pattern delete error:', error.message);
       this.cacheStats.errors++;
       return 0;
     }
@@ -312,7 +302,7 @@ class RedisService extends EventEmitter {
       this.cacheStats.operations++;
       return await this.client.exists(key) > 0;
     } catch (error) {
-      console.error('[REDIS] Cache exists error:', error.message);
+      logger.error('[REDIS] Cache exists error:', error.message);
       this.cacheStats.errors++;
       return false;
     }
@@ -334,7 +324,7 @@ class RedisService extends EventEmitter {
       this.cacheStats.operations++;
       return await this.client.expire(key, ttlSeconds) > 0;
     } catch (error) {
-      console.error('[REDIS] Cache expire error:', error.message);
+      logger.error('[REDIS] Cache expire error:', error.message);
       this.cacheStats.errors++;
       return false;
     }
@@ -382,19 +372,19 @@ class RedisService extends EventEmitter {
   async close() {
     try {
       if (this.client && this.isConnected) {
-        console.log('[REDIS] Closing Redis connection...');
+        logger.debug('[REDIS] Closing Redis connection...');
         await this.client.quit();
         this.isConnected = false;
-        console.log('✅ Redis connection closed gracefully');
+        logger.debug('✅ Redis connection closed gracefully');
       }
 
       // Clean up fallback cache if using it
       if (this.usingFallback && this.fallbackCache) {
         this.fallbackCache.clear();
-        console.log('✅ Memory cache cleared');
+        logger.debug('✅ Memory cache cleared');
       }
     } catch (error) {
-      console.error('[REDIS] Error during shutdown:', error.message);
+      logger.error('[REDIS] Error during shutdown:', error.message);
     }
   }
 
@@ -439,7 +429,7 @@ class RedisService extends EventEmitter {
       const keys = await this.client.keys('token:blacklist:*');
       return keys.length;
     } catch (error) {
-      console.error('[REDIS] Error counting blacklisted tokens:', error.message);
+      logger.error('[REDIS] Error counting blacklisted tokens:', error.message);
       return 0;
     }
   }

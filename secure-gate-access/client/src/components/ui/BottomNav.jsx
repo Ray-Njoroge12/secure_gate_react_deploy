@@ -2,6 +2,7 @@
 // Mobile bottom navigation bar - Industry standard pattern (Glovo, Uber, Instagram)
 import React, { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+
 import Icon from './Icon';
 
 /**

@@ -8,13 +8,14 @@
  * without performance degradation when enabled.
  */
 
-import React from 'react';
-import fc from 'fast-check';
 import { jest } from '@jest/globals';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import fc from 'fast-check';
+import React from 'react';
+
 import { AccessibilityProvider, useAccessibilityContext } from '../../components/accessibility/AccessibilityProvider.jsx';
-import { KeyboardNavigation } from '../../components/accessibility/KeyboardNavigation.jsx';
 import { AccessibilitySettings } from '../../components/accessibility/AccessibilitySettings.jsx';
+import { KeyboardNavigation } from '../../components/accessibility/KeyboardNavigation.jsx';
 
 const mockRunAudit = jest.fn();
 const mockAnnounce = jest.fn();
@@ -90,7 +91,6 @@ const AccessibilityTestComponent = ({ config, onPerformanceMetric }) => {
     settings,
     updateSetting,
     announce,
-    createFocusTrap,
     checkColorContrast,
     validateTouchTarget,
     createAccessibleTimeout,
@@ -515,7 +515,7 @@ describe('Property Tests: Accessibility Compliance Preservation', () => {
             performanceMetrics[type] = time;
           };
 
-          const { container } = render(
+          render(
             <AccessibilityProvider settings={config}>
               <AccessibilityTestComponent 
                 config={config} 
@@ -567,7 +567,7 @@ describe('Property Tests: Accessibility Compliance Preservation', () => {
             performanceMetrics[type] = time;
           };
 
-          const { container } = render(
+          render(
             <AccessibilityProvider settings={{ ...config, highContrast: true }}>
               <AccessibilityTestComponent 
                 config={{ ...config, highContrast: true }} 
@@ -621,7 +621,7 @@ describe('Property Tests: Accessibility Compliance Preservation', () => {
             textScaling: Math.min(Math.max(config.textScaling, WCAG_STANDARDS.minTextScaling), WCAG_STANDARDS.maxTextScaling)
           };
 
-          const { container } = render(
+          render(
             <AccessibilityProvider settings={validConfig}>
               <AccessibilityTestComponent config={validConfig} />
             </AccessibilityProvider>
@@ -667,7 +667,7 @@ describe('Property Tests: Accessibility Compliance Preservation', () => {
             performanceMetrics[type] = time;
           };
 
-          const { container } = render(
+          render(
             <AccessibilityProvider settings={config}>
               <AccessibilityTestComponent 
                 config={config} 
@@ -838,7 +838,6 @@ describe('Property Tests: Accessibility Compliance Preservation', () => {
           // Test touch targets meet minimum size (Requirement 5.1)
           const buttons = container.querySelectorAll('button');
           buttons.forEach(button => {
-            const styles = window.getComputedStyle(button);
             // Note: In real implementation, these would be checked against actual rendered sizes
             expect(button).toBeInTheDocument();
           });

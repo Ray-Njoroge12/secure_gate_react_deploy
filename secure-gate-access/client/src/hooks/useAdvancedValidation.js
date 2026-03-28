@@ -10,10 +10,11 @@
  * - Accessibility compliance
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import logger from 'utils/logger';
+
+import { VALIDATION_MESSAGES } from '../constants/validation';
 import { debounce } from '../utils/validationRules';
-import { VALIDATION_TIMING, VALIDATION_MESSAGES } from '../constants/validation';
 
 // Validation result types
 export const VALIDATION_STATES = {
@@ -44,7 +45,6 @@ export const useAdvancedValidation = (initialValues = {}, options = {}) => {
     validateOnBlur = true,
     validateOnSubmit = true,
     debounceDelay = 300,
-    showValidationOnSubmit = true,
     enableCaching = true,
     enableCrossFieldValidation = true,
     validationMode = 'aggressive' // 'aggressive', 'conservative', 'lazy'

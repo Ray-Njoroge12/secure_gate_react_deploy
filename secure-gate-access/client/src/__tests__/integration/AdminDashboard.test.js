@@ -1,13 +1,47 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import AdminDashboard from '../../pages/admin/AdminDashboard';
-import { useSearchData } from '../../hooks/useSearch';
+import React from 'react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+
 import { AuthContext } from '../../contexts/AuthContext';
+import { useSearchData } from '../../hooks/useSearch';
+import AdminDashboard from '../../pages/admin/AdminDashboard';
 
 // Mock hooks
 jest.mock('../../hooks/useSearch', () => ({
     useSearchData: jest.fn()
+}));
+
+jest.mock('../../i18n/index.js', () => ({
+    useI18n: () => ({
+        t: (key) => {
+            const labels = {
+                'dashboard.admin.overview': 'Overview',
+                'dashboard.admin.approvals': 'User Approvals',
+                'dashboard.admin.guards': 'Guards',
+                'dashboard.admin.residents': 'Residents',
+                'dashboard.admin.visitorLogs': 'Visitor Logs',
+                'dashboard.admin.reports': 'Reports',
+                'dashboard.admin.auditLogs': 'Audit Logs',
+                'dashboard.admin.settings': 'Settings',
+                'dashboard.admin.adminDashboard': 'Admin Dashboard',
+                'dashboard.admin.administrator': 'Administrator',
+                'dashboard.admin.superAdmin': 'Super Admin',
+                'dashboard.common.securityHelp': 'Security Help',
+                'dashboard.admin.quickActions': 'Quick Actions',
+                'dashboard.admin.approveUsers': 'Approve Users',
+                'dashboard.admin.viewTodaysVisitors': 'View Today\'s Visitors',
+                'dashboard.admin.manageResidents': 'Manage Residents',
+                'dashboard.admin.generateReports': 'Generate Reports',
+                'dashboard.admin.notificationSystemStatus': 'Notification System Status',
+                'dashboard.admin.activeJobs': 'Active Jobs',
+                'dashboard.admin.completed': 'Completed',
+                'dashboard.admin.failed': 'Failed',
+                'dashboard.admin.userAccountApprovals': 'User Account Approvals'
+            };
+
+            return labels[key] || key;
+        }
+    })
 }));
 
 // Mock API service to prevent actual calls
@@ -31,7 +65,7 @@ jest.mock('../../components/admin/AnnouncementsAdmin', () => () => null);
 jest.mock('../../components/common/OfflineIndicator', () => () => null);
 jest.mock('../../pages/admin/ManageGuards', () => () => null);
 jest.mock('../../pages/admin/ManageResidents', () => () => null);
-jest.mock('../../pages/admin/VisitorLog', () => () => null);
+jest.mock('../../pages/admin/VisitorLog', () => () => <div data-testid="visitor-log">Visitor Log</div>);
 jest.mock('../../pages/admin/Reports', () => () => null);
 jest.mock('../../pages/admin/Settings', () => () => null);
 
@@ -64,10 +98,10 @@ describe('AdminDashboard Navigation', () => {
         logout: jest.fn()
     };
 
-    const renderWithAuth = (component) => {
+    const renderWithAuth = (component, initialEntries = ['/']) => {
         return render(
             <AuthContext.Provider value={mockAuth}>
-                <MemoryRouter>
+                <MemoryRouter initialEntries={initialEntries}>
                     {component}
                 </MemoryRouter>
             </AuthContext.Provider>
@@ -87,6 +121,20 @@ describe('AdminDashboard Navigation', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('user-approvals')).toBeInTheDocument();
+        });
+        expect(screen.queryByTestId('admin-metrics')).not.toBeInTheDocument();
+    });
+
+    test('renders visitors tab content when route param tab=visitors is used', async () => {
+        renderWithAuth(
+            <Routes>
+                <Route path="/dashboard/admin/:tab?" element={<AdminDashboard />} />
+            </Routes>,
+            ['/dashboard/admin/visitors']
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('visitor-log')).toBeInTheDocument();
         });
         expect(screen.queryByTestId('admin-metrics')).not.toBeInTheDocument();
     });

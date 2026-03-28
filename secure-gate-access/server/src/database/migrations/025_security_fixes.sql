@@ -21,28 +21,39 @@ END $$;
 -- ============================================================================
 -- SEC-002: Add hashed PIN column for recurring passes
 -- ============================================================================
--- Add the hash column if it doesn't exist
-ALTER TABLE recurring_passes 
-    ADD COLUMN IF NOT EXISTS access_pin_hash TEXT;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'recurring_passes'
+    ) THEN
+        -- Add the hash column if it doesn't exist
+        ALTER TABLE recurring_passes
+            ADD COLUMN IF NOT EXISTS access_pin_hash TEXT;
 
--- Add failed attempts tracking for rate limiting
-ALTER TABLE recurring_passes 
-    ADD COLUMN IF NOT EXISTS failed_pin_attempts INTEGER DEFAULT 0;
+        -- Add failed attempts tracking for rate limiting
+        ALTER TABLE recurring_passes
+            ADD COLUMN IF NOT EXISTS failed_pin_attempts INTEGER DEFAULT 0;
 
-ALTER TABLE recurring_passes 
-    ADD COLUMN IF NOT EXISTS last_failed_attempt TIMESTAMP;
+        ALTER TABLE recurring_passes
+            ADD COLUMN IF NOT EXISTS last_failed_attempt TIMESTAMP;
 
-ALTER TABLE recurring_passes 
-    ADD COLUMN IF NOT EXISTS pin_locked_until TIMESTAMP;
+        ALTER TABLE recurring_passes
+            ADD COLUMN IF NOT EXISTS pin_locked_until TIMESTAMP;
 
--- Create index for PIN validation lookups (on hash)
-CREATE INDEX IF NOT EXISTS idx_recurring_passes_pin_hash 
-    ON recurring_passes(access_pin_hash) 
-    WHERE access_pin_hash IS NOT NULL;
+        -- Create index for PIN validation lookups (on hash)
+        CREATE INDEX IF NOT EXISTS idx_recurring_passes_pin_hash
+            ON recurring_passes(access_pin_hash)
+            WHERE access_pin_hash IS NOT NULL;
 
-COMMENT ON COLUMN recurring_passes.access_pin_hash IS 'Argon2 hash of the 6-digit PIN';
-COMMENT ON COLUMN recurring_passes.failed_pin_attempts IS 'Count of consecutive failed PIN attempts';
-COMMENT ON COLUMN recurring_passes.pin_locked_until IS 'Timestamp until which PIN validation is locked';
+        COMMENT ON COLUMN recurring_passes.access_pin_hash IS 'Argon2 hash of the 6-digit PIN';
+        COMMENT ON COLUMN recurring_passes.failed_pin_attempts IS 'Count of consecutive failed PIN attempts';
+        COMMENT ON COLUMN recurring_passes.pin_locked_until IS 'Timestamp until which PIN validation is locked';
+    ELSE
+        RAISE NOTICE 'SEC-002: recurring_passes table not present yet; deferred fixes run in later migration';
+    END IF;
+END $$;
 
 -- Note: The plaintext access_pin column will be dropped after migration 
 -- of existing data to hashed format (handled by application code)
@@ -61,11 +72,22 @@ ALTER TABLE visitors
     ADD COLUMN IF NOT EXISTS encryption_version VARCHAR(10) DEFAULT 'v1';
 
 -- Add encrypted columns for recurring passes
-ALTER TABLE recurring_passes 
-    ADD COLUMN IF NOT EXISTS visitor_id_number_encrypted TEXT;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'recurring_passes'
+    ) THEN
+        ALTER TABLE recurring_passes
+            ADD COLUMN IF NOT EXISTS visitor_id_number_encrypted TEXT;
 
-ALTER TABLE recurring_passes 
-    ADD COLUMN IF NOT EXISTS visitor_phone_encrypted TEXT;
+        ALTER TABLE recurring_passes
+            ADD COLUMN IF NOT EXISTS visitor_phone_encrypted TEXT;
+    ELSE
+        RAISE NOTICE 'SEC-005: recurring_passes encrypted fields deferred to later migration';
+    END IF;
+END $$;
 
 -- Create index for encrypted lookups (will use deterministic encryption for search)
 CREATE INDEX IF NOT EXISTS idx_visitors_phone_encrypted 
@@ -93,84 +115,35 @@ CREATE INDEX IF NOT EXISTS idx_qr_codes_status_expires
 -- ============================================================================
 -- Create security events log for PIN brute force tracking
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS pin_validation_attempts (
-    id SERIAL PRIMARY KEY,
-    pass_id INTEGER REFERENCES recurring_passes(id) ON DELETE CASCADE,
-    ip_address INET,
-    success BOOLEAN NOT NULL,
-    attempt_method VARCHAR(20) DEFAULT 'pin', -- 'pin' or 'qr'
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_pin_attempts_pass_id 
-    ON pin_validation_attempts(pass_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_pin_attempts_ip 
-    ON pin_validation_attempts(ip_address, created_at DESC);
-
--- ============================================================================
--- Function to check if PIN is locked (rate limiting helper)
--- ============================================================================
-CREATE OR REPLACE FUNCTION is_pin_locked(p_pass_id INTEGER)
-RETURNS BOOLEAN AS $$
-DECLARE
-    v_locked_until TIMESTAMP;
+DO $$
 BEGIN
-    SELECT pin_locked_until INTO v_locked_until 
-    FROM recurring_passes 
-    WHERE id = p_pass_id;
-    
-    RETURN v_locked_until IS NOT NULL AND v_locked_until > NOW();
-END;
-$$ LANGUAGE plpgsql;
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'recurring_passes'
+    ) THEN
+        CREATE TABLE IF NOT EXISTS pin_validation_attempts (
+            id SERIAL PRIMARY KEY,
+            pass_id INTEGER REFERENCES recurring_passes(id) ON DELETE CASCADE,
+            ip_address INET,
+            success BOOLEAN NOT NULL,
+            attempt_method VARCHAR(20) DEFAULT 'pin', -- 'pin' or 'qr'
+            user_agent TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
 
--- ============================================================================
--- Function to record failed PIN attempt and lock if threshold reached
--- ============================================================================
-CREATE OR REPLACE FUNCTION record_failed_pin_attempt(
-    p_pass_id INTEGER,
-    p_ip_address INET DEFAULT NULL
-)
-RETURNS TABLE(is_locked BOOLEAN, lock_duration_minutes INTEGER, attempts INTEGER) AS $$
-DECLARE
-    v_attempts INTEGER;
-    v_max_attempts INTEGER := 5;
-    v_lock_duration INTERVAL := INTERVAL '15 minutes';
-BEGIN
-    -- Increment failed attempts
-    UPDATE recurring_passes 
-    SET failed_pin_attempts = COALESCE(failed_pin_attempts, 0) + 1,
-        last_failed_attempt = NOW()
-    WHERE id = p_pass_id
-    RETURNING failed_pin_attempts INTO v_attempts;
-    
-    -- Lock if max attempts reached
-    IF v_attempts >= v_max_attempts THEN
-        UPDATE recurring_passes 
-        SET pin_locked_until = NOW() + v_lock_duration
-        WHERE id = p_pass_id;
-        
-        RETURN QUERY SELECT TRUE, 15, v_attempts;
+        CREATE INDEX IF NOT EXISTS idx_pin_attempts_pass_id
+            ON pin_validation_attempts(pass_id, created_at DESC);
+
+        CREATE INDEX IF NOT EXISTS idx_pin_attempts_ip
+            ON pin_validation_attempts(ip_address, created_at DESC);
     ELSE
-        RETURN QUERY SELECT FALSE, 0, v_attempts;
+        RAISE NOTICE 'SEC-002: pin validation audit table deferred to later migration';
     END IF;
-END;
-$$ LANGUAGE plpgsql;
+END $$;
 
--- ============================================================================
--- Function to reset failed PIN attempts on successful validation
--- ============================================================================
-CREATE OR REPLACE FUNCTION reset_pin_attempts(p_pass_id INTEGER)
-RETURNS VOID AS $$
-BEGIN
-    UPDATE recurring_passes 
-    SET failed_pin_attempts = 0,
-        last_failed_attempt = NULL,
-        pin_locked_until = NULL
-    WHERE id = p_pass_id;
-END;
-$$ LANGUAGE plpgsql;
+-- Recurring-pass security helper functions are deferred to a later migration
+-- after recurring_passes is guaranteed to exist in fresh CI databases.
 
 -- ============================================================================
 -- Audit logging for security-sensitive operations

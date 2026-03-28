@@ -2,6 +2,9 @@
 // Frontend service for comprehensive preference management with real-time updates
 
 import apiClient from '../utils/apiClient.js';
+import logger from '../utils/logger';
+
+const PREFERENCES_API_BASE = '/api/preferences';
 
 /**
  * Default preference structure matching backend
@@ -99,7 +102,7 @@ class PreferenceService {
    */
   async getUserPreferences() {
     try {
-      const response = await apiClient.get('/preferences');
+      const response = await apiClient.get(PREFERENCES_API_BASE);
       
       if (response.data?.success) {
         const preferences = response.data.data.preferences;
@@ -114,7 +117,7 @@ class PreferenceService {
       
       throw new Error('Failed to retrieve preferences');
     } catch (error) {
-      console.error('Error getting user preferences:', error);
+      logger.error('Error getting user preferences:', error);
       
       // Return defaults if API fails
       return {
@@ -133,7 +136,7 @@ class PreferenceService {
       // Optimistic update - notify listeners immediately
       this.notifyListeners({ preferences, version, isDefault: false });
       
-      const response = await apiClient.put('/preferences', {
+      const response = await apiClient.put(PREFERENCES_API_BASE, {
         preferences,
         version
       });
@@ -161,7 +164,7 @@ class PreferenceService {
       
       throw new Error('Failed to update preferences');
     } catch (error) {
-      console.error('Error updating user preferences:', error);
+      logger.error('Error updating user preferences:', error);
       
       // Revert optimistic update by fetching current state
       await this.getUserPreferences();
@@ -175,7 +178,7 @@ class PreferenceService {
    */
   async getAllUserPreferences() {
     try {
-      const response = await apiClient.get('/preferences/all');
+      const response = await apiClient.get(`${PREFERENCES_API_BASE}/all`);
       
       if (response.data?.success) {
         return response.data.data.preferences;
@@ -183,7 +186,7 @@ class PreferenceService {
       
       throw new Error('Failed to retrieve all preferences');
     } catch (error) {
-      console.error('Error getting all user preferences:', error);
+      logger.error('Error getting all user preferences:', error);
       throw error;
     }
   }
@@ -193,7 +196,7 @@ class PreferenceService {
    */
   async createPreferenceBackup(backupName) {
     try {
-      const response = await apiClient.post('/preferences/backup', {
+      const response = await apiClient.post(`${PREFERENCES_API_BASE}/backup`, {
         backupName
       });
       
@@ -203,7 +206,7 @@ class PreferenceService {
       
       throw new Error('Failed to create backup');
     } catch (error) {
-      console.error('Error creating preference backup:', error);
+      logger.error('Error creating preference backup:', error);
       throw error;
     }
   }
@@ -213,7 +216,7 @@ class PreferenceService {
    */
   async restorePreferenceBackup(backupName) {
     try {
-      const response = await apiClient.post(`/preferences/backup/${backupName}/restore`);
+      const response = await apiClient.post(`${PREFERENCES_API_BASE}/backup/${backupName}/restore`);
       
       if (response.data?.success) {
         const preferences = response.data.data.preferences;
@@ -230,7 +233,7 @@ class PreferenceService {
       
       throw new Error('Failed to restore backup');
     } catch (error) {
-      console.error('Error restoring preference backup:', error);
+      logger.error('Error restoring preference backup:', error);
       throw error;
     }
   }
@@ -240,7 +243,7 @@ class PreferenceService {
    */
   async listPreferenceBackups() {
     try {
-      const response = await apiClient.get('/preferences/backups');
+      const response = await apiClient.get(`${PREFERENCES_API_BASE}/backups`);
       
       if (response.data?.success) {
         return response.data.data.backups;
@@ -248,7 +251,7 @@ class PreferenceService {
       
       throw new Error('Failed to list backups');
     } catch (error) {
-      console.error('Error listing preference backups:', error);
+      logger.error('Error listing preference backups:', error);
       throw error;
     }
   }
@@ -258,7 +261,7 @@ class PreferenceService {
    */
   async resetToDefaults() {
     try {
-      const response = await apiClient.post('/preferences/reset');
+      const response = await apiClient.post(`${PREFERENCES_API_BASE}/reset`);
       
       if (response.data?.success) {
         const preferences = response.data.data.preferences;
@@ -275,7 +278,7 @@ class PreferenceService {
       
       throw new Error('Failed to reset preferences');
     } catch (error) {
-      console.error('Error resetting preferences:', error);
+      logger.error('Error resetting preferences:', error);
       throw error;
     }
   }
@@ -301,7 +304,7 @@ class PreferenceService {
       
       return await this.updateUserPreferences(updatedPreferences, current.version);
     } catch (error) {
-      console.error(`Error updating ${category} preferences:`, error);
+      logger.error(`Error updating ${category} preferences:`, error);
       throw error;
     }
   }
@@ -334,7 +337,7 @@ class PreferenceService {
       try {
         listener(data);
       } catch (error) {
-        console.error('Error in preference listener:', error);
+        logger.error('Error in preference listener:', error);
       }
     });
   }
@@ -355,7 +358,7 @@ class PreferenceService {
           this.cache.set('current', data);
           this.notifyListeners(data);
         } catch (error) {
-          console.error('Error syncing preferences across tabs:', error);
+          logger.error('Error syncing preferences across tabs:', error);
         }
       }
     });
@@ -370,7 +373,7 @@ class PreferenceService {
         // Remove the item immediately to trigger storage event
         localStorage.removeItem('preferences-sync');
       } catch (error) {
-        console.error('Error broadcasting preferences to other tabs:', error);
+        logger.error('Error broadcasting preferences to other tabs:', error);
       }
     };
   }

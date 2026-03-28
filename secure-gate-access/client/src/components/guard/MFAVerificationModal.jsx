@@ -7,10 +7,12 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { Card, Button } from '../ui';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import api from '../../utils/apiClient';
 import logger from '../../utils/logger';
+import { Card, Button } from '../ui';
 
 // Icons
 const ShieldIcon = () => (
@@ -200,19 +202,14 @@ export default function MFAVerificationModal({
     try {
       setIsVerifying(true);
 
-      const res = await fetch('/api/mfa/verify-operation', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: verificationCode,
-          operation: operation?.id,
-          operationDetails,
-          reason: reason.trim() || undefined
-        })
+      const res = await api.post('/api/mfa/verify-operation', {
+        code: verificationCode,
+        operation: operation?.id,
+        operationDetails,
+        reason: reason.trim() || undefined
       });
 
-      const json = await res.json();
+      const json = res.data;
 
       if (!json.success) {
         if (json.rateLimited) {

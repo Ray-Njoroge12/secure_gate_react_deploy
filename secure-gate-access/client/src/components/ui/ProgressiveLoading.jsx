@@ -11,7 +11,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import logger from 'utils/logger';
+
 import { useLoadingStates, LOADING_TYPES } from '../../hooks/useLoadingStates';
+
 import AdvancedSkeleton from './AdvancedSkeleton';
 
 // Loading phases for progressive loading

@@ -1,7 +1,9 @@
 // client/src/components/ui/FlowNavigation.jsx
 import React, { useEffect, useRef } from 'react';
-import Button from './Button.jsx';
+
 import { useNavigationFlow } from '../../utils/navigationFlow';
+
+import Button from './Button.jsx';
 
 const FlowNavigation = ({ 
   currentPath, 

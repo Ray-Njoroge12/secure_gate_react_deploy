@@ -19,11 +19,11 @@
     "postinstall": "cd server && npm install",
     "test:parallel": "node tests/parallel-test-runner.mjs",
     "test:puppeteer": "node tests/parallel-test-runner.mjs --puppeteer",
-    "test:playwright": "node tests/parallel-test-runner.mjs --playwright",
+    "test:playwright": "npm --prefix .. run test:playwright:root",
     "test:puppeteer:ui-ux": "node tests/puppeteer/ui-ux-tests.js",
     "test:all": "node tests/parallel-test-runner.mjs --all"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.11.0"
   }
 }

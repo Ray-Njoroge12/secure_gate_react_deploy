@@ -36,7 +36,9 @@ describe('Security & Compliance Integration Tests', () => {
         .set('Cookie', `token=${residentToken}`)
         .send({
           name: 'Test Visitor',
-          phone: '+254700123456'
+          phone: '+254700123456',
+          dateOfVisit: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          purpose: 'Security test visit'
         });
 
       // If CSRF is enforced, should fail without token
@@ -262,13 +264,15 @@ describe('Security & Compliance Integration Tests', () => {
         await request(app)
           .post('/api/auth/login')
           .send({
-            email: 'resident@test.com',
+            email: testUsers.resident.email,
             password: 'testpass123'
           });
 
         const { dbManager } = await import('../../src/database/db.enhanced.js');
         const auditLogs = await dbManager.query(
-          `SELECT * FROM audit_logs WHERE action LIKE '%login%' ORDER BY created_at DESC LIMIT 1`
+          `SELECT * FROM audit_logs
+           WHERE resource = '/api/auth/login' AND action = 'data_change'
+           ORDER BY created_at DESC LIMIT 1`
         );
 
         expect(auditLogs.rows.length).toBeGreaterThan(0);
@@ -480,7 +484,7 @@ describe('Security & Compliance Integration Tests', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'nonexistent@test.com',
+          email: `nonexistent-${Date.now()}@test.com`,
           password: 'wrongpassword'
         });
 
@@ -512,7 +516,12 @@ describe('Security & Compliance Integration Tests', () => {
       const authResponse = await request(app)
         .post('/api/visitors')
         .set('Cookie', `token=${residentToken}`)
-        .send({ name: 'Secure Visitor', phone: '+254700123456' });
+        .send({
+          name: 'Secure Visitor',
+          phone: '+254700123456',
+          dateOfVisit: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          purpose: 'Security lifecycle test'
+        });
 
       expect(authResponse.status).toBe(201);
 

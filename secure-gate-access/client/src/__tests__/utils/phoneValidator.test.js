@@ -3,8 +3,9 @@
  * Tests for phone number validation utility
  */
 
-import phoneValidator from '../../utils/phoneValidator';
 import { parsePhoneNumber } from 'libphonenumber-js';
+
+import phoneValidator from '../../utils/phoneValidator';
 
 jest.mock('libphonenumber-js', () => ({
   parsePhoneNumber: jest.fn(),
@@ -198,8 +199,6 @@ describe('Safaricom/Kenya Specific', () => {
       country: 'KE'
     });
   });
-
-  const validKenyanPrefixes = ['07', '01', '+2547', '+2541'];
 
   test.each([
     ['0712345678', true],  // Safaricom

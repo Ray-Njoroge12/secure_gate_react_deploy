@@ -32,22 +32,43 @@ class TokenService {
 
     this.accessTokenSecret = process.env.JWT_SECRET;
     this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-    this.accessTokenExpiry = process.env.JWT_EXPIRY || '15m'; // Short-lived access tokens
-    this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d'; // Longer refresh token lifetime
+    // Support both JWT_EXPIRES_IN (documented) and JWT_EXPIRY (legacy) env var names
+    this.accessTokenExpiry = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRY || '15m';
+    // Support both JWT_REFRESH_EXPIRES_IN (documented) and JWT_REFRESH_EXPIRY (legacy) env var names
+    this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRES_IN || process.env.JWT_REFRESH_EXPIRY || '7d';
 
     // Initialize Redis for persistent token blacklist
     this.redisService = new RedisService();
     this.redisInitialized = false;
     this.initializeRedis();
 
-    // Database-backed refresh token store
-    this.db = dbManager;
+    // Database-backed refresh token store (resolved lazily to avoid import-cycle TDZ)
+    this.db = null;
 
     // Fallback in-memory storage if Redis unavailable (not recommended for production)
     this.revokedTokens = new Set(); // Fallback only
 
     // Add support for secret rotation
     this.previousSecret = process.env.JWT_PREVIOUS_SECRET; // For graceful rotation
+  }
+
+  getDatabaseManager() {
+    if (this.db) {
+      return this.db;
+    }
+
+    try {
+      if (dbManager && typeof dbManager.query === 'function') {
+        this.db = dbManager;
+      }
+    } catch (error) {
+      if (!(error instanceof ReferenceError)) {
+        throw error;
+      }
+      return null;
+    }
+
+    return this.db;
   }
 
   /**
@@ -325,11 +346,10 @@ class TokenService {
    * Revoke token (add JTI to blacklist) - Uses Redis for persistence
    */
   async revokeToken(token) {
-    try {
-      // Decode without verification to get JTI
-      const decoded = jwt.decode(token);
-      const jti = decoded?.jti || token;
+    const decoded = jwt.decode(token);
+    const jti = decoded?.jti || token;
 
+    try {
       // Calculate TTL based on token expiry
       let ttlSeconds = 900; // Default 15 minutes
       if (decoded?.exp) {
@@ -351,7 +371,6 @@ class TokenService {
       }
     } catch (error) {
       // If Redis fails, use database for persistence AND in-memory for speed
-      const jti = decoded?.jti || token;
       await this.revokeTokenInDatabase(jti);
       this.revokedTokens.add(jti);
     }
@@ -361,11 +380,12 @@ class TokenService {
    * Store refresh token in database (for production persistence)
    */
   async storeRefreshToken(jti, userId, token, expiresAt, metadata = {}) {
-    if (!this.db) return;
+    const db = this.getDatabaseManager();
+    if (!db) return;
 
     try {
       const tokenHash = this.hashToken(token);
-      await this.db.query(
+      await db.query(
         `INSERT INTO refresh_tokens (user_id, token, expires_at, user_agent, ip_address)
          VALUES ($1, $2, $3, $4, $5)`,
         [userId, tokenHash, expiresAt, metadata.userAgent || null, metadata.ipAddress || null]
@@ -379,9 +399,10 @@ class TokenService {
    * Revoke token in database
    */
   async revokeTokenInDatabase(jti) {
-    if (this.db) {
+    const db = this.getDatabaseManager();
+    if (db) {
       try {
-        await this.db.query(
+        await db.query(
           'INSERT INTO revoked_tokens (jti, revoked_at) VALUES ($1, NOW()) ON CONFLICT (jti) DO NOTHING',
           [jti]
         );
@@ -395,9 +416,10 @@ class TokenService {
    * Check if token is revoked in database
    */
   async isTokenRevokedInDatabase(jti) {
-    if (this.db) {
+    const db = this.getDatabaseManager();
+    if (db) {
       try {
-        const result = await this.db.query(
+        const result = await db.query(
           'SELECT 1 FROM revoked_tokens WHERE jti = $1',
           [jti]
         );
@@ -414,11 +436,12 @@ class TokenService {
    * Retrieve refresh token record from database
    */
   async getRefreshTokenRecord(token) {
-    if (!this.db) return null;
+    const db = this.getDatabaseManager();
+    if (!db) return null;
 
     try {
       const tokenHash = this.hashToken(token);
-      const result = await this.db.query(
+      const result = await db.query(
         `SELECT id, user_id, token, expires_at, is_revoked, revoked_at, last_used_at
          FROM refresh_tokens
          WHERE token = $1`,
@@ -434,11 +457,12 @@ class TokenService {
    * Mark refresh token as used
    */
   async markRefreshTokenUsed(token) {
-    if (!this.db) return;
+    const db = this.getDatabaseManager();
+    if (!db) return;
 
     try {
       const tokenHash = this.hashToken(token);
-      await this.db.query(
+      await db.query(
         'UPDATE refresh_tokens SET last_used_at = NOW() WHERE token = $1',
         [tokenHash]
       );
@@ -451,11 +475,12 @@ class TokenService {
    * Revoke refresh token (database-backed)
    */
   async revokeRefreshToken(token) {
-    if (!this.db) return;
+    const db = this.getDatabaseManager();
+    if (!db) return;
 
     try {
       const tokenHash = this.hashToken(token);
-      await this.db.query(
+      await db.query(
         `UPDATE refresh_tokens
          SET is_revoked = TRUE, revoked_at = NOW()
          WHERE token = $1`,
@@ -470,10 +495,11 @@ class TokenService {
    * Revoke all user tokens
    */
   async revokeUserTokens(userId) {
-    if (this.db) {
+    const db = this.getDatabaseManager();
+    if (db) {
       try {
         // Move all user's refresh tokens to revoked list
-        await this.db.query(`
+        await db.query(`
           INSERT INTO revoked_tokens (jti, revoked_at) 
           SELECT jti, NOW() FROM refresh_tokens 
           WHERE user_id = $1 AND expires_at > NOW()
@@ -481,7 +507,7 @@ class TokenService {
         `, [userId]);
 
         // Delete refresh tokens for user
-        await this.db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
+        await db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
 
         // Security: Tokens revoked for user - audit logged only
       } catch (error) {
@@ -568,7 +594,9 @@ class PasswordService {
     });
 
     if (passwordHashingWarning) {
-      console.log(passwordHashingWarning);
+      process.emitWarning(passwordHashingWarning, {
+        code: 'PASSWORD_HASHING_PROFILE_WARNING'
+      });
     }
   }
 
@@ -656,36 +684,92 @@ class PasswordService {
 
 /**
  * Account Security Service
+ *
+ * Stores login lockout state in Redis (with in-memory hot-cache and
+ * automatic memory-only fallback when Redis is unavailable).
+ * This makes lockouts durable across server restarts and consistent
+ * across multiple application instances.
  */
 class AccountSecurityService {
   constructor() {
-    this.failedAttempts = new Map(); // userId -> { count, lastAttempt, lockedUntil }
+    // Per-instance hot-cache to avoid a Redis round-trip on every request
+    this.localCache = new Map();
     this.maxFailedAttempts = 5;
-    this.lockoutDuration = 15 * 60 * 1000; // 15 minutes
+    this.lockoutDurationMs = 15 * 60 * 1000; // 15 minutes
+    this.resetWindowMs = 60 * 60 * 1000;     // reset count after 1 hour of inactivity
+    // Redis TTL covers the full reset window + lockout period
+    this.redisTTLSeconds = 90 * 60;
+
+    this.redisService = new RedisService();
+    this.redisService.initialize().catch(() => {
+      // Redis unavailable — lockouts will be memory-only for this instance.
+      // Acceptable degraded mode: brute-force window is per-process, not cluster-wide.
+    });
+  }
+
+  _key(identifier) {
+    return `auth:lockout:${identifier}`;
+  }
+
+  async _getRecord(identifier) {
+    const now = Date.now();
+    const cached = this.localCache.get(identifier);
+    // Use local cache if it is still within the active reset window
+    if (cached && (now - cached.lastAttempt) < this.resetWindowMs) {
+      return cached;
+    }
+
+    try {
+      const stored = await this.redisService.get(this._key(identifier));
+      if (stored) {
+        this.localCache.set(identifier, stored);
+        return stored;
+      }
+    } catch {
+      // Redis read error — fall through to local cache only
+    }
+    return null;
+  }
+
+  async _setRecord(identifier, record) {
+    this.localCache.set(identifier, record);
+    try {
+      await this.redisService.set(this._key(identifier), record, this.redisTTLSeconds);
+    } catch {
+      // Redis write error — record is in local cache only for this instance
+    }
+  }
+
+  async _deleteRecord(identifier) {
+    this.localCache.delete(identifier);
+    try {
+      await this.redisService.delete(this._key(identifier));
+    } catch {
+      // Redis delete error — record will expire via TTL
+    }
   }
 
   /**
    * Record failed login attempt
    */
-  recordFailedAttempt(userId, ip) {
+  async recordFailedAttempt(identifier, ip) {
     const now = Date.now();
-    const current = this.failedAttempts.get(userId) || { count: 0, lastAttempt: 0, lockedUntil: 0 };
+    const current = await this._getRecord(identifier) || { count: 0, lastAttempt: 0, lockedUntil: 0 };
 
-    // Reset if last attempt was more than 1 hour ago
-    if (now - current.lastAttempt > 60 * 60 * 1000) {
+    // Reset count if the last attempt was outside the reset window
+    if (now - current.lastAttempt > this.resetWindowMs) {
       current.count = 0;
     }
 
     current.count++;
     current.lastAttempt = now;
 
-    // Lock account if too many attempts
     if (current.count >= this.maxFailedAttempts) {
-      current.lockedUntil = now + this.lockoutDuration;
+      current.lockedUntil = now + this.lockoutDurationMs;
       // Security: Account locked due to failed attempts - audit logged only
     }
 
-    this.failedAttempts.set(userId, current);
+    await this._setRecord(identifier, current);
 
     return {
       isLocked: current.lockedUntil > now,
@@ -697,26 +781,24 @@ class AccountSecurityService {
   /**
    * Clear failed attempts on successful login
    */
-  clearFailedAttempts(userId) {
-    this.failedAttempts.delete(userId);
+  async clearFailedAttempts(identifier) {
+    await this._deleteRecord(identifier);
   }
 
   /**
    * Check if account is locked
    */
-  isAccountLocked(userId) {
-    const current = this.failedAttempts.get(userId);
+  async isAccountLocked(identifier) {
+    const current = await this._getRecord(identifier);
     if (!current) return false;
-
-    const now = Date.now();
-    return current.lockedUntil > now;
+    return current.lockedUntil > Date.now();
   }
 
   /**
    * Get lockout info
    */
-  getLockoutInfo(userId) {
-    const current = this.failedAttempts.get(userId);
+  async getLockoutInfo(identifier) {
+    const current = await this._getRecord(identifier);
     if (!current) return null;
 
     const now = Date.now();

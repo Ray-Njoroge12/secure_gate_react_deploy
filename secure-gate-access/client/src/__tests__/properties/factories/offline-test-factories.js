@@ -14,8 +14,12 @@ export const visitorGenerator = fc.record({
   id: fc.integer({ min: 1, max: 100000 }),
   name: fc.string({ minLength: 1, maxLength: 60 }).filter((value) => value.trim().length > 0),
   status: fc.constantFrom(...VISITOR_STATUSES),
-  createdAt: fc.date().map((date) => date.toISOString()),
-  updatedAt: fc.date().map((date) => date.toISOString())
+  createdAt: fc
+    .date({ min: new Date('2000-01-01T00:00:00.000Z'), max: new Date('2100-01-01T00:00:00.000Z'), noInvalidDate: true })
+    .map((date) => date.toISOString()),
+  updatedAt: fc
+    .date({ min: new Date('2000-01-01T00:00:00.000Z'), max: new Date('2100-01-01T00:00:00.000Z'), noInvalidDate: true })
+    .map((date) => date.toISOString())
 });
 
 export const actionGenerator = fc.record({
@@ -38,7 +42,7 @@ export const preferencesGenerator = fc.record({
 
 export const networkStateGenerator = fc.record({
   isOnline: fc.boolean(),
-  reliability: fc.float({ min: 0, max: 1 }),
+  reliability: fc.float({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true }),
   connectionType: fc.constantFrom(...CONNECTION_TYPES)
 });
 

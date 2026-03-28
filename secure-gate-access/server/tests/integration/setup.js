@@ -77,6 +77,8 @@ export async function setupTestDatabase() {
       'DELETE FROM recurring_passes WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR visitor_name LIKE \'Test%\'',
       // Delete visitors created by test users OR with test names/emails
       'DELETE FROM visitors WHERE host_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR name LIKE \'Test%\' OR email LIKE \'%@test.com\'',
+      // Delete active sessions for test users
+      'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Finally: Delete test users
       'DELETE FROM users WHERE email LIKE \'%@test.com\''
     ];
@@ -131,6 +133,8 @@ export async function cleanupTestDatabase() {
       'DELETE FROM recurring_passes WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR visitor_name LIKE \'Test%\'',
       // Delete visitors created by test users OR with test names/emails
       'DELETE FROM visitors WHERE host_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR name LIKE \'Test%\' OR email LIKE \'%@test.com\'',
+      // Delete active sessions for test users
+      'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Finally: Delete test users
       'DELETE FROM users WHERE email LIKE \'%@test.com\''
     ];

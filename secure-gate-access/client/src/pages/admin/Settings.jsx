@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
-import { useTheme } from "../../contexts/ThemeContext";
-import { useAuth } from "../../contexts/AuthContext";
-import api from "../../utils/apiClient";
+
 import NotificationSettings from "../../components/settings/NotificationSettings";
+import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useToast } from "../../contexts/ToastContext";
+import api from "../../utils/apiClient";
 import "../../styles.css";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { theme, resolvedTheme } = useTheme();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'super_admin';
@@ -18,6 +21,7 @@ export default function Settings() {
   const [mfaStatus, setMfaStatus] = useState({ mfaEnabled: false, mfaRequired: false, loading: true, error: null });
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
+  const [disableToken, setDisableToken] = useState('');
   const [disableLoading, setDisableLoading] = useState(false);
   const [disableError, setDisableError] = useState('');
   const [showRegenModal, setShowRegenModal] = useState(false);
@@ -59,17 +63,29 @@ export default function Settings() {
       setDisableError('Password is required');
       return;
     }
+    if (!disableToken) {
+      setDisableError('Authenticator code is required');
+      return;
+    }
     setDisableLoading(true);
     setDisableError('');
     try {
-      const response = await api.post('/api/mfa/disable', { password: disablePassword });
+      const response = await api.post('/api/mfa/disable', { password: disablePassword, token: disableToken });
       if (response.data?.success) {
         setShowDisableModal(false);
         setDisablePassword('');
+        setDisableToken('');
         await fetchMfaStatus();
       }
     } catch (err) {
-      setDisableError(err.response?.data?.message || 'Failed to disable MFA');
+      const errorCode = err.response?.data?.code;
+      if (errorCode === 'INVALID_PASSWORD') {
+        setDisableError('Incorrect password. Please try again.');
+      } else if (errorCode === 'INVALID_TOTP') {
+        setDisableError('Invalid authenticator code or backup code. Please try again.');
+      } else {
+        setDisableError(err.response?.data?.message || 'Failed to disable MFA');
+      }
     } finally {
       setDisableLoading(false);
     }
@@ -162,25 +178,20 @@ export default function Settings() {
   const handleSave = (section, e) => {
     e.preventDefault();
     // API call to save settings
-    fetch('/api/admin/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        section, data:
-          section === 'system' ? systemSettings :
-            section === 'security' ? securitySettings :
-              emailSettings
-      })
+    api.put('/api/admin/settings', {
+      section, data:
+        section === 'system' ? systemSettings :
+          section === 'security' ? securitySettings :
+            emailSettings
     })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert(`${section} settings saved successfully!`);
+      .then(res => {
+        if (res.data.success) {
+          toast.success({ title: `${section} settings saved successfully!` });
         } else {
-          alert('Failed to save settings');
+          toast.error({ title: 'Failed to save settings' });
         }
       })
-      .catch(() => alert('Failed to save settings'));
+      .catch(() => toast.error({ title: 'Failed to save settings' }));
   };
 
   // Define all tabs - some are Super Admin only
@@ -226,16 +237,16 @@ export default function Settings() {
     setComplianceError(null);
     try {
       const [dpoResponse, odpcResponse, metadataResponse, retentionResponse] = await Promise.all([
-        fetch("/api/privacy/dpo"),
-        fetch("/api/privacy/odpc-registration"),
-        fetch("/api/privacy/policy-metadata"),
-        fetch("/api/privacy/retention-policy")
+        api.get("/api/privacy/dpo"),
+        api.get("/api/privacy/odpc-registration"),
+        api.get("/api/privacy/policy-metadata"),
+        api.get("/api/privacy/retention-policy")
       ]);
 
-      const dpoData = await dpoResponse.json();
-      const odpcData = await odpcResponse.json();
-      const metadataData = await metadataResponse.json();
-      const retentionData = await retentionResponse.json();
+      const dpoData = dpoResponse.data;
+      const odpcData = odpcResponse.data;
+      const metadataData = metadataResponse.data;
+      const retentionData = retentionResponse.data;
 
       if (!dpoData.success || !odpcData.success || !metadataData.success || !retentionData.success) {
         throw new Error("Failed to load compliance settings");
@@ -286,39 +297,32 @@ export default function Settings() {
 
   const handleComplianceUpdate = async (section, payload) => {
     try {
-      const response = await fetch(`/api/admin/compliance/${section}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const response = await api.put(`/api/admin/compliance/${section}`, payload);
 
-      const data = await response.json();
+      const data = response.data;
       if (!data.success) {
         throw new Error(data.message || "Failed to update compliance settings");
       }
 
       await loadComplianceData();
-      alert("Compliance settings updated successfully!");
+      toast.success({ title: 'Compliance settings updated successfully!' });
     } catch (error) {
-      alert(error.message || "Failed to update compliance settings");
+      toast.error({ title: error.message || 'Failed to update compliance settings' });
     }
   };
 
   const handleComplianceReview = async () => {
     setReviewRunning(true);
     try {
-      const response = await fetch("/api/admin/compliance/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await response.json();
+      const response = await api.post("/api/admin/compliance/review");
+      const data = response.data;
       if (!data.success) {
         throw new Error(data.message || "Failed to run compliance review");
       }
       await loadComplianceData();
-      alert("Compliance review completed.");
+      toast.success({ title: 'Compliance review completed.' });
     } catch (error) {
-      alert(error.message || "Failed to run compliance review");
+      toast.error({ title: error.message || 'Failed to run compliance review' });
     } finally {
       setReviewRunning(false);
     }
@@ -520,7 +524,7 @@ export default function Settings() {
                             </Button>
                             <Button
                               variant="danger"
-                              onClick={() => { setShowDisableModal(true); setDisablePassword(''); setDisableError(''); }}
+                              onClick={() => { setShowDisableModal(true); setDisablePassword(''); setDisableToken(''); setDisableError(''); }}
                             >
                               <Icon name="ShieldOff" className="w-4 h-4 mr-1.5" />
                               Disable MFA
@@ -551,11 +555,26 @@ export default function Settings() {
                           id="disable-mfa-password"
                           type="password"
                           value={disablePassword}
-                          onChange={(e) => setDisablePassword(e.target.value)}
+                          onChange={(e) => { setDisablePassword(e.target.value); setDisableError(''); }}
                           className={inputClass}
                           placeholder="Your account password"
                           autoFocus
                         />
+                      </div>
+                      <div>
+                        <label htmlFor="disable-mfa-token" className={labelClass}>Enter your current authenticator code to confirm</label>
+                        <input
+                          id="disable-mfa-token"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={8}
+                          value={disableToken}
+                          onChange={(e) => { setDisableToken(e.target.value.replace(/[^a-zA-Z0-9]/g, '')); setDisableError(''); }}
+                          className={`${inputClass} max-w-[240px] tracking-widest text-center text-lg`}
+                          placeholder="000000"
+                          autoComplete="one-time-code"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You can also use a backup code</p>
                       </div>
                       {disableError && (
                         <p className="text-sm text-red-600 dark:text-red-400" role="alert">{disableError}</p>
@@ -564,7 +583,7 @@ export default function Settings() {
                         <Button variant="secondary" onClick={() => setShowDisableModal(false)} disabled={disableLoading}>
                           Cancel
                         </Button>
-                        <Button variant="danger" onClick={handleDisableMFA} disabled={disableLoading || !disablePassword} aria-busy={disableLoading}>
+                        <Button variant="danger" onClick={handleDisableMFA} disabled={disableLoading || !disablePassword || !disableToken} aria-busy={disableLoading}>
                           {disableLoading ? 'Disabling...' : 'Disable MFA'}
                         </Button>
                       </div>

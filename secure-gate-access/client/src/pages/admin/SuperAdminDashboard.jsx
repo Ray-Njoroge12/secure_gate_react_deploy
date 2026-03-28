@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
 import AddEstateModal from '../../components/modals/AddEstateModal';
 import DecommissionEstateModal from '../../components/modals/DecommissionEstateModal';
 import { GradientCard } from '../../components/ui';
@@ -8,11 +9,12 @@ import Button from '../../components/ui/Button';
 import GradientButton from '../../components/ui/GradientButton';
 import Icon from '../../components/ui/Icon';
 import api from '../../utils/apiClient';
+import { handleApiError } from '../../utils/errorMapper';
+import logger from '../../utils/logger.js';
 
 export default function SuperAdminDashboard() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
     
     // Decommission Modal State
@@ -38,8 +40,16 @@ export default function SuperAdminDashboard() {
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'health'
     const [systemMetrics, setSystemMetrics] = useState(null);
 
+    // MFA gate and error message state
+    const [mfaGateMessage, setMfaGateMessage] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
+
     // MFA Status Badge
     const [mfaBadge, setMfaBadge] = useState({ enabled: null, required: false });
+
+    const showApiErrorToast = useCallback((title, message) => {
+        notificationService.error(title, message);
+    }, []);
 
     useEffect(() => {
         const fetchMfaBadge = async () => {
@@ -51,8 +61,9 @@ export default function SuperAdminDashboard() {
                         required: response.data.data.mfaRequired
                     });
                 }
-            } catch {
-                // Silently fail — badge is non-critical
+            } catch (err) {
+                logger.warn('MFA badge fetch failed', err);
+                setMfaBadge({ enabled: null, required: false });
             }
         };
         fetchMfaBadge();
@@ -61,10 +72,8 @@ export default function SuperAdminDashboard() {
     const fetchDashboardData = useCallback(async () => {
         try {
             setLoading(true);
+            setMfaGateMessage(null);
             setErrorMessage(null);
-            const headers = {
-                'Content-Type': 'application/json'
-            };
 
             // 1. Get Overview Stats
             const overviewRes = await api.get('/api/admin/super-admin/overview', { headers });
@@ -93,7 +102,8 @@ export default function SuperAdminDashboard() {
                 if (overviewData.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
             } else {
                 setHealth({ status: 'error', text: 'API Error' });
-                setErrorMessage('Unable to load platform overview. Please retry.');
+                setErrorMessage('Unable to load platform overview.');
+                showApiErrorToast('Overview Load Failed', 'Unable to load platform overview. Please retry.');
             }
 
             // 2. Get Estates List
@@ -118,7 +128,7 @@ export default function SuperAdminDashboard() {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
-    const fetchSystemMetrics = async () => {
+    const fetchSystemMetrics = useCallback(async () => {
         try {
             const res = await api.get('/api/admin/super-admin/system/metrics', {
                 headers: { 'Content-Type': 'application/json' }
@@ -128,22 +138,21 @@ export default function SuperAdminDashboard() {
             console.error('Failed to fetch system metrics:', err);
             setErrorMessage(err?.message || 'Failed to refresh system metrics.');
         }
-    };
+    }, [showApiErrorToast]);
 
     useEffect(() => {
-        if (activeTab === 'health') {
+        if (activeTab === 'health' && !errorMessage && !mfaGateMessage) {
             fetchSystemMetrics();
             const interval = setInterval(fetchSystemMetrics, 30000); // Poll every 30s
             return () => clearInterval(interval);
         }
-    }, [activeTab]);
+    }, [activeTab, errorMessage, mfaGateMessage, fetchSystemMetrics]);
 
 
 
     const handleSearch = async () => {
         if (!searchQuery || searchQuery.length < 3) return;
         setIsSearching(true);
-        setErrorMessage(null);
         try {
             const res = await api.get('/api/admin/super-admin/users/search', {
                 headers: { 'Content-Type': 'application/json' },
@@ -182,7 +191,48 @@ export default function SuperAdminDashboard() {
     };
 
     const handleStatusChange = async (estateId, newStatus) => {
-        if (!window.confirm(`Are you sure you want to ${newStatus} this estate?`)) return;
+        const estate = estates.find(e => e.id === estateId);
+        const estateName = estate?.name || 'this estate';
+
+        let confirmMessage;
+        let confirmTitle;
+        let confirmVariant = 'warning';
+        let confirmButtonText = 'Confirm';
+
+        if (newStatus === 'suspended') {
+            // Fetch estate stats for impact summary
+            let impactInfo = '';
+            try {
+                const statsRes = await api.get(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/stats`);
+                const estateStats = statsRes.data?.data || statsRes.data;
+                const userCount = estateStats?.totalUsers || estateStats?.activeUsers || 'unknown number of';
+                const pendingInvites = estateStats?.pendingInvites || estateStats?.activeInvites || 0;
+                impactInfo = `\n\n• ${userCount} active users will lose access immediately\n• ${pendingInvites} pending visitor invites will be invalidated\n• All active sessions will be terminated`;
+            } catch {
+                impactInfo = '';
+            }
+
+            confirmTitle = `Suspend "${estateName}"`;
+            confirmMessage = `All users in this estate will lose access immediately. Active sessions will be terminated.${impactInfo}\n\nAre you sure you want to suspend this estate?`;
+            confirmVariant = 'danger';
+            confirmButtonText = 'Suspend Estate';
+        } else if (newStatus === 'active') {
+            confirmTitle = `Activate "${estateName}"`;
+            confirmMessage = `This will restore access for all users in "${estateName}". Are you sure?`;
+            confirmButtonText = 'Activate';
+        } else {
+            confirmTitle = 'Change Estate Status';
+            confirmMessage = `Are you sure you want to change "${estateName}" to ${newStatus}?`;
+            confirmButtonText = 'Confirm';
+        }
+
+        const confirmed = await confirm({
+            variant: confirmVariant,
+            title: confirmTitle,
+            message: confirmMessage,
+            confirmText: confirmButtonText
+        });
+        if (!confirmed) return;
 
         try {
             // Optimistic update
@@ -194,6 +244,7 @@ export default function SuperAdminDashboard() {
                 }
             });
 
+            notificationService.success('Status Updated', `Estate "${estateName}" is now ${newStatus}.`);
             // Refresh real data to confirm
             fetchDashboardData();
         } catch (err) {
@@ -225,27 +276,6 @@ export default function SuperAdminDashboard() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
-                {errorMessage && (
-                    <div
-                        role="alert"
-                        className="flex items-start justify-between gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg"
-                    >
-                        <div className="flex items-center gap-2 text-sm">
-                            <Icon name="AlertTriangle" className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                            <span>{errorMessage}</span>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setErrorMessage(null)}
-                            className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200"
-                            aria-label="Dismiss error message"
-                        >
-                            Dismiss
-                        </Button>
-                    </div>
-                )}
-
                 {/* Welcome Section */}
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Platform Overview</h2>
@@ -289,6 +319,27 @@ export default function SuperAdminDashboard() {
                         </GradientButton>
                     </div>
                 </div>
+
+                {mfaGateMessage && (
+                    <GradientCard className="p-4 border border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">{mfaGateMessage}</p>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => navigate('/mfa/setup', { state: { required: true } })}
+                            >
+                                Complete MFA Setup
+                            </Button>
+                        </div>
+                    </GradientCard>
+                )}
+
+                {!mfaGateMessage && errorMessage && (
+                    <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                        {errorMessage}
+                    </div>
+                )}
 
                 {/* Tabs */}
                 <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Dashboard sections">
@@ -658,6 +709,8 @@ export default function SuperAdminDashboard() {
                     estate={estateToDecommission}
                     onSuccess={handleDecommissionSuccess}
                 />
+
+                <ConfirmDialog {...dialogProps} />
         </div>
     );
 }

@@ -1,9 +1,10 @@
 // FormWizard component for multi-step forms with progressive disclosure
 import React, { useState, useEffect, useRef } from 'react';
 import logger from 'utils/logger';
-import { Button, Card, Badge } from './index';
-import Icon from './Icon.jsx';
+
 import { useNavigation } from '../../contexts/NavigationContext';
+
+import { Button, Card, Badge } from './index';
 
 const FormWizard = ({
   steps = [],

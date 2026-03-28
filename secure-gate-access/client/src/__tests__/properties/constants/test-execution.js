@@ -6,6 +6,9 @@
  */
 
 // Environment detection
+// Import deep freeze utility
+import { deepFreeze } from './immutable-utils.js';
+
 const getEnvironment = () => {
   if (typeof process !== 'undefined' && process.env) {
     return process.env.NODE_ENV || 'development';
@@ -230,9 +233,6 @@ function getTestExecutionConfig() {
   const overrides = ENVIRONMENT_OVERRIDES[effectiveEnvironment] || {};
   return mergeConfig(BASE_CONFIG, overrides);
 }
-
-// Import deep freeze utility
-import { deepFreeze } from './immutable-utils.js';
 
 // Export the configuration with deep freezing
 export const TEST_EXECUTION_CONFIG = deepFreeze(getTestExecutionConfig());

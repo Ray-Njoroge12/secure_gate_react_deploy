@@ -261,6 +261,117 @@ const getEstateInfo = async (req, res) => {
 
 export { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus, getEstateInfo };
 
+// ==================== SITE MANAGEMENT ====================
+
+const SITE_FIELDS = `
+  id, name, status,
+  COALESCE(code, slug, 'ESTATE-' || id) AS code,
+  COALESCE(description, '') AS description,
+  COALESCE(address, '') AS address,
+  COALESCE(city, '') AS city,
+  COALESCE(timezone, 'Africa/Nairobi') AS timezone,
+  COALESCE(logo_url, '') AS logo_url,
+  COALESCE(primary_color, '#667eea') AS primary_color,
+  COALESCE(secondary_color, '#764ba2') AS secondary_color,
+  COALESCE(subscription_tier, 'basic') AS subscription_tier,
+  (status = 'active') AS active,
+  created_at, updated_at
+`;
+
+/**
+ * GET /api/admin/sites
+ * Returns all estates for super_admin; single estate for admin.
+ */
+export const getSites = async (req, res) => {
+  try {
+    let result;
+    if (req.user.role === 'super_admin') {
+      result = await dbManager.query(`SELECT ${SITE_FIELDS} FROM estates ORDER BY created_at DESC`);
+    } else {
+      if (!req.user.estate_id) return _respondError(res, 400, 'Estate context missing');
+      result = await dbManager.query(`SELECT ${SITE_FIELDS} FROM estates WHERE id = $1`, [req.user.estate_id]);
+    }
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    _respondError(res, 500, 'Failed to fetch sites', error);
+  }
+};
+
+/**
+ * POST /api/admin/sites
+ * Create a new estate (super_admin only).
+ */
+export const createSite = async (req, res) => {
+  if (req.user.role !== 'super_admin') return _respondError(res, 403, 'Super Admin access required');
+  try {
+    const { name, code, description, address, city, timezone, logo_url, primary_color, secondary_color, subscription_tier } = req.body;
+    if (!name) return _respondError(res, 400, 'Estate name is required');
+    if (!code) return _respondError(res, 400, 'Estate code is required');
+
+    const existing = await dbManager.query('SELECT id FROM estates WHERE LOWER(name) = LOWER($1)', [name.trim()]);
+    if (existing.rowCount > 0) return _respondError(res, 409, 'An estate with that name already exists');
+
+    const slug = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const result = await dbManager.query(
+      `INSERT INTO estates (name, slug, code, description, address, city, timezone, logo_url, primary_color, secondary_color, subscription_tier, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active') RETURNING id, name, code, status`,
+      [name.trim(), slug, code.toUpperCase(), description || '', address || '', city || '',
+       timezone || 'Africa/Nairobi', logo_url || '', primary_color || '#667eea',
+       secondary_color || '#764ba2', subscription_tier || 'basic']
+    );
+    res.status(201).json({ success: true, data: result.rows[0], message: 'Estate created successfully' });
+  } catch (error) {
+    if (error.code === '23505') return _respondError(res, 409, 'Estate code or name already exists');
+    _respondError(res, 500, 'Failed to create site', error);
+  }
+};
+
+/**
+ * PUT /api/admin/sites/:id
+ * Update estate details (super_admin only).
+ */
+export const updateSite = async (req, res) => {
+  if (req.user.role !== 'super_admin') return _respondError(res, 403, 'Super Admin access required');
+  try {
+    const { id } = req.params;
+    const { name, code, description, address, city, timezone, logo_url, primary_color, secondary_color, active, subscription_tier } = req.body;
+
+    const current = await dbManager.query('SELECT id FROM estates WHERE id = $1', [id]);
+    if (current.rowCount === 0) return _respondError(res, 404, 'Estate not found');
+
+    const status = active === false ? 'suspended' : 'active';
+    await dbManager.query(
+      `UPDATE estates SET name=$1, code=$2, description=$3, address=$4, city=$5, timezone=$6,
+       logo_url=$7, primary_color=$8, secondary_color=$9, subscription_tier=$10, status=$11,
+       updated_at=NOW() WHERE id=$12`,
+      [name, code?.toUpperCase(), description, address, city, timezone,
+       logo_url, primary_color, secondary_color, subscription_tier, status, id]
+    );
+    res.json({ success: true, message: 'Estate updated successfully' });
+  } catch (error) {
+    _respondError(res, 500, 'Failed to update site', error);
+  }
+};
+
+/**
+ * PATCH /api/admin/sites/:id/switch
+ * Switch super_admin's active estate context.
+ */
+export const switchSite = async (req, res) => {
+  if (req.user.role !== 'super_admin') return _respondError(res, 403, 'Super Admin access required');
+  try {
+    const { id } = req.params;
+    const estate = await dbManager.query('SELECT id, name, status FROM estates WHERE id = $1', [id]);
+    if (estate.rowCount === 0) return _respondError(res, 404, 'Estate not found');
+    if (estate.rows[0].status !== 'active') return _respondError(res, 400, 'Cannot switch to an inactive estate');
+
+    await dbManager.query('UPDATE users SET estate_id = $1 WHERE id = $2', [id, req.user.id]);
+    res.json({ success: true, message: `Switched to estate: ${estate.rows[0].name}` });
+  } catch (error) {
+    _respondError(res, 500, 'Failed to switch site', error);
+  }
+};
+
 // ====================  EXTRACTED FROM ADMIN ROUTES  ====================
 
 import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
@@ -289,19 +400,22 @@ export const triggerBackup = async (req, res) => {
  */
 export const bulkApproveUsers = async (req, res) => {
   try {
-    const { userIds, estateId } = req.body;
+    const { userIds } = req.body;
+    const estateId = req.estateId ?? req.user?.estate_id;
     if (!Array.isArray(userIds) || userIds.length === 0)
       return res.status(400).json({ success: false, message: 'userIds must be a non-empty array' });
     if (userIds.length > 50)
       return res.status(400).json({ success: false, message: 'Cannot approve more than 50 users at once' });
     if (!userIds.every(id => Number.isInteger(id) && id > 0))
       return res.status(400).json({ success: false, message: 'All user IDs must be positive integers' });
+    if (!estateId)
+      return res.status(403).json({ success: false, message: 'Estate context required' });
 
     let query = `UPDATE users SET account_status = 'active', updated_at = NOW()
       WHERE id = ANY($1) AND account_status = 'pending'`;
     const params = [userIds];
-    if (req.user.estate_id) { query += ` AND estate_id = $2`; params.push(req.user.estate_id); }
-    else if (estateId) { query += ` AND estate_id = $2`; params.push(estateId); }
+    query += ` AND estate_id = $2`;
+    params.push(estateId);
     query += ` RETURNING id, username, email, role`;
 
     const result = await dbManager.query(query, params);
@@ -313,7 +427,7 @@ export const bulkApproveUsers = async (req, res) => {
       data: { approved: result.rows, count: result.rows.length, requested: userIds.length }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to approve users', error: error.message });
+    _respondError(res, 500, 'Failed to approve users');
   }
 };
 
@@ -323,15 +437,19 @@ export const bulkApproveUsers = async (req, res) => {
 export const bulkRejectUsers = async (req, res) => {
   try {
     const { userIds, reason } = req.body;
+    const estateId = req.estateId ?? req.user?.estate_id;
     if (!Array.isArray(userIds) || userIds.length === 0)
       return res.status(400).json({ success: false, message: 'userIds must be a non-empty array' });
     if (userIds.length > 50)
       return res.status(400).json({ success: false, message: 'Cannot reject more than 50 users at once' });
+    if (!estateId)
+      return res.status(403).json({ success: false, message: 'Estate context required' });
 
     let query = `UPDATE users SET account_status = 'rejected', rejection_reason = $2, updated_at = NOW()
       WHERE id = ANY($1) AND account_status = 'pending'`;
     const params = [userIds, reason || 'Rejected by admin'];
-    if (req.user.estate_id) { query += ` AND estate_id = $3`; params.push(req.user.estate_id); }
+    query += ` AND estate_id = $3`;
+    params.push(estateId);
     query += ` RETURNING id, username, email, role`;
 
     const result = await dbManager.query(query, params);
@@ -340,7 +458,7 @@ export const bulkRejectUsers = async (req, res) => {
       data: { rejected: result.rows, count: result.rows.length }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to reject users', error: error.message });
+    _respondError(res, 500, 'Failed to reject users');
   }
 };
 
@@ -470,6 +588,9 @@ export const getVisitorLogs = async (req, res) => {
  */
 export const getAccessLogs = async (req, res) => {
   try {
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (!['admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
+
     const { type, search, page = 1, limit = 50 } = req.query;
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
@@ -488,7 +609,7 @@ export const getAccessLogs = async (req, res) => {
     if (req.user.estate_id) { query += ` AND u.estate_id = $${paramIndex++}`; params.push(req.user.estate_id); }
     if (type) { query += ` AND a.action = $${paramIndex++}`; params.push(type); }
     if (search) { query += ` AND (u.username ILIKE $${paramIndex} OR a.action ILIKE $${paramIndex})`; params.push(`%${search}%`); paramIndex++; }
-    query += ` ORDER BY a.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    query += ` ORDER BY a.log_time DESC NULLS LAST, a.id DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limitNum, offset);
 
     const result = await dbManager.query(query, params);
@@ -497,4 +618,3 @@ export const getAccessLogs = async (req, res) => {
     _respondError(res, 500, 'Failed to fetch access logs', error);
   }
 };
-

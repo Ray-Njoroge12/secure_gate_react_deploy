@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import logger from 'utils/logger';
+
 import browserCompatibility from '../utils/browserCompatibility';
 
 export const useBrowserCompatibility = () => {

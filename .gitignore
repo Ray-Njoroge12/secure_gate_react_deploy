@@ -13,9 +13,6 @@ production-keys-*.txt
 *.secret
 *.secrets
 
-# Allow specific production config (no secrets)
-!secure-gate-access/client/.env.production
-
 # Dependencies
 */node_modules/
 npm-debug.log*
@@ -140,3 +137,20 @@ secure-gate-access/server/logs/
 *.db
 *.db-shm
 *.db-wal
+
+# Git worktrees
+.worktrees/
+
+# Local AI agent/editor state
+.claude/settings.local.json
+.claude/worktrees/
+
+# Generated test/report artifacts (Batch D policy)
+playwright-report/
+test-results/
+analysis-artifacts/
+
+# Generated production-readiness outputs (do not track)
+production-readiness-tests/reports/
+production-readiness-tests/certification-output/
+documentation/archive/validation-artifacts/

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+
 // FIX: Substituted direct Lucide icons with Icon component usage in render method
 // import { 
 //   UserCheck, 
@@ -24,8 +25,8 @@ import React, { useState, useEffect, useRef } from 'react';
 //   MapPin,
 //   Calendar
 // } from 'lucide-react';
-import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button';
+import Icon from '../ui/Icon.jsx';
 
 /**
  * Get icon for event type
@@ -53,58 +54,6 @@ const getEventIcon = (type) => {
 };
 
 /**
- * Get event color class
- */
-const getEventColorClass = (type) => {
-  switch (type) {
-    case 'visitor.check_in':
-    case 'visitor.self_check_in':
-    case 'visitor.approved':
-      return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800';
-    case 'visitor.check_out':
-      return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
-    case 'visitor.denied':
-    case 'security.alert':
-      return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
-    case 'visitor.arrival':
-      return 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800';
-    default:
-      return 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:border-slate-700';
-  }
-};
-
-/**
- * Get human-readable event description
- */
-const getEventDescription = (event) => {
-  const name = event.visitorName || event.name || 'Visitor';
-  const host = event.hostName || event.host || '';
-  
-  switch (event.type) {
-    case 'visitor.check_in':
-      return `${name} checked in${host ? ` to visit ${host}` : ''}`;
-    case 'visitor.self_check_in':
-      return `${name} self-checked in${host ? ` to visit ${host}` : ''}`;
-    case 'visitor.check_out':
-      return `${name} checked out`;
-    case 'visitor.approved':
-      return `${name} was approved for entry${host ? ` by ${host}` : ''}`;
-    case 'visitor.denied':
-      return `${name} was denied entry`;
-    case 'visitor.arrival':
-      return `${name} arrived at gate`;
-    case 'visitor.invited':
-      return `${name} was invited${host ? ` by ${host}` : ''}`;
-    case 'visitor.cancelled':
-      return `Invitation for ${name} was cancelled`;
-    case 'security.alert':
-      return event.message || 'Security alert triggered';
-    default:
-      return event.message || 'Visitor event';
-  }
-};
-
-/**
  * Format relative time
  */
 const formatRelativeTime = (timestamp) => {
@@ -127,19 +76,19 @@ const formatRelativeTime = (timestamp) => {
  * LiveVisitorFeed Component
  */
 export const LiveVisitorFeed = ({
-  maxItems = 10,
-  refreshInterval = 5000,
+  maxItems: _maxItems = 10,
+  refreshInterval: _refreshInterval = 5000,
   className = '',
   initialEvents = []
 }) => {
-  const [events, setEvents] = useState(initialEvents);
+  const [events] = useState(initialEvents);
   const [isLive, setIsLive] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected] = useState(true);
   const feedRef = useRef(null);
   
   // FIX: Define autoScroll state which was missing
-  const [autoScroll, setAutoScroll] = useState(true);
+  const [autoScroll] = useState(true);
 
   // Auto-scroll to top on new events
   useEffect(() => {

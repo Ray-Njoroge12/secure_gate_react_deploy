@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../utils/apiClient';
+
 import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../utils/apiClient';
+import { getRoleBasedRedirect } from '../utils/navigationFlow';
+import { decodeSession } from '../utils/sessionCrypto';
 
 /**
  * MFA Verification Component
@@ -10,11 +14,19 @@ import Button from '../components/ui/Button';
 const MFAVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { completeMfa } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
+
+  const getSafeDestination = (candidate, fallback) => {
+    if (!candidate || typeof candidate !== 'string') return fallback;
+    if (!candidate.startsWith('/') || candidate.startsWith('//')) return fallback;
+    if (candidate.startsWith('/mfa/setup') || candidate.startsWith('/mfa/verify')) return fallback;
+    return candidate;
+  };
 
   // Get mfaSessionId from location state or session storage (persistence fix)
   const getStoredAuth = () => {
@@ -24,20 +36,13 @@ const MFAVerify = () => {
     // Try session storage
     const stored = sessionStorage.getItem('mfa_session');
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Check timestamp expiry (5 mins)
-        if (Date.now() - parsed.timestamp < (parsed.expiresIn || 300) * 1000) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error('Failed to parse stored MFA session');
-      }
+      const parsed = decodeSession(stored);
+      if (parsed) return parsed;
     }
     return {};
   };
 
-  const { mfaSessionId, userId, expiresIn = 300, username = 'your account' } = getStoredAuth();
+  const { mfaSessionId, username = 'your account', returnUrl } = getStoredAuth();
 
   // Redirect if no mfaSessionId
   React.useEffect(() => {
@@ -73,11 +78,10 @@ const MFAVerify = () => {
         // Get user info from response
         const user = response.data.data?.user;
         if (user) {
-          // Redirect based on role
-          if (user.role === 'admin') navigate('/dashboard/admin');
-          else if (user.role === 'guard') navigate('/dashboard/guard');
-          else if (user.role === 'resident') navigate('/dashboard/resident');
-          else navigate('/dashboard');
+          completeMfa(user);
+          const roleDefault = getRoleBasedRedirect(user.role);
+          const destination = getSafeDestination(returnUrl, roleDefault);
+          navigate(destination);
         } else {
           navigate('/dashboard');
         }
@@ -139,7 +143,7 @@ const MFAVerify = () => {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-red-700 dark:text-red-300 font-medium">{error}</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    <p className="text-xs text-red-700 dark:text-red-400 mt-1">
                       Attempts remaining: {attemptsLeft}
                     </p>
                   </div>

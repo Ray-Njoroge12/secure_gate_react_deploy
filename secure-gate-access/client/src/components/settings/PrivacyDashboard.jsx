@@ -192,6 +192,38 @@ const PrivacyDashboard = ({ className = '' }) => {
         </ul>
       </div>
 
+      {/* KDPA Section 26 Rights */}
+      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+        <h3 className="font-semibold text-green-900 dark:text-green-100 mb-1">Kenya Data Protection Act (2019)</h3>
+        <p className="text-sm text-green-800 dark:text-green-200 mb-3">Your rights under KDPA Section 26</p>
+        <ul className="text-sm text-green-800 dark:text-green-200 space-y-2">
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">•</span>
+            <span><strong>Right to Access</strong> — Request access to your personal data</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">•</span>
+            <span><strong>Right to Rectification</strong> — Correct inaccurate personal data</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">•</span>
+            <span><strong>Right to Erasure</strong> — Request deletion of your personal data</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">•</span>
+            <span><strong>Right to Object</strong> — Object to processing of your personal data</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">•</span>
+            <span><strong>Right to Data Portability</strong> — Receive your data in a portable format</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">•</span>
+            <span><strong>Right to Withdraw Consent</strong> — Withdraw previously given consent</span>
+          </li>
+        </ul>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
