@@ -29,30 +29,39 @@ class WorkerService {
   async bulkRegisterWorkers(companyId, estateId, workers, { preApproved, preApprovedBy, createdBy }) {
     const results = [];
     const errors = [];
+    const status = preApproved ? 'active' : 'pending';
 
-    for (let i = 0; i < workers.length; i++) {
-      const w = workers[i];
-      try {
-        const worker = await this.registerWorker({
-          companyId,
-          estateId,
-          firstName: w.firstName || w.first_name,
-          lastName: w.lastName || w.last_name,
-          phone: w.phone,
-          email: w.email,
-          idNumber: w.idNumber || w.id_number,
-          workerType: w.workerType || w.worker_type || 'employee',
-          vehiclePlate: w.vehiclePlate || w.vehicle_plate,
-          preApproved,
-          preApprovedBy,
-          notes: w.notes,
-          createdBy
-        });
-        results.push(worker);
-      } catch (err) {
-        errors.push({ index: i, name: `${w.firstName || w.first_name} ${w.lastName || w.last_name}`, error: err.message });
+    // Use a transaction for atomicity and performance
+    await dbManager.transaction(async (client) => {
+      for (let i = 0; i < workers.length; i++) {
+        const w = workers[i];
+        try {
+          const result = await client.query(
+            `INSERT INTO workers (company_id, estate_id, first_name, last_name, phone, email, id_number, worker_type, status, vehicle_plate, pre_approved, pre_approved_by, pre_approved_at, notes, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ${preApproved ? 'NOW()' : 'NULL'}, $13, $14)
+             RETURNING *`,
+            [
+              companyId, estateId,
+              w.firstName || w.first_name,
+              w.lastName || w.last_name,
+              w.phone || null,
+              w.email || null,
+              w.idNumber || w.id_number || null,
+              w.workerType || w.worker_type || 'employee',
+              status,
+              w.vehiclePlate || w.vehicle_plate || null,
+              preApproved || false,
+              preApprovedBy || null,
+              w.notes || null,
+              createdBy
+            ]
+          );
+          results.push(result.rows[0]);
+        } catch (err) {
+          errors.push({ index: i, name: `${w.firstName || w.first_name} ${w.lastName || w.last_name}`, error: err.message });
+        }
       }
-    }
+    });
 
     return { registered: results, errors };
   }
@@ -132,7 +141,9 @@ class WorkerService {
    * Update worker details
    */
   async updateWorker(workerId, estateId, updates) {
-    const allowedFields = ['first_name', 'last_name', 'phone', 'email', 'id_number', 'worker_type', 'vehicle_plate', 'notes', 'status'];
+    // Note: 'status' is intentionally excluded — status changes must go through
+    // dedicated methods (preApproveWorker, revokeWorker) to enforce business rules
+    const allowedFields = ['first_name', 'last_name', 'phone', 'email', 'id_number', 'worker_type', 'vehicle_plate', 'notes'];
     const setClauses = [];
     const values = [];
     let paramIdx = 1;
@@ -283,6 +294,12 @@ class WorkerService {
    * Check in a worker (guard action)
    */
   async checkInWorker(workerId, estateId, { guardId, passId, vehiclePlate, notes } = {}) {
+    // Validate worker status and company status before check-in
+    const worker = await this.getWorkerById(workerId, estateId);
+    if (!worker) throw new Error('Worker not found');
+    if (worker.status !== 'active') throw new Error('Worker access is not active');
+    if (worker.company_status !== 'approved') throw new Error('Company is not approved for estate access');
+
     // Check for existing active check-in
     const existing = await dbManager.query(
       `SELECT id FROM worker_check_ins

@@ -103,7 +103,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     let userQuery;
     if (typeof userIdentifier === 'string' && userIdentifier.includes('@')) {
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id
+        `SELECT id, email, username, role, estate_id, company_id
          FROM users
          WHERE LOWER(email) = LOWER($1)
            AND estate_id IS NOT DISTINCT FROM $2`,
@@ -123,7 +123,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
         throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
       }
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id
+        `SELECT id, email, username, role, estate_id, company_id
          FROM users
          WHERE id = $1
            AND estate_id IS NOT DISTINCT FROM $2`,
@@ -153,7 +153,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       email: dbUser.email,
       username: dbUser.username,
       role: dbUser.role,
-      estate_id: dbUser.estate_id ?? payload.estate_id ?? null
+      estate_id: dbUser.estate_id ?? payload.estate_id ?? null,
+      company_id: dbUser.company_id ?? null
     });
 
     return next();

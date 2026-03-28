@@ -201,7 +201,16 @@ export const generateWorkerPass = asyncHandler(async (req, res) => {
  * Get worker's passes
  */
 export const getWorkerPasses = asyncHandler(async (req, res) => {
-  const passes = await workerService.getWorkerPasses(parseInt(req.params.id, 10));
+  const workerId = parseInt(req.params.id, 10);
+
+  // Verify worker exists in this estate and company_admin owns it
+  const worker = await workerService.getWorkerById(workerId, req.user.estate_id);
+  if (!worker) return respondError(res, 404, 'Worker not found');
+  if (req.user.role === 'company_admin' && worker.company_id !== req.user.company_id) {
+    return respondError(res, 403, 'Access denied');
+  }
+
+  const passes = await workerService.getWorkerPasses(workerId);
   return respond(res, { passes });
 });
 

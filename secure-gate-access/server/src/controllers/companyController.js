@@ -144,7 +144,12 @@ export const addLocation = asyncHandler(async (req, res) => {
  * List company locations
  */
 export const getLocations = asyncHandler(async (req, res) => {
-  const locations = await companyService.getLocations(parseInt(req.params.id, 10));
+  const companyId = parseInt(req.params.id, 10);
+  if (req.user.role === 'company_admin' && req.user.company_id !== companyId) {
+    return respondError(res, 403, 'You can only view your own company locations');
+  }
+
+  const locations = await companyService.getLocations(companyId);
   return respond(res, { locations });
 });
 

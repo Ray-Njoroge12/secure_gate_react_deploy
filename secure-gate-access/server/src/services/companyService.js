@@ -22,14 +22,30 @@ class CompanyService {
   /**
    * Link a user as company admin
    */
+  /**
+   * Link a user as company admin.
+   * Only sets company_id on the user — role is NOT changed until the company is approved.
+   */
   async setCompanyAdmin(companyId, userId) {
     await dbManager.query(
       `UPDATE companies SET admin_user_id = $1, updated_at = NOW() WHERE id = $2`,
       [userId, companyId]
     );
     await dbManager.query(
-      `UPDATE users SET company_id = $1, role = 'company_admin', updated_at = NOW() WHERE id = $2`,
+      `UPDATE users SET company_id = $1, updated_at = NOW() WHERE id = $2`,
       [userId, companyId]
+    );
+  }
+
+  /**
+   * Promote the company admin user to 'company_admin' role.
+   * Called when a company is approved.
+   */
+  async promoteCompanyAdmin(companyId) {
+    await dbManager.query(
+      `UPDATE users SET role = 'company_admin', updated_at = NOW()
+       WHERE company_id = $1 AND id = (SELECT admin_user_id FROM companies WHERE id = $1)`,
+      [companyId]
     );
   }
 
@@ -52,27 +68,33 @@ class CompanyService {
    */
   async listCompanies(estateId, { status, page = 1, limit = 20 } = {}) {
     const offset = (page - 1) * limit;
-    const params = [estateId, limit, offset];
-    let whereClause = 'WHERE c.estate_id = $1';
 
+    // Build WHERE clause with consistent parameter indexing
+    const countParams = [estateId];
+    let countWhere = 'WHERE c.estate_id = $1';
     if (status) {
-      whereClause += ' AND c.status = $4';
-      params.push(status);
+      countWhere += ' AND c.status = $2';
+      countParams.push(status);
     }
+
+    // Data query adds LIMIT and OFFSET after the count params
+    const dataParams = [...countParams, limit, offset];
+    const limitIdx = countParams.length + 1;
+    const offsetIdx = countParams.length + 2;
 
     const [dataResult, countResult] = await Promise.all([
       dbManager.query(
         `SELECT c.*, u.email as admin_email, u.first_name as admin_first_name, u.last_name as admin_last_name
          FROM companies c
          LEFT JOIN users u ON c.admin_user_id = u.id
-         ${whereClause}
+         ${countWhere}
          ORDER BY c.created_at DESC
-         LIMIT $2 OFFSET $3`,
-        params
+         LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        dataParams
       ),
       dbManager.query(
-        `SELECT COUNT(*) as total FROM companies c ${whereClause}`,
-        status ? [estateId, status] : [estateId]
+        `SELECT COUNT(*) as total FROM companies c ${countWhere}`,
+        countParams
       )
     ]);
 
@@ -95,7 +117,12 @@ class CompanyService {
        RETURNING *`,
       [approvedBy, companyId, estateId]
     );
-    return result.rows[0] || null;
+    const company = result.rows[0];
+    // Promote the company admin user to company_admin role
+    if (company) {
+      await this.promoteCompanyAdmin(companyId);
+    }
+    return company || null;
   }
 
   /**
@@ -162,16 +189,23 @@ class CompanyService {
    */
   async addLocation(companyId, { name, address, isPrimary }) {
     if (isPrimary) {
-      await dbManager.query(
-        `UPDATE company_locations SET is_primary = false WHERE company_id = $1`,
-        [companyId]
+      // Use a CTE to atomically unset existing primary and insert new one
+      const result = await dbManager.query(
+        `WITH unset AS (
+           UPDATE company_locations SET is_primary = false WHERE company_id = $1 AND is_primary = true
+         )
+         INSERT INTO company_locations (company_id, name, address, is_primary)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [companyId, name, address, true]
       );
+      return result.rows[0];
     }
     const result = await dbManager.query(
       `INSERT INTO company_locations (company_id, name, address, is_primary)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [companyId, name, address, isPrimary || false]
+      [companyId, name, address, false]
     );
     return result.rows[0];
   }
