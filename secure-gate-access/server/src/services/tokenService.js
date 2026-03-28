@@ -684,36 +684,92 @@ class PasswordService {
 
 /**
  * Account Security Service
+ *
+ * Stores login lockout state in Redis (with in-memory hot-cache and
+ * automatic memory-only fallback when Redis is unavailable).
+ * This makes lockouts durable across server restarts and consistent
+ * across multiple application instances.
  */
 class AccountSecurityService {
   constructor() {
-    this.failedAttempts = new Map(); // userId -> { count, lastAttempt, lockedUntil }
+    // Per-instance hot-cache to avoid a Redis round-trip on every request
+    this.localCache = new Map();
     this.maxFailedAttempts = 5;
-    this.lockoutDuration = 15 * 60 * 1000; // 15 minutes
+    this.lockoutDurationMs = 15 * 60 * 1000; // 15 minutes
+    this.resetWindowMs = 60 * 60 * 1000;     // reset count after 1 hour of inactivity
+    // Redis TTL covers the full reset window + lockout period
+    this.redisTTLSeconds = 90 * 60;
+
+    this.redisService = new RedisService();
+    this.redisService.initialize().catch(() => {
+      // Redis unavailable — lockouts will be memory-only for this instance.
+      // Acceptable degraded mode: brute-force window is per-process, not cluster-wide.
+    });
+  }
+
+  _key(identifier) {
+    return `auth:lockout:${identifier}`;
+  }
+
+  async _getRecord(identifier) {
+    const now = Date.now();
+    const cached = this.localCache.get(identifier);
+    // Use local cache if it is still within the active reset window
+    if (cached && (now - cached.lastAttempt) < this.resetWindowMs) {
+      return cached;
+    }
+
+    try {
+      const stored = await this.redisService.get(this._key(identifier));
+      if (stored) {
+        this.localCache.set(identifier, stored);
+        return stored;
+      }
+    } catch {
+      // Redis read error — fall through to local cache only
+    }
+    return null;
+  }
+
+  async _setRecord(identifier, record) {
+    this.localCache.set(identifier, record);
+    try {
+      await this.redisService.set(this._key(identifier), record, this.redisTTLSeconds);
+    } catch {
+      // Redis write error — record is in local cache only for this instance
+    }
+  }
+
+  async _deleteRecord(identifier) {
+    this.localCache.delete(identifier);
+    try {
+      await this.redisService.delete(this._key(identifier));
+    } catch {
+      // Redis delete error — record will expire via TTL
+    }
   }
 
   /**
    * Record failed login attempt
    */
-  recordFailedAttempt(userId, ip) {
+  async recordFailedAttempt(identifier, ip) {
     const now = Date.now();
-    const current = this.failedAttempts.get(userId) || { count: 0, lastAttempt: 0, lockedUntil: 0 };
+    const current = await this._getRecord(identifier) || { count: 0, lastAttempt: 0, lockedUntil: 0 };
 
-    // Reset if last attempt was more than 1 hour ago
-    if (now - current.lastAttempt > 60 * 60 * 1000) {
+    // Reset count if the last attempt was outside the reset window
+    if (now - current.lastAttempt > this.resetWindowMs) {
       current.count = 0;
     }
 
     current.count++;
     current.lastAttempt = now;
 
-    // Lock account if too many attempts
     if (current.count >= this.maxFailedAttempts) {
-      current.lockedUntil = now + this.lockoutDuration;
+      current.lockedUntil = now + this.lockoutDurationMs;
       // Security: Account locked due to failed attempts - audit logged only
     }
 
-    this.failedAttempts.set(userId, current);
+    await this._setRecord(identifier, current);
 
     return {
       isLocked: current.lockedUntil > now,
@@ -725,26 +781,24 @@ class AccountSecurityService {
   /**
    * Clear failed attempts on successful login
    */
-  clearFailedAttempts(userId) {
-    this.failedAttempts.delete(userId);
+  async clearFailedAttempts(identifier) {
+    await this._deleteRecord(identifier);
   }
 
   /**
    * Check if account is locked
    */
-  isAccountLocked(userId) {
-    const current = this.failedAttempts.get(userId);
+  async isAccountLocked(identifier) {
+    const current = await this._getRecord(identifier);
     if (!current) return false;
-
-    const now = Date.now();
-    return current.lockedUntil > now;
+    return current.lockedUntil > Date.now();
   }
 
   /**
    * Get lockout info
    */
-  getLockoutInfo(userId) {
-    const current = this.failedAttempts.get(userId);
+  async getLockoutInfo(identifier) {
+    const current = await this._getRecord(identifier);
     if (!current) return null;
 
     const now = Date.now();

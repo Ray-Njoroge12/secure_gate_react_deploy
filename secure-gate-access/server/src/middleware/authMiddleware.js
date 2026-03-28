@@ -153,7 +153,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       email: dbUser.email,
       username: dbUser.username,
       role: dbUser.role,
-      estate_id: dbUser.estate_id ?? payload.estate_id ?? null
+      estate_id: dbUser.estate_id ?? payload.estate_id ?? null,
+      jti: payload.jti ?? null  // token ID — used by logout to remove user_sessions row
     });
 
     return next();
