@@ -154,12 +154,14 @@ export const AuthProvider = ({ children }) => {
       // Transform frontend data to match backend expectations
       const registrationData = {
         email: userData.email,
-        username: userData.name, // Backend expects 'username' not 'name'
+        username: userData.username || userData.name,
+        first_name: userData.first_name || userData.firstName,
+        last_name: userData.last_name || userData.lastName,
         password: userData.password,
         role: userData.role || 'resident',
-        phone: userData.phoneNumber, // Backend expects 'phone' not 'phoneNumber'
-        house: userData.houseNumber, // Backend expects 'house' not 'residenceNumber'
-        area: userData.area || 'General' // Backend expects 'area' field
+        phone: userData.phone || userData.phoneNumber,
+        house: userData.house || userData.houseNumber,
+        estate_id: userData.estate_id || userData.estateId || null
       };
 
       // BUG-005 FIX: Changed from /api/register to /api/auth/register

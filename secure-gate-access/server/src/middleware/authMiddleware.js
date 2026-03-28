@@ -218,7 +218,7 @@ export async function attachUserFromToken(req, res, next) {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE LOWER(email) = LOWER($1)
-           AND estate_id = $2`,
+           AND estate_id IS NOT DISTINCT FROM $2`,
         [userIdentifier, estateId]
       );
     } else {
@@ -227,7 +227,7 @@ export async function attachUserFromToken(req, res, next) {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE id = $1
-           AND estate_id = $2`,
+           AND estate_id IS NOT DISTINCT FROM $2`,
         [parseInt(userIdentifier, 10), estateId]
       );
     }

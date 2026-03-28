@@ -32,8 +32,10 @@ class TokenService {
 
     this.accessTokenSecret = process.env.JWT_SECRET;
     this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-    this.accessTokenExpiry = process.env.JWT_EXPIRY || '15m'; // Short-lived access tokens
-    this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d'; // Longer refresh token lifetime
+    // Support both JWT_EXPIRES_IN (documented) and JWT_EXPIRY (legacy) env var names
+    this.accessTokenExpiry = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRY || '15m';
+    // Support both JWT_REFRESH_EXPIRES_IN (documented) and JWT_REFRESH_EXPIRY (legacy) env var names
+    this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRES_IN || process.env.JWT_REFRESH_EXPIRY || '7d';
 
     // Initialize Redis for persistent token blacklist
     this.redisService = new RedisService();
