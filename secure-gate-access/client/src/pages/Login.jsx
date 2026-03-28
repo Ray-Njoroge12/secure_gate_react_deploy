@@ -8,6 +8,8 @@ import api from "../utils/apiClient";
 import { getRoleBasedRedirect } from '../utils/navigationFlow';
 import { encodeSession } from '../utils/sessionCrypto';
 
+// API base URL for cross-site deployment (Netlify frontend + Render backend)
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const AUTH_INLINE_ERROR_PATTERN = /invalid credentials|incorrect|locked|too many/i;
 const INLINE_ERROR_ALERT_CLASS = 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300';
 
@@ -79,6 +81,15 @@ export default function LoginPage() {
             handleLogin(e);
           }
         }
+      }
+      // Escape to clear errors
+      if (e.key === 'Escape') {
+        clearAllErrors();
+        setEmailError("");
+        setPasswordError("");
+        setAuthError("");
+        setForgotPasswordError("");
+        setRateLimitSeconds(0);
       }
     };
 
@@ -212,7 +223,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await api.post('/api/auth/forgot-password', { email: resetEmail });
+      const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include', // Include cookies for cross-site
+        body: JSON.stringify({ email: resetEmail }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setForgotPasswordError(data.message || "Error sending reset link");
+        return;
+      }
 
       handleSuccess("Password reset link sent to your email.", {
         context: 'Password Reset',
@@ -223,7 +246,7 @@ export default function LoginPage() {
       setResetEmail("");
       navigate('/login', { replace: true });
     } catch (err) {
-      setForgotPasswordError(err?.response?.data?.message || err?.message || 'Error sending reset link');
+      setForgotPasswordError(err?.message || 'Error sending reset link');
     } finally {
       setLoading(false);
     }
@@ -296,7 +319,7 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
         {authError && (
-          <div id="auth-error" role="alert" className={INLINE_ERROR_ALERT_CLASS}>
+          <div role="alert" className={INLINE_ERROR_ALERT_CLASS}>
             <p>{authError}</p>
             {rateLimitSeconds > 0 && (
               <p className="mt-1 text-xs font-medium">Try again in {rateLimitSeconds}s.</p>

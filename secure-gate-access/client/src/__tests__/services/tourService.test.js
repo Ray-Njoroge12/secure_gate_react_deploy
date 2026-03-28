@@ -1,11 +1,3 @@
-import {
-  startTour,
-  resetTour,
-  isTourCompleted,
-  shouldOfferTour,
-  destroyActiveTour,
-} from '../../services/tourService';
-
 const mockCreateDriver = jest.fn();
 
 let lastDriverOptions;
@@ -18,6 +10,14 @@ jest.mock('../../tours', () => ({
   adminTourSteps: [{ element: '[data-tour="admin-dashboard"]' }],
   visitorTourSteps: [{ element: '[data-tour="visitor-dashboard"]' }],
 }));
+
+import {
+  startTour,
+  resetTour,
+  isTourCompleted,
+  shouldOfferTour,
+  destroyActiveTour,
+} from '../../services/tourService';
 
 const TOUR_COMPLETED_KEY = 'securegate-tour-completed-resident';
 const TOUR_SKIPPED_KEY = 'securegate-tour-skipped-resident';
