@@ -296,7 +296,7 @@ class UserService {
     }
 
     // Check if account is locked
-    const lockoutInfo = accountSecurity.getLockoutInfo(username);
+    const lockoutInfo = await accountSecurity.getLockoutInfo(username);
     if (lockoutInfo && lockoutInfo.isLocked) {
        throw new AppError(`Account is locked until ${lockoutInfo.lockedUntil}`, 403, 'ACCOUNT_LOCKED');
     }
@@ -316,7 +316,7 @@ class UserService {
 
       if (result.rows.length === 0) {
         // Record failed attempt even for non-existent users (security)
-        accountSecurity.recordFailedAttempt(username, 'unknown');
+        await accountSecurity.recordFailedAttempt(username, 'unknown');
         throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
 
@@ -327,7 +327,7 @@ class UserService {
 
       if (!isValid) {
         // Record failed attempt
-        accountSecurity.recordFailedAttempt(username, 'unknown');
+        await accountSecurity.recordFailedAttempt(username, 'unknown');
         throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
 
@@ -345,7 +345,7 @@ class UserService {
       }
 
       // Clear failed attempts on successful login
-      accountSecurity.clearFailedAttempts(username);
+      await accountSecurity.clearFailedAttempts(username);
 
       // Remove password hash from response
       delete user.password_hash;

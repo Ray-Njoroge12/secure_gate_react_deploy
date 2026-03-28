@@ -60,6 +60,7 @@ import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.j
 import { strictRateLimit } from '../middleware/rateLimitMiddleware.js';
 import mfaService from '../services/mfaService.js';
 import { userService } from '../services/userService.js';
+import { tokenService } from '../services/tokenService.js';
 
 const router = express.Router();
 
@@ -189,7 +190,6 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
   }
 
   // Generate tokens
-  const { tokenService } = await import('../services/tokenService.js');
   const { getCookieOptions } = await import('../utils/cookies.js');
   const { accessToken, refreshToken, refreshJti, expiresIn } = tokenService.generateTokens(user);
   const refreshInfo = tokenService.getTokenInfo(refreshToken);
@@ -369,42 +369,24 @@ router.post('/verify-operation', authenticateToken, strictRateLimit(), asyncHand
   }
 
   // Generate a short-lived operation token (5 minutes)
-  const { tokenService } = await import('../services/tokenService.js');
   const crypto = await import('crypto');
   const operationToken = crypto.randomBytes(32).toString('hex');
 
-  // Store operation token (in memory/cache - expires in 5 minutes)
-  // NOTE: This is ephemeral and not cluster-safe. For multi-instance deployments,
-  // replace with a Redis-backed store (e.g. redisService.set with TTL).
-  if (!global.operationTokens) {
-    global.operationTokens = new Map();
-  }
-
+  // Store in Redis with a 5-minute TTL — cluster-safe and restart-durable.
+  // Falls back to in-process memory automatically when Redis is unavailable.
   const now = Date.now();
-  global.operationTokens.set(operationToken, {
-    userId,
-    operation,
-    operationDetails,
-    reason,
-    createdAt: now,
-    expiresAt: now + 5 * 60 * 1000 // 5 minutes
-  });
-
-  // Clean up expired tokens and cap map size to prevent unbounded growth
-  for (const [token, data] of global.operationTokens) {
-    if (data.expiresAt < now) {
-      global.operationTokens.delete(token);
-    }
-  }
-  if (global.operationTokens.size > 1000) {
-    // Safety valve: clear oldest entries if map grows unexpectedly large
-    const oldest = [...global.operationTokens.entries()]
-      .sort((a, b) => a[1].createdAt - b[1].createdAt)
-      .slice(0, 500);
-    for (const [token] of oldest) {
-      global.operationTokens.delete(token);
-    }
-  }
+  await tokenService.redisService.set(
+    `mfa:op:${operationToken}`,
+    {
+      userId,
+      operation,
+      operationDetails,
+      reason,
+      createdAt: now,
+      expiresAt: now + 5 * 60 * 1000
+    },
+    300 // TTL in seconds (5 minutes)
+  );
 
   // Log successful verification
   const { auditLogService } = await import('../services/auditLogService.js');

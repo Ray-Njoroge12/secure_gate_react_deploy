@@ -88,8 +88,8 @@ export async function loginUser(req, res) {
       return errorResponse(res, 'Invalid credentials', 'INVALID_CREDENTIALS', 401, null, req);
     }
 
-    if (accountSecurity.isAccountLocked(user.id)) {
-      const lockoutInfo = accountSecurity.getLockoutInfo(user.id);
+    if (await accountSecurity.isAccountLocked(user.id)) {
+      const lockoutInfo = await accountSecurity.getLockoutInfo(user.id);
       loggingService.logSecurity('warn', 'auth.account.locked_access_attempt', {
         userId: user.id,
         ip: req.ip,
@@ -129,7 +129,7 @@ export async function loginUser(req, res) {
     }
 
     if (!isValidPassword) {
-      const attemptInfo = accountSecurity.recordFailedAttempt(user.id, req.ip);
+      const attemptInfo = await accountSecurity.recordFailedAttempt(user.id, req.ip);
       loggingService.logSecurity('warn', 'auth.login.failed', {
         userId: user.id,
         reason: 'invalid_password',
@@ -156,7 +156,7 @@ export async function loginUser(req, res) {
       return errorResponse(res, message, 'INVALID_CREDENTIALS', 401, null, req);
     }
 
-    accountSecurity.clearFailedAttempts(user.id);
+    await accountSecurity.clearFailedAttempts(user.id);
 
     try {
       await sessionSecurityService.initializeSession(req, {
