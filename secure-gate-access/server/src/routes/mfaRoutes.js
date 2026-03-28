@@ -374,23 +374,34 @@ router.post('/verify-operation', authenticateToken, strictRateLimit(), asyncHand
   const operationToken = crypto.randomBytes(32).toString('hex');
 
   // Store operation token (in memory/cache - expires in 5 minutes)
-  // In production, use Redis or similar
+  // NOTE: This is ephemeral and not cluster-safe. For multi-instance deployments,
+  // replace with a Redis-backed store (e.g. redisService.set with TTL).
   if (!global.operationTokens) {
     global.operationTokens = new Map();
   }
 
+  const now = Date.now();
   global.operationTokens.set(operationToken, {
     userId,
     operation,
     operationDetails,
     reason,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+    createdAt: now,
+    expiresAt: now + 5 * 60 * 1000 // 5 minutes
   });
 
-  // Clean up expired tokens
+  // Clean up expired tokens and cap map size to prevent unbounded growth
   for (const [token, data] of global.operationTokens) {
-    if (data.expiresAt < Date.now()) {
+    if (data.expiresAt < now) {
+      global.operationTokens.delete(token);
+    }
+  }
+  if (global.operationTokens.size > 1000) {
+    // Safety valve: clear oldest entries if map grows unexpectedly large
+    const oldest = [...global.operationTokens.entries()]
+      .sort((a, b) => a[1].createdAt - b[1].createdAt)
+      .slice(0, 500);
+    for (const [token] of oldest) {
       global.operationTokens.delete(token);
     }
   }
