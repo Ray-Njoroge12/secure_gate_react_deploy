@@ -81,6 +81,15 @@ const ActivityLog = lazy(() => import("./pages/guard/ActivityLog.jsx")); // Phas
 const BulkCheckout = lazy(() => import("./pages/guard/BulkCheckout.jsx")); // Phase 3: Bulk checkout & EOD operations
 const MFASetupGuide = lazy(() => import("./pages/guard/MFASetupGuide.jsx")); // Guard in-app documentation
 
+// Company admin pages - Company and worker management
+const CompanyRegistration = lazy(() => import("./pages/company/CompanyRegistration.jsx"));
+const CompanyDashboard = lazy(() => import("./pages/company/CompanyDashboard.jsx"));
+const WorkerManagement = lazy(() => import("./pages/company/WorkerManagement.jsx"));
+const BulkWorkerRegistration = lazy(() => import("./pages/company/BulkWorkerRegistration.jsx"));
+const CompanySettings = lazy(() => import("./pages/company/CompanySettings.jsx"));
+const CompanyApprovals = lazy(() => import("./pages/admin/CompanyApprovals.jsx"));
+const WorkerCheckIn = lazy(() => import("./pages/guard/WorkerCheckIn.jsx"));
+
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
 // MessageViewer removed - file missing // Dev Tool
@@ -516,6 +525,72 @@ function App() {
                       />
 
 
+                      {/* Guard: Worker Check-in */}
+                      <Route
+                        path="/dashboard/guard/worker-check-in"
+                        element={
+                          <ProtectedRoute allowedRoles={["guard"]}>
+                            <AppShell role="guard" title="Worker Access">
+                              <WorkerCheckIn />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Company Registration (any authenticated user) */}
+                      <Route
+                        path="/company/register"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident", "admin", "super_admin", "company_admin"]}>
+                            <AppShell role="user" title="Register Company">
+                              <CompanyRegistration />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* COMPANY ADMIN ROUTES */}
+                      <Route
+                        path="/dashboard/company"
+                        element={
+                          <ProtectedRoute allowedRoles={["company_admin"]}>
+                            <AppShell role="company_admin" title="Company Dashboard">
+                              <CompanyDashboard />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/company/workers"
+                        element={
+                          <ProtectedRoute allowedRoles={["company_admin"]}>
+                            <AppShell role="company_admin" title="Worker Management">
+                              <WorkerManagement />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/company/workers/bulk-register"
+                        element={
+                          <ProtectedRoute allowedRoles={["company_admin"]}>
+                            <AppShell role="company_admin" title="Bulk Worker Registration">
+                              <BulkWorkerRegistration />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/company/settings"
+                        element={
+                          <ProtectedRoute allowedRoles={["company_admin"]}>
+                            <AppShell role="company_admin" title="Company Settings">
+                              <CompanySettings />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+
                       {/* ADMIN ROUTES */}
                       <Route
                         path="/dashboard/super-admin"
@@ -608,6 +683,17 @@ function App() {
                           <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                             <AppShell role="admin" title="Admin Dashboard">
                               <AdminDashboard initialTab="settings" />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Admin: Company Management */}
+                      <Route
+                        path="/dashboard/admin/companies"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <AppShell role="admin" title="Company Management">
+                              <CompanyApprovals />
                             </AppShell>
                           </ProtectedRoute>
                         }

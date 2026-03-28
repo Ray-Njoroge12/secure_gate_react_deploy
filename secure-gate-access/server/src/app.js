@@ -40,6 +40,7 @@ import authDomain from './routes/domains/auth.domain.js';
 import visitorDomain from './routes/domains/visitor.domain.js';
 import guardDomain from './routes/domains/guard.domain.js';
 import adminDomain from './routes/domains/admin.domain.js';
+import companyDomain from './routes/domains/company.domain.js';
 import systemDomain from './routes/domains/system.domain.js';
 
 // Remaining standalone routes not covered by domains
@@ -243,6 +244,7 @@ loadRoutes(app, authDomain);
 loadRoutes(app, visitorDomain);
 loadRoutes(app, guardDomain);
 loadRoutes(app, adminDomain);
+loadRoutes(app, companyDomain);
 
 // Dev Tools Routes (Message Viewer) - Development Only
 if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEV_ROUTES === 'true') {
