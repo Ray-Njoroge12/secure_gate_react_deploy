@@ -17,6 +17,7 @@ import "./styles.css"; // Additional app styles
 // BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
 // import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
+import { closeAudioContext } from "./utils/notificationAudio";
 import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
 import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
@@ -187,6 +188,12 @@ function App() {
 
   useEffect(() => {
     refreshCSRFToken().catch(() => { });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      closeAudioContext();
+    };
   }, []);
 
   return (

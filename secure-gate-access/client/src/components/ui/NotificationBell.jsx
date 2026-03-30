@@ -7,8 +7,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotifications } from '../../hooks/useWebSocket';
+import { playNotificationTone, supportsNotificationAudio, triggerVisualNotificationFallback } from '../../utils/notificationAudio';
 
 import Icon from './Icon';
 import './NotificationBell.css';
@@ -17,16 +19,16 @@ import './NotificationBell.css';
  * Notification type icons and colors
  */
 const NOTIFICATION_TYPES = {
-  visitor_arrival: { icon: '👋', color: 'blue', label: 'Visitor Arrival' },
-  visitor_checkout: { icon: '👋', color: 'gray', label: 'Visitor Left' },
-  visitor_approved: { icon: '✅', color: 'green', label: 'Approved' },
-  visitor_denied: { icon: '❌', color: 'red', label: 'Denied' },
-  security_alert: { icon: '🚨', color: 'red', label: 'Security Alert' },
-  system: { icon: '🔔', color: 'purple', label: 'System' },
-  info: { icon: 'ℹ️', color: 'blue', label: 'Info' },
-  warning: { icon: '⚠️', color: 'yellow', label: 'Warning' },
-  success: { icon: '✅', color: 'green', label: 'Success' },
-  error: { icon: '❌', color: 'red', label: 'Error' }
+  visitor_arrival: { icon: 'door-open', color: 'blue', label: 'Visitor Arrival' },
+  visitor_checkout: { icon: 'door', color: 'gray', label: 'Visitor Left' },
+  visitor_approved: { icon: 'check-circle', color: 'green', label: 'Approved' },
+  visitor_denied: { icon: 'x-circle', color: 'red', label: 'Denied' },
+  security_alert: { icon: 'shield-alert', color: 'red', label: 'Security Alert' },
+  system: { icon: 'bell-ring', color: 'purple', label: 'System' },
+  info: { icon: 'info', color: 'blue', label: 'Info' },
+  warning: { icon: 'alert-triangle', color: 'yellow', label: 'Warning' },
+  success: { icon: 'check-circle', color: 'green', label: 'Success' },
+  error: { icon: 'alert-circle', color: 'red', label: 'Error' }
 };
 
 /**
@@ -60,15 +62,11 @@ const NotificationItem = ({ notification, onMarkRead, onDelete, isDark }) => {
   
   return (
     <div
-      role="button"
-      tabIndex={0}
       className={`notification-item ${notification.read ? 'read' : 'unread'} ${isDark ? 'dark' : ''}`}
-      onClick={() => !notification.read && onMarkRead(notification.id)}
-      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !notification.read) { e.preventDefault(); onMarkRead(notification.id); } }}
       aria-label={`${notification.read ? 'Read' : 'Unread'} notification: ${notification.title || typeConfig.label}. ${notification.message}`}
     >
       <div className={`notification-icon ${typeConfig.color}`}>
-        <span>{typeConfig.icon}</span>
+        <Icon name={typeConfig.icon} size="sm" aria-hidden="true" />
       </div>
       
       <div className="notification-content">
@@ -84,18 +82,22 @@ const NotificationItem = ({ notification, onMarkRead, onDelete, isDark }) => {
       
       <div className="notification-actions">
         {!notification.read && (
-          <button 
+          <button
+            type="button"
             className="notification-action-btn"
             onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
             title="Mark as read"
+            aria-label={`Mark ${notification.title || typeConfig.label} as read`}
           >
             <Icon name="check" className="w-4 h-4" />
           </button>
         )}
-        <button 
+        <button
+          type="button"
           className="notification-action-btn delete"
           onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
           title="Delete"
+          aria-label={`Delete ${notification.title || typeConfig.label} notification`}
         >
           <Icon name="trash-2" className="w-4 h-4" />
         </button>
@@ -110,11 +112,10 @@ const NotificationItem = ({ notification, onMarkRead, onDelete, isDark }) => {
 const NotificationBell = ({ className = '' }) => {
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(() => supportsNotificationAudio());
   const [localNotifications, setLocalNotifications] = useState([]);
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
-  const audioRef = useRef(null);
 
   // WebSocket notifications hook
   const { 
@@ -123,10 +124,14 @@ const NotificationBell = ({ className = '' }) => {
     clearAll,
     isConnected 
   } = useNotifications({
-    onNotification: useCallback((_notification) => {
-      // Play sound for new notifications
-      if (soundEnabled && audioRef.current) {
-        audioRef.current.play().catch(() => {});
+    onNotification: useCallback(async (_notification) => {
+      if (soundEnabled) {
+        const played = await playNotificationTone();
+        if (!played) {
+          triggerVisualNotificationFallback();
+        }
+      } else {
+        triggerVisualNotificationFallback();
       }
     }, [soundEnabled])
   });
@@ -194,20 +199,16 @@ const NotificationBell = ({ className = '' }) => {
 
   return (
     <>
-      {/* Notification Sound */}
-      <audio ref={audioRef} preload="auto">
-        <source src="/sounds/notification.mp3" type="audio/mpeg" />
-        <source src="/sounds/notification.ogg" type="audio/ogg" />
-      </audio>
-
       {/* Bell Button */}
       <button
+        type="button"
         ref={bellRef}
+        data-notification-bell
         className={`notification-bell ${className} ${isDark ? 'dark' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`Notifications${unreadLocalCount > 0 ? `, ${unreadLocalCount} unread` : ''}`}
         aria-expanded={isOpen}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
       >
         <Icon name="bell" className="w-5 h-5" />
         {unreadLocalCount > 0 && (
@@ -231,38 +232,46 @@ const NotificationBell = ({ className = '' }) => {
             right: window.innerWidth - bellRef.current?.getBoundingClientRect().right,
           }}
           role="dialog"
+          aria-modal="false"
           aria-label="Notifications"
         >
           {/* Header */}
           <div className="notification-dropdown-header">
             <h3>Notifications</h3>
             <div className="notification-header-actions">
-              <button 
+              <button
+                type="button"
                 onClick={toggleSound}
                 className="notification-header-btn"
                 title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+                aria-label={soundEnabled ? 'Mute notification sounds' : 'Enable notification sounds'}
               >
                 {soundEnabled ? <Icon name="volume-2" className="w-4 h-4" /> : <Icon name="volume-x" className="w-4 h-4" />}
               </button>
               {localNotifications.length > 0 && (
                 <>
-                  <button 
+                  <button
+                    type="button"
                     onClick={handleMarkAllRead}
                     className="notification-header-btn"
                     title="Mark all as read"
+                    aria-label="Mark all notifications as read"
                   >
                     <Icon name="check-check" className="w-4 h-4" />
                   </button>
-                  <button 
+                  <button
+                    type="button"
                     onClick={handleClearAll}
                     className="notification-header-btn"
                     title="Clear all"
+                    aria-label="Clear all notifications"
                   >
                     <Icon name="trash-2" className="w-4 h-4" />
                   </button>
                 </>
               )}
-              <button 
+              <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="notification-header-btn close"
                 aria-label="Close notifications"

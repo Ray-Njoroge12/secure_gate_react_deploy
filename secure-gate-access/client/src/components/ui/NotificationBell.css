@@ -301,12 +301,39 @@
   flex-shrink: 0;
 }
 
-.notification-icon.blue { background: rgba(59, 130, 246, 0.15); }
-.notification-icon.green { background: rgba(16, 185, 129, 0.15); }
-.notification-icon.red { background: rgba(239, 68, 68, 0.15); }
-.notification-icon.yellow { background: rgba(245, 158, 11, 0.15); }
-.notification-icon.purple { background: rgba(139, 92, 246, 0.15); }
-.notification-icon.gray { background: rgba(107, 114, 128, 0.15); }
+.notification-icon .sg-icon {
+  color: currentColor;
+}
+
+.notification-icon.blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+}
+
+.notification-icon.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.notification-icon.red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.notification-icon.yellow {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.notification-icon.purple {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+}
+
+.notification-icon.gray {
+  background: rgba(107, 114, 128, 0.15);
+  color: #4b5563;
+}
 
 /* Content */
 .notification-content {
@@ -431,4 +458,18 @@
     animation: none;
     transition: none;
   }
+}
+
+/* ============================================================
+   Visual fallback pulse (fires when Web Audio is unavailable)
+   ============================================================ */
+
+@keyframes notification-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.notification-pulse {
+  animation: notification-pulse 0.35s ease-out;
 }
