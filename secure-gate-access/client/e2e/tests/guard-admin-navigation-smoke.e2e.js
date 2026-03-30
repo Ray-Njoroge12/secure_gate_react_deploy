@@ -121,8 +121,8 @@ test.describe('Guard/Admin navigation smoke', () => {
     await page.goto('/dashboard/admin/users');
     await expect(page).toHaveURL(/\/dashboard\/admin\/approvals/);
 
-    await page.goto('/dashboard/admin/activity');
-    await expect(page).toHaveURL(/\/dashboard\/admin\/activity/);
+    await page.goto('/dashboard/admin/integrations');
+    await expect(page).toHaveURL(/\/dashboard\/admin\/integrations/);
 
     await expect(page.locator('text=Access Restricted')).toHaveCount(0);
     await expect(page.locator('text=Application Error')).toHaveCount(0);
