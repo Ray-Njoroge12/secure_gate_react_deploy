@@ -12,6 +12,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useAccessibility } from '../../hooks/useAccessibility.js';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 
 const AccessibilityContext = createContext(undefined);
 
@@ -568,6 +569,7 @@ class ScreenReaderManager {
  * Accessibility Provider Component
  */
 export const AccessibilityProvider = ({ children, settings = {} }) => {
+  const theme = useTheme();
   const [accessibilitySettings, setAccessibilitySettings] = useState({
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...settings
@@ -579,6 +581,8 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
   // Managers
   const wcagManager = useRef(new WCAGComplianceManager());
   const keyboardManager = useRef(new KeyboardNavigationManager());
+  const keyboardHandlerRef = useRef(null);
+  const isSyncingHighContrastRef = useRef(false);
   const screenReaderManager = useRef(new ScreenReaderManager());
   const alternativeInputManager = useRef(new AlternativeInputMethodsManager());
   const timeoutManager = useRef(new EnhancedTimeoutManager());
@@ -623,7 +627,8 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
         }, 'Go to main heading');
 
         // Set up keyboard event listener
-        document.addEventListener('keydown', keyboardManager.current.handleKeyDown.bind(keyboardManager.current));
+        keyboardHandlerRef.current = keyboardManager.current.handleKeyDown.bind(keyboardManager.current);
+        document.addEventListener('keydown', keyboardHandlerRef.current);
 
         // Initialize alternative input methods
         alternativeInputManager.current.initialize(accessibilitySettings);
@@ -640,11 +645,22 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
     initialize();
 
     return () => {
-      document.removeEventListener('keydown', keyboardManager.current.handleKeyDown.bind(keyboardManager.current));
+      if (keyboardHandlerRef.current) {
+        document.removeEventListener('keydown', keyboardHandlerRef.current);
+      }
       alternativeInputManager.current.disable();
       timeoutManager.current.clearAll();
     };
   }, [accessibility]);
+
+  useEffect(() => {
+    if (isSyncingHighContrastRef.current) return;
+    setAccessibilitySettings(prev => (
+      prev.highContrast === theme.isHighContrast
+        ? prev
+        : { ...prev, highContrast: theme.isHighContrast }
+    ));
+  }, [theme.isHighContrast]);
 
   // Apply accessibility settings
   useEffect(() => {
@@ -715,20 +731,32 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
       [key]: value
     }));
 
+    if (key === 'highContrast' && value !== theme.isHighContrast) {
+      isSyncingHighContrastRef.current = true;
+      theme.toggleHighContrast();
+      setTimeout(() => { isSyncingHighContrastRef.current = false; }, 0);
+    }
+
     // Announce change to screen readers
-    screenReaderManager.current.announce(
+    accessibility.announce(
       `Accessibility setting ${key} ${value ? 'enabled' : 'disabled'}`,
       'polite'
     );
-  }, []);
+  }, [theme, accessibility]);
 
   // Toggle accessibility setting
   const toggleSetting = useCallback((key) => {
     setAccessibilitySettings(prev => {
       const newValue = !prev[key];
 
+      if (key === 'highContrast' && newValue !== theme.isHighContrast) {
+        isSyncingHighContrastRef.current = true;
+        theme.toggleHighContrast();
+        setTimeout(() => { isSyncingHighContrastRef.current = false; }, 0);
+      }
+
       // Announce change to screen readers
-      screenReaderManager.current.announce(
+      accessibility.announce(
         `${key} ${newValue ? 'enabled' : 'disabled'}`,
         'polite'
       );
@@ -738,7 +766,7 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
         [key]: newValue
       };
     });
-  }, []);
+  }, [theme, accessibility]);
 
   // Create focus trap
   const createFocusTrap = useCallback((container) => {
@@ -796,7 +824,7 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
 
     // Functions
     createFocusTrap,
-    announce,
+    announce: accessibility.announce,
     enhanceElement,
     checkColorContrast,
     validateTouchTarget,
