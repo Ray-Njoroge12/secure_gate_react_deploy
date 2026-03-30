@@ -37,6 +37,30 @@ const STORAGE_KEY = 'securegate-theme';
 const DENSITY_STORAGE_KEY = 'securegate-theme-density';
 const CUSTOM_COLORS_STORAGE_KEY = 'securegate-custom-colors';
 
+const getMediaQuery = (query) => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return null;
+  }
+
+  return window.matchMedia(query);
+};
+
+const getSystemPreferences = () => ({
+  prefersDark: getMediaQuery('(prefers-color-scheme: dark)')?.matches ?? false,
+  prefersHighContrast: getMediaQuery('(prefers-contrast: high)')?.matches ?? false,
+  prefersReducedMotion: getMediaQuery('(prefers-reduced-motion: reduce)')?.matches ?? false,
+});
+
+const resolveSystemTheme = () => {
+  const { prefersDark, prefersHighContrast } = getSystemPreferences();
+
+  if (prefersHighContrast) {
+    return prefersDark ? THEMES.HIGH_CONTRAST_DARK : THEMES.HIGH_CONTRAST;
+  }
+
+  return prefersDark ? THEMES.DARK : THEMES.LIGHT;
+};
+
 /**
  * ThemeProvider Component
  * Provides theme state and controls to the entire application
@@ -94,24 +118,18 @@ export const ThemeProvider = ({ children }) => {
   // Resolved theme (what's actually applied - light, dark, high-contrast, etc.)
   const [resolvedTheme, setResolvedTheme] = useState(() => {
     if (typeof window === 'undefined') return THEMES.LIGHT;
-    
+
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === THEMES.DARK) return THEMES.DARK;
-    if (saved === THEMES.LIGHT) return THEMES.LIGHT;
-    if (saved === THEMES.HIGH_CONTRAST) return THEMES.HIGH_CONTRAST;
-    if (saved === THEMES.HIGH_CONTRAST_DARK) return THEMES.HIGH_CONTRAST_DARK;
-    
-    // Check system preference for SYSTEM theme
-    // Handle test environment where window.matchMedia might not be available
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches 
-        ? THEMES.DARK 
-        : THEMES.LIGHT;
+    if (saved && Object.values(THEMES).includes(saved) && saved !== THEMES.SYSTEM) {
+      return saved;
     }
-    
-    // Fallback for test environment
-    return THEMES.LIGHT;
+
+    return resolveSystemTheme();
   });
+
+  const [isReducedMotionMode, setIsReducedMotionMode] = useState(() => (
+    typeof window === 'undefined' ? false : getSystemPreferences().prefersReducedMotion
+  ));
 
   // Update document attributes and meta theme color
   useEffect(() => {
@@ -132,9 +150,11 @@ export const ThemeProvider = ({ children }) => {
     if (isDarkTheme) {
       document.body.classList.add('dark');
       root.classList.add('dark');
+      root.style.colorScheme = 'dark';
     } else {
       document.body.classList.remove('dark');
       root.classList.remove('dark');
+      root.style.colorScheme = 'light';
     }
     
     // Apply custom colors if any
@@ -167,33 +187,72 @@ export const ThemeProvider = ({ children }) => {
 
   // Listen for system preference changes
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e) => {
+    const colorSchemeQuery = getMediaQuery('(prefers-color-scheme: dark)');
+    const highContrastQuery = getMediaQuery('(prefers-contrast: high)');
+    const reducedMotionQuery = getMediaQuery('(prefers-reduced-motion: reduce)');
+
+    const handleThemeChange = () => {
       if (theme === THEMES.SYSTEM) {
-        setResolvedTheme(e.matches ? THEMES.DARK : THEMES.LIGHT);
+        setResolvedTheme(resolveSystemTheme());
       }
     };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+
+    const handleReducedMotionChange = (event) => {
+      setIsReducedMotionMode(
+        event.matches || document.documentElement.classList.contains('reduced-motion')
+      );
+    };
+
+    colorSchemeQuery?.addEventListener?.('change', handleThemeChange);
+    highContrastQuery?.addEventListener?.('change', handleThemeChange);
+    reducedMotionQuery?.addEventListener?.('change', handleReducedMotionChange);
+
+    return () => {
+      colorSchemeQuery?.removeEventListener?.('change', handleThemeChange);
+      highContrastQuery?.removeEventListener?.('change', handleThemeChange);
+      reducedMotionQuery?.removeEventListener?.('change', handleReducedMotionChange);
+    };
   }, [theme]);
 
   // Resolve theme when preference changes
   useEffect(() => {
     if (theme === THEMES.SYSTEM) {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const prefersHighContrast = window.matchMedia('(prefers-contrast: high)').matches;
-      
-      if (prefersHighContrast) {
-        setResolvedTheme(prefersDark ? THEMES.HIGH_CONTRAST_DARK : THEMES.HIGH_CONTRAST);
-      } else {
-        setResolvedTheme(prefersDark ? THEMES.DARK : THEMES.LIGHT);
-      }
+      setResolvedTheme(resolveSystemTheme());
     } else {
       setResolvedTheme(theme);
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const syncReducedMotionMode = () => {
+      setIsReducedMotionMode(
+        root.classList.contains('reduced-motion') || getSystemPreferences().prefersReducedMotion
+      );
+    };
+
+    syncReducedMotionMode();
+
+    const observer = new MutationObserver(syncReducedMotionMode);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Sync isReducedMotionMode → document root class so CSS and AccessibilityProvider
+  // both respond to the same source of truth
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isReducedMotionMode) {
+      root.classList.add('reduced-motion');
+    } else {
+      root.classList.remove('reduced-motion');
+    }
+  }, [isReducedMotionMode]);
 
   // Set theme function
   const setTheme = useCallback((newTheme) => {
@@ -260,7 +319,7 @@ export const ThemeProvider = ({ children }) => {
   const isHighContrast = resolvedTheme === THEMES.HIGH_CONTRAST || resolvedTheme === THEMES.HIGH_CONTRAST_DARK;
   const isCompact = density === THEME_DENSITY.COMPACT;
   const isComfortable = density === THEME_DENSITY.COMFORTABLE;
-  const isSpaciou = density === THEME_DENSITY.SPACIOUS;
+  const isSpacious = density === THEME_DENSITY.SPACIOUS;
 
   const value = {
     // Theme state
@@ -286,10 +345,11 @@ export const ThemeProvider = ({ children }) => {
     isLight,         // Boolean: is light mode active?
     isSystem,        // Boolean: is following system preference?
     isHighContrast,  // Boolean: is high contrast mode active?
+    isReducedMotionMode, // Boolean: reduced motion is enabled via prefs or system
     isCompact,       // Boolean: is compact density active?
     isComfortable,   // Boolean: is comfortable density active?
-    isSpaciou,      // Boolean: is spacious density active?
-    
+    isSpacious,      // Boolean: is spacious density active?
+
     // Constants for reference
     THEMES,          // Theme constants
     THEME_DENSITY,   // Density constants

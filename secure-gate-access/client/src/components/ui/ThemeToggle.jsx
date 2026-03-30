@@ -5,21 +5,35 @@
 
 import React from 'react';
 import Icon from './Icon.jsx';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme, THEME_DENSITY } from '../../contexts/ThemeContext';
 
-const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) => {
+const buildThemeOptions = (THEMES) => ([
+  { value: THEMES.LIGHT, iconName: 'sun', label: 'Light', description: 'Light mode with bright surfaces' },
+  { value: THEMES.DARK, iconName: 'moon', label: 'Dark', description: 'Dark mode for lower-light environments' },
+  { value: THEMES.SYSTEM, iconName: 'monitor', label: 'System', description: 'Follow your device preference' },
+  { value: THEMES.HIGH_CONTRAST, iconName: 'accessibility', label: 'High Contrast', description: 'High-contrast light theme' },
+  { value: THEMES.HIGH_CONTRAST_DARK, iconName: 'accessibility', label: 'High Contrast Dark', description: 'High-contrast dark theme' }
+]);
+
+const densityOptions = [
+  { value: THEME_DENSITY.COMPACT, label: 'Compact', description: 'Fits more information in less space' },
+  { value: THEME_DENSITY.COMFORTABLE, label: 'Comfortable', description: 'Balanced spacing for daily use' },
+  { value: THEME_DENSITY.SPACIOUS, label: 'Spacious', description: 'More breathing room and larger targets' }
+];
+
+const sizeClasses = {
+  sm: 'px-2.5 py-2 text-sm',
+  md: 'px-3 py-2',
+};
+
+const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '', size = 'md' }) => {
   const { theme, setTheme, isDark, THEMES } = useTheme();
+  const themes = buildThemeOptions(THEMES);
 
-  const themes = [
-    { value: THEMES.LIGHT, iconName: 'sun', label: 'Light' },
-    { value: THEMES.DARK, iconName: 'moon', label: 'Dark' },
-    { value: THEMES.SYSTEM, iconName: 'monitor', label: 'System' }
-  ];
-
-  const currentTheme = themes.find(t => t.value === theme) || themes[0];
+  const currentTheme = themes.find((option) => option.value === theme) || themes[0];
 
   const handleToggle = () => {
-    const currentIndex = themes.findIndex(t => t.value === theme);
+    const currentIndex = themes.findIndex((option) => option.value === theme);
     const nextIndex = (currentIndex + 1) % themes.length;
     setTheme(themes[nextIndex].value);
   };
@@ -30,7 +44,7 @@ const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) =>
         <select
           value={theme}
           onChange={(e) => setTheme(e.target.value)}
-          className="px-4 py-2 rounded-lg border"
+          className="px-4 py-2 rounded-lg border bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white"
           style={{
             backgroundColor: 'var(--color-input-bg)',
             borderColor: 'var(--color-input-border)',
@@ -48,7 +62,7 @@ const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) =>
   return (
     <button
       onClick={handleToggle}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all min-h-[44px] min-w-[44px] ${className}`}
+      className={`flex items-center gap-2 rounded-lg transition-all min-h-[44px] min-w-[44px] ${sizeClasses[size] || sizeClasses.md} ${className}`}
       style={{
         backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
         color: 'var(--color-text-primary)'
@@ -66,13 +80,8 @@ const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) =>
 export const ThemeDropdown = (props) => <ThemeToggle variant="dropdown" {...props} />;
 
 export const ThemeRadioGroup = ({ className = '' }) => {
-  const { theme, setTheme, THEMES } = useTheme();
-
-  const themes = [
-    { value: THEMES.LIGHT, iconName: 'Sun', label: 'Light', description: 'Light mode with bright colors' },
-    { value: THEMES.DARK, iconName: 'Moon', label: 'Dark', description: 'Dark mode with muted colors' },
-    { value: THEMES.SYSTEM, iconName: 'Monitor', label: 'System', description: 'Follow system preference' }
-  ];
+  const { theme, setTheme, density, setDensity, THEMES, THEME_DENSITY } = useTheme();
+  const themes = buildThemeOptions(THEMES);
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -106,6 +115,36 @@ export const ThemeRadioGroup = ({ className = '' }) => {
           </div>
         </label>
       ))}
+
+      <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
+        <div className="flex items-center gap-2 mb-3">
+          <Icon name="layout-dashboard" className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+          <p className="text-sm font-medium text-gray-900 dark:text-white">Layout Density</p>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {densityOptions.map(({ value, label, description }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setDensity(value)}
+              className={`rounded-lg border p-3 text-left transition-all ${
+                density === value
+                  ? 'border-brand-500 bg-brand-50 text-brand-800 dark:border-brand-500 dark:bg-brand-900/20 dark:text-brand-100'
+                  : 'border-gray-200 bg-white text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200'
+              }`}
+              aria-pressed={density === value}
+            >
+              <span className="block font-medium">{label}</span>
+              <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">{description}</span>
+              {value === THEME_DENSITY.SPACIOUS && (
+                <span className="mt-2 inline-block text-[11px] font-medium uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                  Best for accessibility
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
