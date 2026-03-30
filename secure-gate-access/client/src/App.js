@@ -12,6 +12,7 @@ import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles/accessibility.css"; // WCAG 2.1 AA compliance styles
+import "./styles/high-contrast.css"; // Explicit high-contrast mode styles
 import "./styles.css"; // Additional app styles
 // BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
 // import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
@@ -694,6 +695,17 @@ function App() {
                           <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                             <AppShell role="admin" title="Company Management">
                               <CompanyApprovals />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Admin: Integrations Hub */}
+                      <Route
+                        path="/dashboard/admin/integrations"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <AppShell role="admin" title="Integrations">
+                              <IntegrationsHub />
                             </AppShell>
                           </ProtectedRoute>
                         }
