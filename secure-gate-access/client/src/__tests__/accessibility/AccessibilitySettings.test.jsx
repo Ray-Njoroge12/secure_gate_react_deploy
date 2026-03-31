@@ -46,8 +46,8 @@ describe('AccessibilitySettings Component', () => {
   describe('Rendering', () => {
     test('renders accessibility settings dialog', () => {
       render(<AccessibilitySettings />);
-      
-      expect(screen.getByRole('dialog', { name: /accessibility settings/i })).toBeInTheDocument();
+
+      expect(screen.getByRole('region', { name: /accessibility settings/i })).toBeInTheDocument();
       expect(screen.getByText('Accessibility Settings')).toBeInTheDocument();
     });
 
@@ -398,10 +398,10 @@ describe('AccessibilitySettings Component', () => {
   describe('Accessibility Features', () => {
     test('has proper ARIA attributes', () => {
       render(<AccessibilitySettings />);
-      
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveAttribute('aria-labelledby', 'accessibility-settings-title');
-      
+
+      const region = screen.getByRole('region');
+      expect(region).toHaveAttribute('aria-labelledby', 'accessibility-settings-title');
+
       const title = screen.getByText('Accessibility Settings');
       expect(title).toHaveAttribute('id', 'accessibility-settings-title');
     });

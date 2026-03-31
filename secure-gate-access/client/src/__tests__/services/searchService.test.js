@@ -4,9 +4,25 @@
  */
 
 import { searchService, FilterBuilder } from '../../services/searchService';
+import api from '../../utils/apiClient';
 
-// Mock fetch
-global.fetch = jest.fn();
+jest.mock('../../utils/apiClient', () => ({
+  __esModule: true,
+  default: {
+    post: jest.fn(),
+    get: jest.fn(),
+  },
+}));
+
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 
 // Mock localStorage
 const localStorageMock = {
@@ -15,58 +31,57 @@ const localStorageMock = {
   removeItem: jest.fn(),
   clear: jest.fn()
 };
-global.localStorage = localStorageMock;
+Object.defineProperty(global, 'localStorage', { value: localStorageMock, writable: true });
 
 // Mock performance API
 global.performance = {
   now: jest.fn(() => Date.now())
 };
 
+// Save original AbortController
+const OriginalAbortController = global.AbortController;
+
 describe('SearchService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    fetch.mockClear();
+    api.post.mockClear();
+    api.get.mockClear();
     localStorageMock.getItem.mockReturnValue(null);
+    // Restore AbortController in case a test overrode it
+    global.AbortController = OriginalAbortController;
     searchService.clearCache();
-    searchService.clearHistory();
+    searchService.searchHistory = [];
+    searchService.popularQueries = new Map();
+    searchService.abortController = null;
   });
 
   describe('search functionality', () => {
     test('performs basic search with default options', async () => {
       const mockResponse = {
         data: {
-          items: [
-            { id: 1, title: 'John Doe', type: 'visitor', relevanceScore: 0.95 }
-          ],
-          totalCount: 1
+          data: {
+            items: [
+              { id: 1, title: 'John Doe', type: 'visitor', relevanceScore: 0.95 }
+            ],
+            totalCount: 1
+          }
         }
       };
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+      api.post.mockResolvedValueOnce(mockResponse);
 
       const result = await searchService.search('john');
 
-      expect(fetch).toHaveBeenCalledWith('/api/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer null'
-        },
-        body: JSON.stringify({
-          query: 'john',
-          dataTypes: ['visitors', 'users', 'incidents'],
-          filters: {},
-          sortBy: 'relevance',
-          sortOrder: 'desc',
-          page: 1,
-          limit: 20,
-          includeHighlights: true
-        }),
-        signal: expect.any(AbortSignal)
-      });
+      expect(api.post).toHaveBeenCalledWith('/api/search', {
+        query: 'john',
+        dataTypes: ['visitors', 'users', 'incidents'],
+        filters: {},
+        sortBy: 'relevance',
+        sortOrder: 'desc',
+        page: 1,
+        limit: 20,
+        includeHighlights: true
+      }, { signal: expect.any(AbortSignal) });
 
       expect(result.items).toHaveLength(1);
       expect(result.query).toBe('john');
@@ -76,15 +91,14 @@ describe('SearchService', () => {
     test('performs search with custom options', async () => {
       const mockResponse = {
         data: {
-          items: [],
-          totalCount: 0
+          data: {
+            items: [],
+            totalCount: 0
+          }
         }
       };
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+      api.post.mockResolvedValueOnce(mockResponse);
 
       const options = {
         dataTypes: ['visitors'],
@@ -97,34 +111,17 @@ describe('SearchService', () => {
 
       await searchService.search('test', options);
 
-      expect(fetch).toHaveBeenCalledWith('/api/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer null'
-        },
-        body: JSON.stringify({
-          query: 'test',
-          ...options,
-          includeHighlights: true
-        }),
-        signal: expect.any(AbortSignal)
-      });
+      expect(api.post).toHaveBeenCalledWith('/api/search', {
+        query: 'test',
+        ...options,
+        includeHighlights: true
+      }, { signal: expect.any(AbortSignal) });
     });
 
     test('handles search errors', async () => {
-      fetch.mockRejectedValueOnce(new Error('Network error'));
+      api.post.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(searchService.search('test')).rejects.toThrow('Network error');
-    });
-
-    test('handles HTTP error responses', async () => {
-      fetch.mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Internal Server Error'
-      });
-
-      await expect(searchService.search('test')).rejects.toThrow('Search failed: Internal Server Error');
     });
 
     test('aborts previous search when new search starts', async () => {
@@ -136,13 +133,16 @@ describe('SearchService', () => {
 
       global.AbortController = jest.fn(() => mockAbortController);
 
-      // Start first search
-      const firstSearchPromise = searchService.search('first');
-      
+      // Start first search (will hang since no mock response, but that's ok)
+      searchService.search('first').catch(() => {});
+
       // Start second search immediately
-      const secondSearchPromise = searchService.search('second');
+      searchService.search('second').catch(() => {});
 
       expect(mockAbort).toHaveBeenCalled();
+
+      // Restore for other tests
+      global.AbortController = OriginalAbortController;
     });
   });
 
@@ -150,99 +150,93 @@ describe('SearchService', () => {
     test('caches search results', async () => {
       const mockResponse = {
         data: {
-          items: [{ id: 1, title: 'John Doe' }],
-          totalCount: 1
+          data: {
+            items: [{ id: 1, title: 'John Doe' }],
+            totalCount: 1
+          }
         }
       };
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+      api.post.mockResolvedValueOnce(mockResponse);
 
       // First search
       const result1 = await searchService.search('john');
-      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(api.post).toHaveBeenCalledTimes(1);
 
       // Second search with same parameters should use cache
       const result2 = await searchService.search('john');
-      expect(fetch).toHaveBeenCalledTimes(1); // No additional fetch
+      expect(api.post).toHaveBeenCalledTimes(1); // No additional call
       expect(result2).toEqual(result1);
     });
 
     test('generates different cache keys for different options', async () => {
       const mockResponse = {
-        data: { items: [], totalCount: 0 }
+        data: {
+          data: { items: [], totalCount: 0 }
+        }
       };
 
-      fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+      api.post.mockResolvedValue(mockResponse);
 
       await searchService.search('john', { dataTypes: ['visitors'] });
       await searchService.search('john', { dataTypes: ['users'] });
 
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(api.post).toHaveBeenCalledTimes(2);
     });
 
     test('clears cache when requested', async () => {
       const mockResponse = {
-        data: { items: [], totalCount: 0 }
+        data: {
+          data: { items: [], totalCount: 0 }
+        }
       };
 
-      fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+      api.post.mockResolvedValue(mockResponse);
 
       // First search
       await searchService.search('john');
-      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(api.post).toHaveBeenCalledTimes(1);
 
       // Clear cache
       searchService.clearCache();
 
       // Second search should fetch again
       await searchService.search('john');
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(api.post).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('suggestions functionality', () => {
     test('gets search suggestions', async () => {
+      jest.useFakeTimers();
+
       const mockSuggestions = [
         { text: 'John Doe', type: 'visitor', count: 5 }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: { suggestions: mockSuggestions } })
+      api.post.mockResolvedValueOnce({
+        data: { data: { suggestions: mockSuggestions } }
       });
 
-      const suggestions = await searchService.getSuggestions('john');
+      const promise = searchService.getSuggestions('john');
 
-      expect(fetch).toHaveBeenCalledWith('/api/search/suggestions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer null'
-        },
-        body: JSON.stringify({
-          query: 'john',
-          dataTypes: ['visitors', 'users'],
-          maxSuggestions: 10
-        })
+      // Advance past debounce
+      jest.advanceTimersByTime(300);
+
+      const suggestions = await promise;
+
+      expect(api.post).toHaveBeenCalledWith('/api/search/suggestions', {
+        query: 'john',
+        dataTypes: ['visitors', 'users'],
+        maxSuggestions: 10
       });
 
       expect(suggestions).toEqual(mockSuggestions);
+
+      jest.useRealTimers();
     });
 
     test('returns recent searches for short queries', async () => {
-      const recentSearches = [
-        { text: 'previous search', type: 'recent', timestamp: '2025-01-01T10:00:00Z' }
-      ];
-
       // Mock getRecentSearches
       searchService.searchHistory = [
         { query: 'previous search', timestamp: '2025-01-01T10:00:00Z' }
@@ -259,43 +253,49 @@ describe('SearchService', () => {
       jest.useFakeTimers();
 
       const mockSuggestions = [];
-      fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ data: { suggestions: mockSuggestions } })
+      api.post.mockResolvedValue({
+        data: { data: { suggestions: mockSuggestions } }
       });
 
-      // Make multiple rapid requests
-      const promise1 = searchService.getSuggestions('john');
+      // Make multiple rapid requests - the first promise's timer gets
+      // cancelled by the second call, so both promises resolve when the
+      // second timer fires (they share the same resolve via closure replacement).
+      searchService.getSuggestions('john');
       const promise2 = searchService.getSuggestions('john doe');
 
       // Fast forward timers
       jest.advanceTimersByTime(300);
 
-      await Promise.all([promise1, promise2]);
+      await promise2;
 
-      // Should only make one request after debounce
-      expect(fetch).toHaveBeenCalledTimes(1);
+      // Should only make one request after debounce (the last one)
+      expect(api.post).toHaveBeenCalledTimes(1);
 
       jest.useRealTimers();
     });
 
     test('caches suggestions', async () => {
+      jest.useFakeTimers();
+
       const mockSuggestions = [
         { text: 'John Doe', type: 'visitor' }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: { suggestions: mockSuggestions } })
+      api.post.mockResolvedValueOnce({
+        data: { data: { suggestions: mockSuggestions } }
       });
 
       // First request
-      const suggestions1 = await searchService.getSuggestions('john');
-      expect(fetch).toHaveBeenCalledTimes(1);
+      const promise1 = searchService.getSuggestions('john');
+      jest.advanceTimersByTime(300);
+      const suggestions1 = await promise1;
+      expect(api.post).toHaveBeenCalledTimes(1);
 
-      // Second request should use cache
+      jest.useRealTimers();
+
+      // Second request should use cache (no debounce needed)
       const suggestions2 = await searchService.getSuggestions('john');
-      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(api.post).toHaveBeenCalledTimes(1);
       expect(suggestions2).toEqual(suggestions1);
     });
   });
@@ -359,9 +359,10 @@ describe('SearchService', () => {
 
       localStorageMock.getItem.mockReturnValue(storedHistory);
 
-      // Create new service instance to trigger loading
-      const newService = new (searchService.constructor)();
-      const recentSearches = newService.getRecentSearches();
+      // Manually call loadSearchHistory to simulate loading
+      const loaded = searchService.loadSearchHistory();
+      searchService.searchHistory = loaded;
+      const recentSearches = searchService.getRecentSearches();
 
       expect(recentSearches[0].text).toBe('stored search');
     });
@@ -421,9 +422,8 @@ describe('SearchService', () => {
         description: 'Filter for active users'
       };
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: { id: 1, ...filterSet } })
+      api.post.mockResolvedValueOnce({
+        data: { data: { id: 1, ...filterSet } }
       });
 
       const result = await searchService.saveFilterSet(
@@ -432,14 +432,7 @@ describe('SearchService', () => {
         filterSet.description
       );
 
-      expect(fetch).toHaveBeenCalledWith('/api/search/filter-sets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer null'
-        },
-        body: JSON.stringify(filterSet)
-      });
+      expect(api.post).toHaveBeenCalledWith('/api/search/filter-sets', filterSet);
 
       expect(result.data.name).toBe('Active Users');
     });
@@ -449,18 +442,13 @@ describe('SearchService', () => {
         { id: 1, name: 'Active Users', filters: {} }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: { filterSets: mockFilterSets } })
+      api.get.mockResolvedValueOnce({
+        data: { data: { filterSets: mockFilterSets } }
       });
 
       const filterSets = await searchService.getFilterSets();
 
-      expect(fetch).toHaveBeenCalledWith('/api/search/filter-sets', {
-        headers: {
-          'Authorization': 'Bearer null'
-        }
-      });
+      expect(api.get).toHaveBeenCalledWith('/api/search/filter-sets');
 
       expect(filterSets).toEqual(mockFilterSets);
     });
@@ -474,28 +462,36 @@ describe('SearchService', () => {
         popularQueries: ['visitor', 'user']
       };
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockAnalytics })
+      api.get.mockResolvedValueOnce({
+        data: { data: mockAnalytics }
       });
 
       const analytics = await searchService.getSearchAnalytics('30d');
 
-      expect(fetch).toHaveBeenCalledWith('/api/search/analytics?timeRange=30d', {
-        headers: {
-          'Authorization': 'Bearer null'
-        }
-      });
+      expect(api.get).toHaveBeenCalledWith('/api/search/analytics?timeRange=30d');
 
       expect(analytics).toEqual(mockAnalytics);
     });
 
     test('handles analytics errors gracefully', async () => {
-      fetch.mockRejectedValueOnce(new Error('Analytics unavailable'));
+      api.get.mockRejectedValueOnce(new Error('Analytics unavailable'));
 
       const analytics = await searchService.getSearchAnalytics();
 
       expect(analytics).toBeNull();
+    });
+  });
+
+  describe('source code security', () => {
+    test('does not use localStorage for authentication', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const content = fs.readFileSync(
+        path.join(__dirname, '../../services/searchService.js'), 'utf8'
+      );
+      expect(content).not.toContain("localStorage.getItem('accessToken')");
+      expect(content).not.toContain("fetch('/api/");
+      expect(content).not.toContain('fetch(`/api/');
     });
   });
 });
@@ -591,7 +587,7 @@ describe('FilterBuilder', () => {
   });
 
   test('validates nested groups', () => {
-    const group = builder.addGroup();
+    builder.addGroup();
     // Empty group should have validation errors
 
     const errors = builder.validate();

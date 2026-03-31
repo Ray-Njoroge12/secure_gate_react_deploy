@@ -4,6 +4,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react';
+
 import useFormValidationHook from '../../hooks/useFormValidation';
 
 // Simulated validation functions for testing
@@ -126,7 +127,7 @@ const useFormValidation = (initialValues, validationRules) => {
     const newErrors = {};
     let isValid = true;
 
-    for (const [name, rules] of Object.entries(validationRules)) {
+    for (const [name] of Object.entries(validationRules)) {
       const error = validateField(name, state.values[name]);
       if (error) {
         newErrors[name] = error;

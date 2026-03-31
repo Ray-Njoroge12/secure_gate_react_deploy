@@ -5,8 +5,8 @@
  * @version 1.0.0
  */
 
-import performanceMonitor from '../utils/performanceMonitor.js';
 import logger from '../utils/logger.js';
+import performanceMonitor from '../utils/performanceMonitor.js';
 
 class PerformanceService {
   constructor() {
@@ -52,7 +52,6 @@ class PerformanceService {
    */
   trackUIInteraction(event) {
     const startTime = performance.now();
-    const interactionId = `${event.type}_${Date.now()}`;
     
     // Set up mutation observer to detect UI updates
     const observer = new MutationObserver(() => {
@@ -266,7 +265,7 @@ class PerformanceService {
     
     // Adjust image quality
     root.setAttribute('data-image-quality', settings.imageQuality);
-    root.setAttribute('data-performance-level', Object.keys(this.currentOptimizations || {}).find(key => 
+    root.setAttribute('data-performance-level', Object.keys(this.currentOptimizations || {}).find(_key => 
       JSON.stringify(this.currentOptimizations) === JSON.stringify(settings)
     ) || 'medium');
   }

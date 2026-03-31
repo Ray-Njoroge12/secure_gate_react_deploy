@@ -31,6 +31,38 @@ function createMockUser(role) {
   };
 }
 
+async function suppressGlobalOverlays(page) {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('pwa-install-dismissed', 'true');
+      localStorage.setItem('notification-prompt-dismissed', 'true');
+      localStorage.setItem('cookieConsent', JSON.stringify({
+        necessary: true,
+        analytics: false,
+        marketing: false,
+        preferences: false
+      }));
+      localStorage.setItem('cookieConsentDate', new Date().toISOString());
+    } catch (e) {
+      // Ignore storage write failures in constrained browser contexts.
+    }
+  });
+}
+
+async function dismissBlockingPrompts(page) {
+  const rejectCookies = page.getByRole('button', { name: /Reject All/i });
+  if (await rejectCookies.isVisible({ timeout: 1200 }).catch(() => false)) {
+    await rejectCookies.click({ force: true });
+  }
+
+  const pwaNotNow = page.getByRole('button', { name: /Not now/i });
+  if (await pwaNotNow.isVisible({ timeout: 1200 }).catch(() => false)) {
+    await pwaNotNow.click({ force: true });
+  }
+
+  await page.keyboard.press('Escape').catch(() => {});
+}
+
 async function mockDashboardApi(page, role) {
   const user = createMockUser(role);
 
@@ -238,11 +270,16 @@ async function expectNoGlobalErrorShell(page) {
 }
 
 test.describe('Dashboard role verification smoke', () => {
+  test.beforeEach(async ({ page }) => {
+    await suppressGlobalOverlays(page);
+  });
+
   test('resident dashboard renders and blocks admin dashboard access', async ({ page }) => {
     await mockDashboardApi(page, 'resident');
 
     await page.goto('/dashboard/resident');
     await expect(page).toHaveURL(/\/dashboard\/resident(?:\?.*)?$/);
+    await dismissBlockingPrompts(page);
     await expect(page.locator('[data-test-id="cta-quick-invite"]')).toBeVisible();
     await expect(page.getByText(/Upcoming Invites/i).first()).toBeVisible();
 

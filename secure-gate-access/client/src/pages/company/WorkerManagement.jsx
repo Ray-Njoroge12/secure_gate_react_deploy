@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext.js";
-import { Card, Button, Badge, Loading, EmptyState, Modal, Input } from "../../components/ui";
+import {
+  Card,
+  Button,
+  Badge,
+  Loading,
+  EmptyState,
+  ErrorState,
+  Modal,
+  Input
+} from "../../components/ui";
 import {
   listWorkers,
   registerWorker,
@@ -14,12 +23,35 @@ const WORKER_TYPES = [
   { value: "subcontractor", label: "Subcontractor" }
 ];
 
-const STATUS_COLORS = {
-  active: "bg-green-100 text-green-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  suspended: "bg-orange-100 text-orange-800",
-  revoked: "bg-red-100 text-red-800"
+const STATUS_VARIANTS = {
+  active: "success",
+  pending: "pending",
+  suspended: "warning",
+  revoked: "danger"
 };
+
+const STATUS_LABELS = {
+  active: "Active",
+  pending: "Pending",
+  suspended: "Suspended",
+  revoked: "Revoked"
+};
+
+const INITIAL_WORKER_FORM = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  idNumber: "",
+  workerType: "employee",
+  vehiclePlate: "",
+  preApproved: true,
+  notes: ""
+};
+
+function formatWorkerName(worker) {
+  return `${worker.firstName || worker.first_name || ""} ${worker.lastName || worker.last_name || ""}`.trim() || "worker";
+}
 
 export default function WorkerManagement() {
   const { user } = useAuth();
@@ -28,16 +60,19 @@ export default function WorkerManagement() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [pendingRevokeWorker, setPendingRevokeWorker] = useState(null);
   const [filter, setFilter] = useState({ status: "", workerType: "", search: "" });
   const [actionLoading, setActionLoading] = useState(null);
-  const [error, setError] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [feedback, setFeedback] = useState(null);
 
   const companyId = user?.company_id || user?.companyId;
 
   const fetchWorkers = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(null);
+
       const params = { page, limit: 20 };
       if (companyId) params.companyId = companyId;
       if (filter.status) params.status = filter.status;
@@ -48,212 +83,340 @@ export default function WorkerManagement() {
       setWorkers(res?.data?.workers || []);
       setTotal(res?.data?.total || 0);
     } catch (err) {
-      setError(err.message);
+      setLoadError(err.message || "Failed to load workers");
     } finally {
       setLoading(false);
     }
   }, [page, filter, companyId]);
 
-  useEffect(() => { fetchWorkers(); }, [fetchWorkers]);
+  useEffect(() => {
+    fetchWorkers();
+  }, [fetchWorkers]);
 
-  const handleApprove = async (workerId) => {
-    setActionLoading(workerId);
+  const handleApprove = async (worker) => {
+    const workerId = worker.id;
+    setActionLoading({ workerId, action: "approve" });
+    setFeedback(null);
     try {
       await preApproveWorker(workerId);
-      fetchWorkers();
+      setFeedback({ type: "success", message: `Approved ${formatWorkerName(worker)}.` });
+      await fetchWorkers();
     } catch (err) {
-      setError(err.message);
+      setFeedback({ type: "error", message: err.message || "Failed to approve worker" });
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleRevoke = async (workerId) => {
-    if (!window.confirm("Are you sure you want to revoke this worker's access?")) return;
-    setActionLoading(workerId);
-    try {
-      await revokeWorker(workerId);
-      fetchWorkers();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleGeneratePass = async (workerId) => {
-    setActionLoading(workerId);
+  const handleGeneratePass = async (worker) => {
+    const workerId = worker.id;
+    setActionLoading({ workerId, action: "pass" });
+    setFeedback(null);
     try {
       await generateWorkerPass(workerId, { passType: "worker" });
-      alert("Worker pass generated successfully");
+      setFeedback({ type: "success", message: `Generated pass for ${formatWorkerName(worker)}.` });
+      await fetchWorkers();
     } catch (err) {
-      setError(err.message);
+      setFeedback({ type: "error", message: err.message || "Failed to generate worker pass" });
     } finally {
       setActionLoading(null);
     }
   };
+
+  const handleConfirmRevoke = async () => {
+    if (!pendingRevokeWorker) return;
+
+    const workerId = pendingRevokeWorker.id;
+    setActionLoading({ workerId, action: "revoke" });
+    setFeedback(null);
+
+    try {
+      await revokeWorker(workerId);
+      setFeedback({ type: "success", message: `Revoked access for ${formatWorkerName(pendingRevokeWorker)}.` });
+      setPendingRevokeWorker(null);
+      await fetchWorkers();
+    } catch (err) {
+      setFeedback({ type: "error", message: err.message || "Failed to revoke worker access" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAddSuccess = async (createdWorker) => {
+    setShowAddModal(false);
+    setFeedback({
+      type: "success",
+      message: `Registered ${createdWorker?.firstName || createdWorker?.first_name || "new"} worker successfully.`
+    });
+    await fetchWorkers();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center py-12">
+        <Loading text="Loading workers" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return <ErrorState onRetry={fetchWorkers} errorMessage={loadError} />;
+  }
+
+  const hasWorkers = workers.length > 0;
+  const feedbackVariant =
+    feedback?.type === "success"
+      ? "success"
+      : feedback?.type === "error"
+      ? "danger"
+      : "default";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Worker Management</h1>
-        <Button onClick={() => setShowAddModal(true)}>Add Worker</Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Worker Management</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Manage worker registration, status, and estate access from one place.
+          </p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} fullWidth={false}>
+          Add Worker
+        </Button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-          <button className="ml-2 underline" onClick={() => setError(null)}>Dismiss</button>
+      {feedback && (
+        <div
+          className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 ${
+            feedbackVariant === "success"
+              ? "border-green-200 bg-green-50 text-green-800 dark:border-green-900/40 dark:bg-green-950/30 dark:text-green-100"
+              : "border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-100"
+          }`}
+          role={feedback.type === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          <p className="text-sm">{feedback.message}</p>
+          <Button variant="ghost" size="sm" onClick={() => setFeedback(null)} aria-label="Dismiss message">
+            Dismiss
+          </Button>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Search workers..."
-          value={filter.search}
-          onChange={(e) => { setFilter(f => ({ ...f, search: e.target.value })); setPage(1); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        <select
-          value={filter.status}
-          onChange={(e) => { setFilter(f => ({ ...f, status: e.target.value })); setPage(1); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        >
-          <option value="">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="suspended">Suspended</option>
-          <option value="revoked">Revoked</option>
-        </select>
-        <select
-          value={filter.workerType}
-          onChange={(e) => { setFilter(f => ({ ...f, workerType: e.target.value })); setPage(1); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        >
-          <option value="">All Types</option>
-          <option value="employee">Employee</option>
-          <option value="subcontractor">Subcontractor</option>
-        </select>
-      </div>
+      <Card className="bg-white dark:bg-slate-800">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,1fr))]">
+          <Input
+            label="Search workers"
+            placeholder="Name, phone, ID number..."
+            value={filter.search}
+            onChange={(e) => {
+              setFilter((current) => ({ ...current, search: e.target.value }));
+              setPage(1);
+            }}
+          />
 
-      {loading ? (
-        <Loading />
-      ) : workers.length === 0 ? (
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Status</label>
+            <select
+              value={filter.status}
+              onChange={(e) => {
+                setFilter((current) => ({ ...current, status: e.target.value }));
+                setPage(1);
+              }}
+              className="block w-full min-h-[44px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="suspended">Suspended</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Type</label>
+            <select
+              value={filter.workerType}
+              onChange={(e) => {
+                setFilter((current) => ({ ...current, workerType: e.target.value }));
+                setPage(1);
+              }}
+              className="block w-full min-h-[44px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value="">All types</option>
+              {WORKER_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </Card>
+
+      {!hasWorkers ? (
         <EmptyState
-          title="No Workers Found"
-          description="Add workers to manage their estate access."
+          title="No workers found"
+          description="Add workers to manage estate access and approval workflows."
+          primaryAction={{
+            label: "Add Worker",
+            onClick: () => setShowAddModal(true)
+          }}
         />
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+              <thead className="bg-gray-50 dark:bg-slate-900/70">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Phone</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Vehicle</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {workers.map(worker => (
-                  <tr key={worker.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {worker.firstName || worker.first_name} {worker.lastName || worker.last_name}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 capitalize">
-                      {worker.workerType || worker.worker_type}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{worker.phone || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {worker.vehiclePlate || worker.vehicle_plate || "-"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[worker.status] || "bg-gray-100 text-gray-800"}`}>
-                        {worker.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm space-x-2">
-                      {worker.status === "pending" && (
-                        <button
-                          onClick={() => handleApprove(worker.id)}
-                          disabled={actionLoading === worker.id}
-                          className="text-green-600 hover:text-green-800 font-medium disabled:opacity-50"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      {worker.status === "active" && (
-                        <>
-                          <button
-                            onClick={() => handleGeneratePass(worker.id)}
-                            disabled={actionLoading === worker.id}
-                            className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                          >
-                            Generate Pass
-                          </button>
-                          <button
-                            onClick={() => handleRevoke(worker.id)}
-                            disabled={actionLoading === worker.id}
-                            className="text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
-                          >
-                            Revoke
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-gray-200 bg-white dark:divide-slate-700 dark:bg-slate-800">
+                {workers.map((worker) => {
+                  const workerStatus = worker.status || "pending";
+                  const workerLoading = actionLoading?.workerId === worker.id;
+                  const activeAction = actionLoading?.action;
+
+                  return (
+                    <tr key={worker.id} className="hover:bg-gray-50 dark:hover:bg-slate-900/50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                        {formatWorkerName(worker)}
+                      </td>
+                      <td className="px-4 py-3 text-sm capitalize text-gray-600 dark:text-gray-300">
+                        {worker.workerType || worker.worker_type || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {worker.phone || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {worker.vehiclePlate || worker.vehicle_plate || "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STATUS_VARIANTS[workerStatus] || "default"} size="sm">
+                          {STATUS_LABELS[workerStatus] || workerStatus}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          {workerStatus === "pending" && (
+                            <Button
+                              size="sm"
+                              variant="success"
+                              loading={workerLoading && activeAction === "approve"}
+                              disabled={workerLoading}
+                              onClick={() => handleApprove(worker)}
+                            >
+                              Approve
+                            </Button>
+                          )}
+                          {(workerStatus === "active" || workerStatus === "pending") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              loading={workerLoading && activeAction === "pass"}
+                              disabled={workerLoading}
+                              onClick={() => handleGeneratePass(worker)}
+                            >
+                              Generate Pass
+                            </Button>
+                          )}
+                          {workerStatus === "active" && (
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              loading={workerLoading && activeAction === "revoke"}
+                              disabled={workerLoading}
+                              onClick={() => setPendingRevokeWorker(worker)}
+                            >
+                              Revoke
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination */}
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-500">{total} worker{total !== 1 ? "s" : ""} total</p>
-            <div className="space-x-2">
-              <Button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} variant="outline" size="sm">Previous</Button>
-              <span className="text-sm text-gray-600">Page {page}</span>
-              <Button onClick={() => setPage(p => p + 1)} disabled={workers.length < 20} variant="outline" size="sm">Next</Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
+              {total} worker{total !== 1 ? "s" : ""} total
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1}
+                variant="outline"
+                size="sm"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Page {page}</span>
+              <Button
+                onClick={() => setPage((current) => current + 1)}
+                disabled={workers.length < 20}
+                variant="outline"
+                size="sm"
+              >
+                Next
+              </Button>
             </div>
           </div>
         </>
       )}
 
-      {/* Add Worker Modal */}
-      {showAddModal && (
-        <AddWorkerModal
-          companyId={companyId}
-          onClose={() => setShowAddModal(false)}
-          onSuccess={() => { setShowAddModal(false); fetchWorkers(); }}
-        />
-      )}
+      <AddWorkerModal
+        isOpen={showAddModal}
+        companyId={companyId}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={handleAddSuccess}
+      />
+
+      <ConfirmRevokeModal
+        isOpen={Boolean(pendingRevokeWorker)}
+        worker={pendingRevokeWorker}
+        loading={actionLoading?.workerId === pendingRevokeWorker?.id && actionLoading?.action === "revoke"}
+        onClose={() => setPendingRevokeWorker(null)}
+        onConfirm={handleConfirmRevoke}
+      />
     </div>
   );
 }
 
-function AddWorkerModal({ companyId, onClose, onSuccess }) {
-  const [form, setForm] = useState({
-    firstName: "", lastName: "", phone: "", email: "",
-    idNumber: "", workerType: "employee", vehiclePlate: "", preApproved: true, notes: ""
-  });
+function AddWorkerModal({ isOpen, companyId, onClose, onSuccess }) {
+  const [form, setForm] = useState(INITIAL_WORKER_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      setForm(INITIAL_WORKER_FORM);
+      setError(null);
+      setSubmitting(false);
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName) {
+
+    if (!form.firstName.trim() || !form.lastName.trim()) {
       setError("First name and last name are required");
       return;
     }
+
     setSubmitting(true);
+    setError(null);
+
     try {
       await registerWorker({ ...form, companyId });
-      onSuccess();
+      await onSuccess(form);
     } catch (err) {
       setError(err.message || "Failed to register worker");
     } finally {
@@ -262,69 +425,141 @@ function AddWorkerModal({ companyId, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Worker</h2>
-        {error && <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-              <input type="text" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-              <input type="text" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
-            </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add Worker"
+      size="lg"
+      ariaLabel="Add worker dialog"
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-100" role="alert">
+            {error}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
-              <input type="text" value={form.idNumber} onChange={e => setForm(f => ({ ...f, idNumber: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Plate</label>
-              <input type="text" value={form.vehiclePlate} onChange={e => setForm(f => ({ ...f, vehiclePlate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Worker Type</label>
-            <select value={form.workerType} onChange={e => setForm(f => ({ ...f, workerType: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-              {WORKER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" rows={2} />
-          </div>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={form.preApproved} onChange={e => setForm(f => ({ ...f, preApproved: e.target.checked }))} />
-            <span className="text-sm text-gray-700">Pre-approve for estate access</span>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            label="First name"
+            value={form.firstName}
+            onChange={(e) => setForm((current) => ({ ...current, firstName: e.target.value }))}
+            required
+          />
+          <Input
+            label="Last name"
+            value={form.lastName}
+            onChange={(e) => setForm((current) => ({ ...current, lastName: e.target.value }))}
+            required
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            label="Phone"
+            type="tel"
+            value={form.phone}
+            onChange={(e) => setForm((current) => ({ ...current, phone: e.target.value }))}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            label="ID number"
+            value={form.idNumber}
+            onChange={(e) => setForm((current) => ({ ...current, idNumber: e.target.value }))}
+          />
+          <Input
+            label="Vehicle plate"
+            value={form.vehiclePlate}
+            onChange={(e) => setForm((current) => ({ ...current, vehiclePlate: e.target.value }))}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Worker type</label>
+          <select
+            value={form.workerType}
+            onChange={(e) => setForm((current) => ({ ...current, workerType: e.target.value }))}
+            className="block w-full min-h-[44px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            {WORKER_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200" htmlFor="worker-notes">
+            Notes
           </label>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={submitting}>{submitting ? "Registering..." : "Add Worker"}</Button>
-          </div>
-        </form>
+          <textarea
+            id="worker-notes"
+            value={form.notes}
+            onChange={(e) => setForm((current) => ({ ...current, notes: e.target.value }))}
+            rows={3}
+            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          />
+        </div>
+
+        <label className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/70">
+          <input
+            type="checkbox"
+            checked={form.preApproved}
+            onChange={(e) => setForm((current) => ({ ...current, preApproved: e.target.checked }))}
+            className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-200">Pre-approve for estate access</span>
+        </label>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={submitting}>
+            Add Worker
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function ConfirmRevokeModal({ isOpen, worker, loading, onClose, onConfirm }) {
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Revoke worker access"
+      size="md"
+      ariaLabel="Confirm revoke worker access"
+    >
+      <div className="space-y-5">
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Are you sure you want to revoke access for{" "}
+          <span className="font-semibold text-gray-900 dark:text-white">
+            {worker ? formatWorkerName(worker) : "this worker"}
+          </span>
+          ? This will remove estate access until the worker is approved again.
+        </p>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" loading={loading} onClick={onConfirm}>
+            Revoke access
+          </Button>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

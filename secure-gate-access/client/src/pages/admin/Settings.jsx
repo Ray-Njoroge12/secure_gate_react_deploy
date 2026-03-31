@@ -5,6 +5,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../utils/apiClient";
 import NotificationSettings from "../../components/settings/NotificationSettings";
+import AccessibilitySettings from "../../components/accessibility/AccessibilitySettings";
 import "../../styles.css";
 
 export default function Settings() {
@@ -809,6 +810,7 @@ export default function Settings() {
                 </p>
               </div>
               <ThemeRadioGroup />
+              <AccessibilitySettings className="mt-6" />
               <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>

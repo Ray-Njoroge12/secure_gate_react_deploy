@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Modal from '../ui/Modal';
-import GradientButton from '../ui/GradientButton';
-import Icon from '../ui/Icon';
+
+import api from '../../utils/apiClient';
 import Button from '../ui/Button';
+import Icon from '../ui/Icon';
+import Modal from '../ui/Modal';
 
 /**
  * DecommissionEstateModal
@@ -36,16 +37,11 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
         setFetchingImpact(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}/decommission-impact`, {
-                credentials: 'include'
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.message || 'Failed to fetch impact summary');
-            }
+            const res = await api.get(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}/decommission-impact`);
+            const data = res.data;
             setImpact(data.data || data);
         } catch (err) {
-            setError(err.message || 'Failed to load impact data');
+            setError(err.response?.data?.message || err.message || 'Failed to load impact data');
         } finally {
             setFetchingImpact(false);
         }
@@ -64,25 +60,16 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ confirmationText, reason })
+            const res = await api.delete(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}`, {
+                data: { confirmationText, reason }
             });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || 'Failed to decommission estate');
-            }
+            const data = res.data;
 
             onSuccess?.(data);
             onClose();
         } catch (err) {
-            // Show field-specific validation errors if available
-            const fieldError = err.errors?.[0]?.message;
-            setError(fieldError || err.message || 'Failed to decommission estate');
+            const fieldError = err.response?.data?.errors?.[0]?.message;
+            setError(fieldError || err.response?.data?.message || err.message || 'Failed to decommission estate');
         } finally {
             setLoading(false);
         }
@@ -107,7 +94,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                                 Danger Zone
                             </h3>
                             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                                This action cannot be easily undone. All users from this estate will lose access immediately.
+                                <strong>This action is permanent and cannot be undone.</strong> All users from this estate will lose access immediately, active sessions will be terminated, and pending visitor invites will be invalidated.
                             </p>
                         </div>
                     </div>
@@ -243,16 +230,20 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                                 <Button
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={onClose}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                                    className="text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                                     disabled={loading}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
+                                    variant="danger"
+                                    size="sm"
                                     disabled={!isConfirmationValid() || loading}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                    className="text-sm font-medium transition-colors flex items-center gap-2"
                                 >
                                     {loading && <Icon name="loader-2" className="h-4 w-4 animate-spin" aria-hidden="true" />}
                                     Decommission Estate

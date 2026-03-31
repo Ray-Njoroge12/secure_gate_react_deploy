@@ -279,7 +279,6 @@ describe.skip('API Service', () => {
 
   describe('Request Queuing', () => {
     const queue = [];
-    let isProcessing = false;
 
     const enqueueRequest = (request) => {
       return new Promise((resolve, reject) => {
@@ -295,7 +294,6 @@ describe.skip('API Service', () => {
 
     beforeEach(() => {
       clearQueue();
-      isProcessing = false;
     });
 
     test('should add request to queue', () => {

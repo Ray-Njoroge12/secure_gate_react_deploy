@@ -7,6 +7,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+import { playNotificationTone, supportsNotificationAudio } from '../utils/notificationAudio';
+
 import useWebSocket from './useWebSocket';
 
 /**
@@ -50,74 +52,14 @@ export function useVisitorEvents({
   });
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [lastUpdate, setLastUpdate] = useState(null);
-  const notificationSound = useRef(null);
-
-  // Initialize notification sound
-  useEffect(() => {
-    notificationSound.current = new Audio('/sounds/notification.mp3');
-    notificationSound.current.volume = 0.5;
-  }, []);
+  const soundEnabledRef = useRef(supportsNotificationAudio());
 
   // Play notification sound
-  const playNotificationSound = useCallback(() => {
-    if (notificationSound.current) {
-      notificationSound.current.currentTime = 0;
-      notificationSound.current.play().catch(() => {
-        // Silently fail if audio is not allowed
-      });
+  const playNotificationSound = useCallback(async () => {
+    if (soundEnabledRef.current) {
+      await playNotificationTone({ frequency: 784, volume: 0.03 });
     }
   }, []);
-
-  // Handle incoming visitor event (with deduplication)
-  const handleVisitorEvent = useCallback((event) => {
-    const eventData = {
-      ...event,
-      id: event.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: event.timestamp || new Date().toISOString(),
-      isNew: true
-    };
-
-    // Deduplicate: build a fingerprint from type + visitor ID + timestamp
-    const fingerprint = `${eventData.type}:${eventData.visitorId || eventData.visitor_id || ''}:${eventData.timestamp}`;
-
-    // Add to recent events (with deduplication)
-    setRecentEvents(prev => {
-      // Check for duplicate by fingerprint or original event ID
-      const isDuplicate = prev.some(existing => {
-        const existingFingerprint = `${existing.type}:${existing.visitorId || existing.visitor_id || ''}:${existing.timestamp}`;
-        return existingFingerprint === fingerprint || (event.id && existing.id === event.id);
-      });
-      if (isDuplicate) return prev;
-
-      const updated = [eventData, ...prev].slice(0, 50); // Keep last 50 events
-      return updated;
-    });
-
-    // Update live stats based on event type
-    updateLiveStats(event.type);
-
-    // Set last update time
-    setLastUpdate(new Date());
-
-    // Play sound for important events
-    if (showNotifications && isImportantEvent(event.type)) {
-      playNotificationSound();
-    }
-
-    // Call external callback
-    if (onVisitorEvent) {
-      onVisitorEvent(eventData);
-    }
-  }, [onVisitorEvent, showNotifications, playNotificationSound]);
-
-  // Handle security alerts
-  const handleSecurityAlert = useCallback((alert) => {
-    playNotificationSound();
-    
-    if (onSecurityAlert) {
-      onSecurityAlert(alert);
-    }
-  }, [onSecurityAlert, playNotificationSound]);
 
   // Update live stats based on event type
   const updateLiveStats = useCallback((eventType) => {
@@ -163,6 +105,57 @@ export function useVisitorEvents({
     ];
     return importantEvents.includes(eventType);
   }, []);
+
+  // Handle incoming visitor event (with deduplication)
+  const handleVisitorEvent = useCallback((event) => {
+    const eventData = {
+      ...event,
+      id: event.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: event.timestamp || new Date().toISOString(),
+      isNew: true
+    };
+
+    // Deduplicate: build a fingerprint from type + visitor ID + timestamp
+    const fingerprint = `${eventData.type}:${eventData.visitorId || eventData.visitor_id || ''}:${eventData.timestamp}`;
+
+    // Add to recent events (with deduplication)
+    setRecentEvents(prev => {
+      // Check for duplicate by fingerprint or original event ID
+      const isDuplicate = prev.some(existing => {
+        const existingFingerprint = `${existing.type}:${existing.visitorId || existing.visitor_id || ''}:${existing.timestamp}`;
+        return existingFingerprint === fingerprint || (event.id && existing.id === event.id);
+      });
+      if (isDuplicate) return prev;
+
+      const updated = [eventData, ...prev].slice(0, 50); // Keep last 50 events
+      return updated;
+    });
+
+    // Update live stats based on event type
+    updateLiveStats(event.type);
+
+    // Set last update time
+    setLastUpdate(new Date());
+
+    // Play sound for important events
+    if (showNotifications && isImportantEvent(event.type)) {
+      playNotificationSound();
+    }
+
+    // Call external callback
+    if (onVisitorEvent) {
+      onVisitorEvent(eventData);
+    }
+  }, [isImportantEvent, onVisitorEvent, playNotificationSound, showNotifications, updateLiveStats]);
+
+  // Handle security alerts
+  const handleSecurityAlert = useCallback((alert) => {
+    playNotificationSound();
+    
+    if (onSecurityAlert) {
+      onSecurityAlert(alert);
+    }
+  }, [onSecurityAlert, playNotificationSound]);
 
   const normalizeIncomingEvent = useCallback((event) => {
     if (!event || typeof event !== 'object') {

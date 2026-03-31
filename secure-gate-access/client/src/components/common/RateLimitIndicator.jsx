@@ -5,8 +5,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Icon from '../ui/Icon';
+
 import Button from '../ui/Button';
+import Icon from '../ui/Icon';
 
 const RateLimitIndicator = ({ 
   threshold = 10, // Warn when this many requests remain

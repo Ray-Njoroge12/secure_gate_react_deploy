@@ -169,6 +169,7 @@ jest.mock('../../components/ui', () => {
   const FloatingLabelInput = require('../../components/ui/FloatingLabelInput.jsx').default;
   const GradientButton = require('../../components/ui/GradientButton.jsx').default;
   const GradientCard = require('../../components/ui/GradientCard.jsx').default;
+  const Icon = require('../../components/ui/Icon.jsx').default;
 
   const CheckboxModule = require('../../components/ui/Checkbox.jsx');
   const Checkbox = CheckboxModule.Checkbox || CheckboxModule.default;
@@ -185,6 +186,7 @@ jest.mock('../../components/ui', () => {
     FloatingLabelInput,
     GradientButton,
     GradientCard,
+    Icon,
     Checkbox,
     Card,
     Button,
@@ -296,8 +298,8 @@ describe('Accessibility (jest-axe)', () => {
       { route: '/dashboard/admin', auth: { user: { id: 'a1', role: 'admin' } } }
     );
 
-    // Wait for the dashboard to render - check for Overview tab or Health Metrics section
-    await screen.findByText(/health metrics/i);
+    // Wait for the dashboard to render - use a stable current overview label
+    await screen.findByText(/notification system status/i);
 
     const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(results).toHaveNoViolations();

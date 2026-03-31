@@ -1,4 +1,5 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
+
 import { useVisitorInvite } from '../../hooks/useVisitorInvite';
 
 describe('useVisitorInvite', () => {

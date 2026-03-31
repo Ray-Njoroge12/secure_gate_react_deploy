@@ -17,6 +17,7 @@ import { LoadingProvider } from './LoadingContext.jsx';
 import { SearchProvider } from './SearchContext.jsx';
 import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx';
 import { ThemeProvider } from './ThemeContext.jsx';
+import { ThemeEngineProvider } from './ThemeEngine.jsx';
 import { PreferenceProvider } from './PreferenceContext.jsx';
 import { ToastProvider } from './ToastContext.jsx';
 import { UndoProvider } from './UndoContext.jsx';
@@ -75,32 +76,34 @@ export const RootProvider = ({ children }) => {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ThemeProvider>
-            <PreferenceProvider>
-              <AccessibilityProvider>
-                <BrowserCompatibilityProvider>
-                  <LoadingProvider>
-                    <ToastProvider position="top-right" maxVisible={4}>
-                      <UndoProvider maxHistory={10}>
-                        <SearchProvider>
-                          <Router
-                            future={{
-                              v7_startTransition: true,
-                              v7_relativeSplatPath: true
-                            }}
-                          >
-                            <AppNavigationBridge />
-                            <AuthNavigationBridge />
-                            <NavigationProvider>
-                              {children}
-                            </NavigationProvider>
-                          </Router>
-                        </SearchProvider>
-                      </UndoProvider>
-                    </ToastProvider>
-                  </LoadingProvider>
-                </BrowserCompatibilityProvider>
-              </AccessibilityProvider>
-            </PreferenceProvider>
+            <ThemeEngineProvider>
+              <PreferenceProvider>
+                <AccessibilityProvider>
+                  <BrowserCompatibilityProvider>
+                    <LoadingProvider>
+                      <ToastProvider position="top-right" maxVisible={4}>
+                        <UndoProvider maxHistory={10}>
+                          <SearchProvider>
+                            <Router
+                              future={{
+                                v7_startTransition: true,
+                                v7_relativeSplatPath: true
+                              }}
+                            >
+                              <AppNavigationBridge />
+                              <AuthNavigationBridge />
+                              <NavigationProvider>
+                                {children}
+                              </NavigationProvider>
+                            </Router>
+                          </SearchProvider>
+                        </UndoProvider>
+                      </ToastProvider>
+                    </LoadingProvider>
+                  </BrowserCompatibilityProvider>
+                </AccessibilityProvider>
+              </PreferenceProvider>
+            </ThemeEngineProvider>
           </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>

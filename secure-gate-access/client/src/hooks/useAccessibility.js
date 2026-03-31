@@ -1,5 +1,6 @@
 // client/src/hooks/useAccessibility.js
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+
 import { auditThemeAccessibility, runAccessibilityChecks } from '../utils/accessibilityAudit';
 
 /**
@@ -17,8 +18,8 @@ export const useAccessibility = (options = {}) => {
   } = safeOptions;
 
   const [accessibilityState, setAccessibilityState] = useState({
-    isHighContrast: false,
-    isReducedMotion: false,
+    isHighContrast: enableHighContrast,
+    isReducedMotion: enableReducedMotion,
     isKeyboardUser: false,
     isScreenReader: false,
     focusVisible: false,
@@ -28,7 +29,6 @@ export const useAccessibility = (options = {}) => {
 
   const [auditResults, setAuditResults] = useState(null);
   const focusHistory = useRef([]);
-  const announcementQueue = useRef([]);
 
   // Detect user preferences
   useEffect(() => {

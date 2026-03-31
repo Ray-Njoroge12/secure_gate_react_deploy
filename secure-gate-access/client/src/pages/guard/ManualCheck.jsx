@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { navigateTo } from '../../utils/appNavigation';
+
+import OfflineBanner from '../../components/common/OfflineBanner';
+import IncidentModal from '../../components/guard/IncidentModal'; // Phase G4
 import { Card, Button, PageHeader, Icon, Skeleton, EmptyState } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import IncidentModal from '../../components/guard/IncidentModal'; // Phase G4
-import { getStatusChipClass } from '../../utils/statusColors'; // Phase A8
-import { verifyOtp } from '../../services/visitorService';
-import notificationService from '../../services/notificationService';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import OfflineBanner from '../../components/common/OfflineBanner';
-
+import notificationService from '../../services/notificationService';
+import api from '../../utils/apiClient';
+import { navigateTo } from '../../utils/appNavigation';
 import {
-  normalizeVisitorStatus,
   formatVisitorStatus,
   canVisitorCheckIn,
   canVisitorCheckOut
 } from '../../utils/guardScanUtils';
+import { getStatusChipClass } from '../../utils/statusColors'; // Phase A8
+
 
 const ManualCheck = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,74 +52,15 @@ const ManualCheck = () => {
       setLoading('manualCheck', true, { message: 'Searching visitors...' });
       clearAllErrors();
 
-      // Check if search term is a 6-digit OTP
-      const isOTP = /^\d{6}$/.test(searchTerm.trim());
+      // Server-side search — the backend handles OTP (6-digit), name, phone, and invite code
+      const query = encodeURIComponent(searchTerm.trim());
+      const response = await api.get(`/api/visitors?search=${query}`);
+      const data = response.data;
+      const visitors = data.data || [];
+      setSearchResults(visitors);
 
-      if (isOTP) {
-        // Search by OTP - find visitors with status otp_sent or pending
-        const response = await fetch('/api/visitors', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const visitors = data.data || [];
-
-          // Filter for visitors awaiting OTP verification
-          const otpPending = visitors.filter((visitor) => {
-            const normalized = normalizeVisitorStatus(visitor.status);
-            return normalized === 'OTP_SENT' || normalized === 'PENDING';
-          });
-
-          // Try to verify OTP for each pending visitor
-          const verified = [];
-          for (const visitor of otpPending) {
-            try {
-              const otpResult = await verifyOtp(visitor.id, searchTerm.trim());
-              verified.push({
-                ...visitor,
-                status: otpResult?.status || 'verified',
-                _otpVerified: true
-              });
-              break; // Found the match
-            } catch (e) {
-              // OTP doesn't match this visitor, continue
-            }
-          }
-
-          if (verified.length > 0) {
-            setSearchResults(verified);
-            notificationService.success('OTP Verified', 'Visitor verified successfully');
-          } else {
-            setSearchResults([]);
-            handleError('Invalid OTP or OTP expired', { context: 'OTP Verification' });
-          }
-        }
-      } else {
-        // Regular search by name, phone, or invite code
-        const response = await fetch('/api/visitors', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const visitors = data.data || [];
-
-          const query = searchTerm.toLowerCase();
-          const filtered = visitors.filter((visitor) =>
-            visitor.name?.toLowerCase().includes(query) ||
-            visitor.phone?.includes(searchTerm) ||
-            visitor.invite_code?.toLowerCase().includes(query)
-          );
-
-          setSearchResults(filtered);
-        } else {
-          const error = new Error('Failed to fetch visitors');
-          error.response = { status: response.status };
-          throw error;
-        }
+      if (/^\d{6}$/.test(searchTerm.trim()) && visitors.length > 0) {
+        notificationService.success('OTP Match', 'Visitor found by OTP');
       }
     } catch (err) {
       handleApiError(err, 'Manual Check Search');
@@ -131,27 +72,14 @@ const ManualCheck = () => {
   const handleCheckIn = async (visitorId) => {
     try {
       setLoading('checkIn', true, { message: 'Checking in visitor...' });
-      const response = await fetch(`/api/visitors/${visitorId}/check-in`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setSearchResults(prev =>
-          prev.map(v =>
-            v.id === visitorId
-              ? { ...v, status: 'on_premise', check_in: new Date().toISOString() }
-              : v
-          )
-        );
-      } else {
-        const error = new Error('Check-in failed');
-        error.response = { status: response.status, data: await response.json() };
-        throw error;
-      }
+      await api.post(`/api/visitors/${visitorId}/check-in`);
+      setSearchResults(prev =>
+        prev.map(v =>
+          v.id === visitorId
+            ? { ...v, status: 'on_premise', check_in: new Date().toISOString() }
+            : v
+        )
+      );
     } catch (err) {
       handleApiError(err, 'Visitor Check-in');
     } finally {
@@ -162,27 +90,14 @@ const ManualCheck = () => {
   const handleCheckOut = async (visitorId) => {
     try {
       setLoading('checkOut', true, { message: 'Checking out visitor...' });
-      const response = await fetch(`/api/visitors/${visitorId}/check-out`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setSearchResults(prev =>
-          prev.map(v =>
-            v.id === visitorId
-              ? { ...v, status: 'checked_out', check_out: new Date().toISOString() }
-              : v
-          )
-        );
-      } else {
-        const error = new Error('Check-out failed');
-        error.response = { status: response.status, data: await response.json() };
-        throw error;
-      }
+      await api.post(`/api/visitors/${visitorId}/check-out`);
+      setSearchResults(prev =>
+        prev.map(v =>
+          v.id === visitorId
+            ? { ...v, status: 'checked_out', check_out: new Date().toISOString() }
+            : v
+        )
+      );
     } catch (err) {
       handleApiError(err, 'Visitor Check-out');
     } finally {

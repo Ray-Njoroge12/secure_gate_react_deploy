@@ -2,6 +2,7 @@
 // Custom hook for easy preference access and management
 
 import { useCallback, useMemo } from 'react';
+
 import { usePreferences } from '../contexts/PreferenceContext.jsx';
 import { PREFERENCE_CATEGORIES } from '../services/preferenceService.js';
 
@@ -142,7 +143,7 @@ export const useUserPreferences = () => {
    */
   const isNotificationChannelEnabled = useCallback((channel) => {
     return notificationPreferences.channels[channel] || false;
-  }, [notificationPreferences.channels]);
+  }, [notificationPreferences]);
 
   /**
    * Check if notifications are enabled for a specific frequency
@@ -157,7 +158,7 @@ export const useUserPreferences = () => {
     }
     
     return 'immediate'; // Default frequency
-  }, [notificationPreferences.frequency]);
+  }, [notificationPreferences]);
 
   /**
    * Check if currently in quiet hours
@@ -176,7 +177,7 @@ export const useUserPreferences = () => {
     } else {
       return currentTime >= quietHours.start && currentTime <= quietHours.end;
     }
-  }, [notificationPreferences.quietHours]);
+  }, [notificationPreferences]);
 
   /**
    * Get CSS classes based on accessibility preferences

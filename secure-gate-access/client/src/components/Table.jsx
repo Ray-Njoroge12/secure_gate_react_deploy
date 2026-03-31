@@ -1,7 +1,7 @@
 // client/src/components/Table.jsx
 import React, { useEffect } from "react";
 
-export default function Table({ headers = [], rows = [], mobileCardView = true, loading = false, variant = 'auto' }) {
+export default function Table({ headers = [], rows = [], mobileCardView = true, loading = false }) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {

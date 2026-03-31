@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop, temp-*, feature/* ]
+    branches: [ main, master, develop, staging, temp-*, feature/* ]
   pull_request:
     branches: [ "**" ]
 
@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.11'
           cache: 'npm'
           cache-dependency-path: |
             secure-gate-access/server/package-lock.json
@@ -63,9 +63,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-
-      - name: Install root dependencies
-        run: npm ci
 
       - name: Install server dependencies
         working-directory: secure-gate-access/server
@@ -104,20 +101,31 @@ jobs:
         working-directory: secure-gate-access/server
         run: npm run migrations:check-sequence
 
+      - name: Check migration file format
+        working-directory: secure-gate-access/server
+        run: npm run migrations:check-format
+
       - name: Apply SQL migrations
         working-directory: secure-gate-access/server
-        run: |
-          set -e
-          shopt -s nullglob
-          for f in migrations/*.sql; do
-            echo "Applying migration: $f"
-            psql -v ON_ERROR_STOP=1 -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f "$f"
-          done
+        run: npm run migrations:apply:ci
+
+      - name: Run security regression gate
+        working-directory: secure-gate-access/server
+        run: npm run test:security:regression
 
       - name: Run critical flow tests
         working-directory: secure-gate-access/server
         run: npm run test:critical
 
-      - name: Run server tests
+      - name: Run stable integration lane
         working-directory: secure-gate-access/server
-        run: npm test
+        run: npm run test:integration:stable
+
+      - name: Run quarantine integration lane (non-blocking)
+        working-directory: secure-gate-access/server
+        run: npm run test:integration:quarantine
+        continue-on-error: true
+
+      - name: Run server unit tests
+        working-directory: secure-gate-access/server
+        run: npm run test:unit

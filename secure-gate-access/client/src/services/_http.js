@@ -3,6 +3,7 @@
 
 import { validateResponse, mapErrorMessage, mapStatusToMessage } from '../utils/errorMapper.js';
 import { API_ENDPOINTS } from '../constants/endpoints.js';
+import { getCSRFToken } from '../utils/csrf.js';
 
 /**
  * Build standard headers for API requests
@@ -48,15 +49,24 @@ export async function parseApiResponse(res) {
  * @returns {Object} Response data or throws structured error
  */
 export async function apiCall(url, options = {}) {
+  // Determine if this is a state-changing request
+  const method = (options.method || 'GET').toUpperCase();
+  let csrfHeader = {};
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    const token = getCSRFToken();
+    if (token) {
+      csrfHeader = { 'x-csrf-token': token };
+    }
+  }
   const opts = {
-    method: 'GET',
+    method: method,
     credentials: 'include', // ✅ SECURITY FIX: Send httpOnly cookies
-    headers: buildHeaders(),
-    ...options,
     headers: {
       ...buildHeaders(),
+      ...csrfHeader,
       ...options.headers
-    }
+    },
+    ...options
   };
 
   if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {

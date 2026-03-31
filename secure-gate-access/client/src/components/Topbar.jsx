@@ -8,6 +8,7 @@ import ThemeToggle from "./ui/ThemeToggle.jsx";
 import NotificationBell from "./ui/NotificationBell.jsx";
 import ChangePasswordModal from "./modals/ChangePasswordModal";
 import Button from './ui/Button';
+import Icon from './ui/Icon.jsx';
 
 export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const { user } = useAuth(); // Get user from AuthContext instead of localStorage
@@ -97,19 +98,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           aria-expanded={sidebarOpen}
           aria-controls="main-navigation"
         >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
+          <Icon name={sidebarOpen ? "x" : "menu"} className="w-6 h-6" aria-hidden="true" />
         </Button>
 
         <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-200 m-0">
@@ -122,7 +111,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
 
       <div className="flex items-center gap-3">
         {/* Theme Toggle */}
-        <ThemeToggle size="small" />
+        <ThemeToggle size="sm" />
 
         {/* Notifications */}
         <NotificationBell />
@@ -141,21 +130,11 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                 {(profilePic && profilePic !== "") ? (
                   <img
                     src={profilePic}
-                    alt={`${getRoleDisplayName(role)} profile picture`}
+                    alt={`${getRoleDisplayName(role)} profile`}
                     className="w-full h-full object-cover rounded-full"
                   />
                 ) : (
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="text-green-500"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" fill="none" />
-                    <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                  </svg>
+                  <Icon name="user" className="w-6 h-6 text-green-500" aria-hidden="true" />
                 )}
               </div>
             </div>

@@ -1,7 +1,9 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useState, useEffect, useContext, useMemo } from "react";
 import logger from 'utils/logger';
-import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
+
+import { disconnectAllSockets } from '../hooks/useWebSocket';
 import api from '../utils/apiClient.js';
+import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
 
 export const AuthContext = createContext();
 
@@ -54,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // login(email, password, remember=false)
-  const login = async (email, password, remember = false) => {
+  const login = async (email, password, _remember = false) => {
     const response = await api.post('/api/auth/login', {
       username: email,
       password
@@ -104,6 +106,8 @@ export const AuthProvider = ({ children }) => {
     // Optimistic update: Clear state immediately for instant UI feedback
     setUser(null);
     authStateMachine.transition('UNAUTHENTICATED', { reason: 'logout' });
+    sessionStorage.removeItem('mfa_session');
+    disconnectAllSockets();
 
     try {
       // Call logout endpoint to clear httpOnly cookies and server session in background
@@ -187,7 +191,8 @@ export const AuthProvider = ({ children }) => {
     return roles.includes(user?.role);
   };
 
-  const value = {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({
     user,
     loading,
     isAuthenticated: !!user,
@@ -199,7 +204,8 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     hasAnyRole,
     authState
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [user, loading, authState]);
 
   return (
     <AuthContext.Provider value={value}>

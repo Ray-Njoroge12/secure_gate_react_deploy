@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { Button, Card, PageHeader, Icon } from "../../components/ui";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
-import { Button, Card, PageHeader, Icon } from "../../components/ui";
+import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 
 // Helper to format date for input
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -21,7 +24,6 @@ const BulkInvite = () => {
   });
 
   const [generatedLink, setGeneratedLink] = useState(null);
-  const [generatedCode, setGeneratedCode] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -48,22 +50,10 @@ const BulkInvite = () => {
     try {
       setLoading('bulkInvite', true);
 
-      const res = await fetch('/api/visitors/bulk-invite', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      const res = await api.post('/api/visitors/bulk-invite', formData);
 
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.message || 'Failed to generate link');
-      }
-
-      if (json.success) {
-        setGeneratedLink(json.data.inviteLink);
-        setGeneratedCode(json.data.inviteCode);
+      if (res.data.success) {
+        setGeneratedLink(res.data.data.inviteLink);
         setCurrentStep(2);
       }
     } catch (err) {
@@ -80,7 +70,7 @@ const BulkInvite = () => {
         // Could add a toast success here if available, 
         // relying on user feedback on button for now or just generic success
       } catch (err) {
-        console.error('Failed to copy', err);
+        logger.error('Failed to copy', err);
       }
     }
   };

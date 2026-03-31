@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import logger from 'utils/logger';
+
 import { useCurrentBreakpoint } from '../../utils/responsive';
 
 /**

@@ -1,8 +1,11 @@
+import { QRCodeSVG as QRCode } from 'qrcode.react';
 import React, { useState, memo, useCallback, useEffect, useRef } from 'react';
 import logger from 'utils/logger';
-import { QRCodeSVG as QRCode } from 'qrcode.react';
-import { Button, Toast } from './ui';
+
 import { useCurrentBreakpoint, TOUCH_SIZES } from '../utils/responsive';
+
+import { Button, Toast } from './ui';
+
 
 // QRCodeDisplay props:
 // - value: string | data-url to encode
@@ -10,7 +13,7 @@ import { useCurrentBreakpoint, TOUCH_SIZES } from '../utils/responsive';
 // - otp: optional string to show below
 // - altImg: optional fallback data-url image
 // - showCopyButton: boolean to show copy OTP button
-const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altImg, showCopyButton = true }) {
+const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altImg: _altImg, showCopyButton = true }) {
   const [showToast, setShowToast] = useState(false);
   const breakpoint = useCurrentBreakpoint();
   const qrRef = useRef(null);
@@ -68,7 +71,7 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
 
   return (
     <>
-      <div ref={qrRef} className={wrapperClasses} tabIndex={0}>
+      <div ref={qrRef} className={wrapperClasses} tabIndex={0} role="img" aria-label="QR code for visitor access">
         <div className={qrContainerClasses}>
           {isDataUrl ? (
             <img

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { collaborationService } from '../../services/collaborationService';
+import React, { useState } from 'react';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { collaborationService } from '../../services/collaborationService';
 import './ApprovalWorkflows.css';
 import Button from '../ui/Button';
 
@@ -302,10 +303,6 @@ const WorkflowDetail = ({ workflow, currentUser, onProcessApproval, isProcessing
   const [approvalAction, setApprovalAction] = useState('approve');
 
   const approvalSteps = workflow.approval_steps || [];
-  const canApprove = approvalSteps.some(step => 
-    step.status === 'pending' && 
-    (step.approver_id === currentUser.id || step.approver_role === currentUser.role)
-  );
 
   const handleApprovalSubmit = () => {
     if (selectedStep) {
@@ -433,7 +430,6 @@ const WorkflowDetail = ({ workflow, currentUser, onProcessApproval, isProcessing
 const ApprovalStep = ({ 
   step, 
   stepNumber, 
-  currentUser, 
   canApprove, 
   onApprove, 
   onReject, 

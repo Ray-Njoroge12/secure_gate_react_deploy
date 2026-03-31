@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
-import { useAuth } from '../../contexts/AuthContext.js';
+
 import { useToast } from '../../contexts/ToastContext.jsx';
 import './BulkOperationsPanel.css';
 import Button from '../ui/Button';
@@ -20,7 +20,6 @@ const BulkOperationsPanel = ({
   idField = 'id',
   searchField = 'name',
 }) => {
-  const { user } = useAuth();
   const toast = useToast();
   const fileInputRef = useRef(null);
 

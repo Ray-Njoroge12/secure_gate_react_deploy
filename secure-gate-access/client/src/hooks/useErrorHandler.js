@@ -1,7 +1,8 @@
-import { useState, useCallback, useRef } from 'react';
-import { handleApiError } from '../utils/errorMapper';
-import errorQueueService from '../services/errorQueueService';
+import { useCallback, useRef } from 'react';
 import logger from 'utils/logger';
+
+import errorQueueService from '../services/errorQueueService';
+import { handleApiError } from '../utils/errorMapper';
 
 /**
  * Standardized Error Handling Hook
@@ -20,7 +21,6 @@ export const useErrorHandler = (options = {}) => {
     showRecoveryActions = true
   } = options;
 
-  const [localErrors, setLocalErrors] = useState([]);
   const errorIdRef = useRef(null);
 
   /**

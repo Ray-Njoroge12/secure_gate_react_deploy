@@ -9,15 +9,13 @@
  * sessions and devices.
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import * as fc from 'fast-check';
-import { DashboardFoundation } from '../../components/dashboard/DashboardFoundation';
+import React from 'react';
+
 import { useLayoutPersistence } from '../../components/ui/LayoutManager';
 import { 
-  createMockAccessibilityHook, 
-  accessibilityScenarios,
-  verifyAccessibilityMockCalls 
+  createMockAccessibilityHook
 } from '../utils/mockAccessibility';
 
 // Mock localStorage for testing persistence
@@ -127,7 +125,7 @@ const dashboardLayoutGenerator = fc.array(layoutItemGenerator, {
   const uniqueItems = [];
   const usedIds = new Set();
   
-  items.forEach((item, index) => {
+  items.forEach((item, _index) => {
     let uniqueId = item.i;
     let counter = 1;
     

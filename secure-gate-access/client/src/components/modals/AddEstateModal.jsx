@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import Modal from '../ui/Modal';
+
+import api from '../../utils/apiClient';
+import Button from '../ui/Button';
 import GradientButton from '../ui/GradientButton';
 import Icon from '../ui/Icon';
-import { handleApiError } from '../../utils/errorMapper';
-import Button from '../ui/Button';
+import Modal from '../ui/Modal';
 
 // Password validation helper
 const validatePassword = (password) => {
@@ -183,30 +184,8 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Handle validation errors from server
-                if (data.errors && Array.isArray(data.errors)) {
-                    const serverErrors = {};
-                    data.errors.forEach(err => {
-                        if (err.field) {
-                            serverErrors[err.field] = err.message;
-                        }
-                    });
-                    setFieldErrors(serverErrors);
-                }
-                throw new Error(data.message || 'Failed to create estate');
-            }
+            const response = await api.post(`${API_BASE_URL}/api/admin/super-admin/estates`, formData);
+            const data = response.data;
 
             onSuccess(data);
             onClose();
@@ -221,7 +200,16 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
             setFieldErrors({});
         } catch (err) {
             console.error('Create estate error:', err);
-            setError(err.message || 'Failed to create estate. Please check inputs.');
+            if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+                const serverErrors = {};
+                err.response.data.errors.forEach(e => {
+                    if (e.field) {
+                        serverErrors[e.field] = e.message;
+                    }
+                });
+                setFieldErrors(serverErrors);
+            }
+            setError(err.response?.data?.message || err.message || 'Failed to create estate. Please check inputs.');
         } finally {
             setLoading(false);
         }
@@ -315,8 +303,10 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
                 <div className="mt-6 flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                     <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                        className="text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         Cancel
                     </Button>

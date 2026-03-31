@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
+
 import QRScanner from '../../components/QRScanner';
 import { Card, Button, PageHeader, Icon } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import offlineService from '../../services/offlineService';
+import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
 import { extractQrTokenFromQrData, extractVisitorIdFromQrData } from '../../utils/guardScanUtils';
+import logger from '../../utils/logger';
 
 const ScanQR = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -24,20 +27,29 @@ const ScanQR = () => {
 
   // Check camera permission on mount
   useEffect(() => {
+    let permResult = null;
+    const handleChange = () => {
+      if (permResult) setCameraPermission(permResult.state);
+    };
+
     const checkCameraPermission = async () => {
       try {
         if (navigator.permissions && navigator.permissions.query) {
-          const result = await navigator.permissions.query({ name: 'camera' });
-          setCameraPermission(result.state); // 'granted', 'denied', or 'prompt'
-          result.addEventListener('change', () => {
-            setCameraPermission(result.state);
-          });
+          permResult = await navigator.permissions.query({ name: 'camera' });
+          setCameraPermission(permResult.state);
+          permResult.addEventListener('change', handleChange);
         }
       } catch {
         // permissions API not supported, rely on getUserMedia error
       }
     };
     checkCameraPermission();
+
+    return () => {
+      if (permResult) {
+        permResult.removeEventListener('change', handleChange);
+      }
+    };
   }, []);
 
   // Track online/offline status
@@ -54,7 +66,7 @@ const ScanQR = () => {
         const pending = await offlineService.getPendingOfflineCheckIns();
         setPendingSyncCount(pending.length);
       } catch (err) {
-        console.error('Failed to get pending sync count:', err);
+        logger.error('Failed to get pending sync count:', err);
       }
     };
     
@@ -77,13 +89,6 @@ const ScanQR = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + S to start scanning
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (!isScanning) {
-          setIsScanning(true);
-        }
-      }
       // Escape to stop scanning
       if (e.key === 'Escape' && isScanning) {
         handleClose();
@@ -153,14 +158,6 @@ const ScanQR = () => {
     }
   };
 
-  const readJsonSafely = async (response) => {
-    try {
-      return await response.json();
-    } catch {
-      return {};
-    }
-  };
-
   const processLegacyCheckIn = async (visitorId, qrData) => {
     if (!visitorId) {
       setScannedData({
@@ -172,16 +169,9 @@ const ScanQR = () => {
       return;
     }
 
-    const response = await fetch(`/api/visitors/${visitorId}/check-in`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.ok) {
-      const result = await readJsonSafely(response);
+    try {
+      const response = await api.post(`/api/visitors/${visitorId}/check-in`);
+      const result = response.data;
       setScannedData({
         qrData,
         status: 'success',
@@ -189,32 +179,23 @@ const ScanQR = () => {
         visitorInfo: result.data || result,
         mode: 'online'
       });
-      return;
+    } catch (err) {
+      const errorData = err.response?.data || {};
+      setScannedData({
+        qrData,
+        status: 'error',
+        message: errorData.message || 'Check-in failed',
+        mode: 'online'
+      });
     }
-
-    const errorData = await readJsonSafely(response);
-    setScannedData({
-      qrData,
-      status: 'error',
-      message: errorData.message || 'Check-in failed',
-      mode: 'online'
-    });
   };
 
   const processOnlineCheckIn = async ({ visitorId, qrData, qrToken }) => {
     try {
       if (qrToken) {
-        const tokenResponse = await fetch('/api/qr/checkin', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ qrToken })
-        });
-
-        if (tokenResponse.ok) {
-          const result = await readJsonSafely(tokenResponse);
+        try {
+          const tokenResponse = await api.post('/api/qr/checkin', { qrToken });
+          const result = tokenResponse.data;
           setScannedData({
             qrData,
             status: 'success',
@@ -223,31 +204,32 @@ const ScanQR = () => {
             mode: 'online'
           });
           return;
-        }
+        } catch (tokenErr) {
+          const errorData = tokenErr.response?.data || {};
 
-        const errorData = await readJsonSafely(tokenResponse);
-        if (tokenResponse.status === 428) {
+          if (tokenErr.response?.status === 428) {
+            setScannedData({
+              qrData,
+              status: 'warning',
+              message: errorData.message || 'OTP required before check-in. Use Manual Check to verify OTP first.',
+              mode: 'online'
+            });
+            return;
+          }
+
+          if (visitorId) {
+            await processLegacyCheckIn(visitorId, qrData);
+            return;
+          }
+
           setScannedData({
             qrData,
-            status: 'warning',
-            message: errorData.message || 'OTP required before check-in. Use Manual Check to verify OTP first.',
+            status: 'error',
+            message: errorData.message || 'Check-in failed',
             mode: 'online'
           });
           return;
         }
-
-        if (visitorId) {
-          await processLegacyCheckIn(visitorId, qrData);
-          return;
-        }
-
-        setScannedData({
-          qrData,
-          status: 'error',
-          message: errorData.message || 'Check-in failed',
-          mode: 'online'
-        });
-        return;
       }
 
       await processLegacyCheckIn(visitorId, qrData);
@@ -337,7 +319,7 @@ const ScanQR = () => {
       });
       
     } catch (err) {
-      console.error('Offline check-in error:', err);
+      logger.error('Offline check-in error:', err);
       setScannedData({
         qrData,
         status: 'error',

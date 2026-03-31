@@ -15,8 +15,9 @@
  * - Location optional - button works without GPS
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+
 import emergencyService from '../../services/emergencyService';
 import notificationService from '../../services/notificationService';
 import logger from '../../utils/logger';

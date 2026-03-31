@@ -14,20 +14,23 @@
  * - Mobile-optimized
  */
 
+import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
+
+import Button from '../../components/ui/Button';
 import SavePassModal from '../../components/visitor/SavePassModal';
 import VisitorDirections from '../../components/visitor/VisitorDirections';
-import './VisitorInvitePage.css';
-
-// Custom hook import
 import { useVisitorInvite } from '../../hooks/useVisitorInvite';
-import Button from '../../components/ui/Button';
+import { useI18n } from '../../i18n/index.js';
+import offlineService from '../../services/offlineService';
+import api from '../../utils/apiClient';
+import './VisitorInvitePage.css';
 
 const VisitorInvitePage = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   // Use the custom hook for data management
   const {
@@ -76,7 +79,7 @@ const VisitorInvitePage = () => {
       <div className="visitor-invite-page">
         <div className="loading-container">
           <div className="spinner"></div>
-          <p>Loading your invite...</p>
+          <p>{t('visitor.loadingInvite')}</p>
         </div>
       </div>
     );
@@ -87,10 +90,10 @@ const VisitorInvitePage = () => {
       <div className="visitor-invite-page">
         <div className="error-container">
           <div className="error-icon">⚠️</div>
-          <h2>Invite Not Available</h2>
+          <h2>{t('visitor.inviteNotAvailable')}</h2>
           <p>{error}</p>
           <Button className="btn-primary" onClick={() => navigate('/')}>
-            Go Home
+            {t('visitor.goHome')}
           </Button>
         </div>
       </div>
@@ -112,30 +115,43 @@ const VisitorInvitePage = () => {
     setConfirmLoading(true);
     setConfirmError(null);
 
-    try {
-      const response = await fetch(`/api/public/visitors/${token}/confirm`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          consent: {
-            dataProcessing: true,
-            privacyPolicy: true,
-            marketing: false
-          },
-          additionalInfo: {
-            purpose: additionalInfo.purpose || 'Personal Visit',
-            vehiclePlate: additionalInfo.vehiclePlate,
-            idNumber: additionalInfo.idNumber
+    if (!navigator.onLine) {
+      try {
+        await offlineService.addToSyncQueue({
+          type: 'visitor_confirmation',
+          url: `/api/public/visitors/${token}/confirm`,
+          method: 'POST',
+          body: {
+            consent: { dataProcessing: true, privacyPolicy: true, marketing: false },
+            additionalInfo: {
+              purpose: additionalInfo.purpose || 'Personal Visit',
+              vehiclePlate: additionalInfo.vehiclePlate,
+              idNumber: additionalInfo.idNumber
+            }
           }
-        })
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || data?.message || 'Failed to confirm visit');
+        });
+        setConfirmError('You are offline. Your confirmation has been saved and will be sent when you reconnect.');
+      } catch {
+        setConfirmError('Failed to save confirmation for offline sync.');
+      } finally {
+        setConfirmLoading(false);
       }
+      return;
+    }
+
+    try {
+      await api.post(`/api/public/visitors/${token}/confirm`, {
+        consent: {
+          dataProcessing: true,
+          privacyPolicy: true,
+          marketing: false
+        },
+        additionalInfo: {
+          purpose: additionalInfo.purpose || 'Personal Visit',
+          vehiclePlate: additionalInfo.vehiclePlate,
+          idNumber: additionalInfo.idNumber
+        }
+      });
 
       // Refresh visitor details to get updated status and QR code
       await fetchVisitorDetails();
@@ -180,31 +196,21 @@ const VisitorInvitePage = () => {
     setConfirmError(null);
 
     try {
-      const response = await fetch(`/api/visitors/complete/${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: additionalInfo.name,
-          phone: additionalInfo.phone,
-          email: additionalInfo.email,
-          purpose: additionalInfo.purpose || visitor.eventName || 'Event',
-          vehiclePlate: additionalInfo.vehiclePlate,
-          // company removed
-          idNumber: additionalInfo.idNumber,
-          consent_given: true,
-          consent_timestamp: new Date().toISOString(),
-          consent_type: 'data_processing',
-          consent_version: '1.0'
-        })
+      const response = await api.post(`/api/visitors/complete/${token}`, {
+        name: additionalInfo.name,
+        phone: additionalInfo.phone,
+        email: additionalInfo.email,
+        purpose: additionalInfo.purpose || visitor.eventName || 'Event',
+        vehiclePlate: additionalInfo.vehiclePlate,
+        // company removed
+        idNumber: additionalInfo.idNumber,
+        consent_given: true,
+        consent_timestamp: new Date().toISOString(),
+        consent_type: 'data_processing',
+        consent_version: '1.0'
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Failed to register');
-      }
+      const data = response.data;
 
       // On success, redirect to the new visitor pass URL
       if (data.visitor_token) {
@@ -230,7 +236,7 @@ const VisitorInvitePage = () => {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-center">
-              <h1 className="text-2xl font-bold text-white mb-1">Event Invitation 🎟️</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">{t('visitor.eventInvitation')} 🎟️</h1>
               <p className="text-blue-100 text-sm">
                 You're invited to <strong>{visitor.eventName}</strong>
               </p>
@@ -239,7 +245,7 @@ const VisitorInvitePage = () => {
             <div className="p-6 space-y-6">
               {/* Event Details */}
               <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Event Details</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('visitor.eventDetails')}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-200">Date:</span>
@@ -262,12 +268,12 @@ const VisitorInvitePage = () => {
 
               {/* Registration Form */}
               <form onSubmit={handleEventRegistration} className="space-y-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Register for Access</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('visitor.registerForAccess')}</h3>
 
                 {/* Name */}
                 <div>
                   <label htmlFor="visitor-name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Full Name <span className="text-red-500">*</span>
+                    {t('visitor.fullName')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="visitor-name"
@@ -283,7 +289,7 @@ const VisitorInvitePage = () => {
                 {/* Phone */}
                 <div>
                   <label htmlFor="visitor-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Phone Number <span className="text-red-500">*</span>
+                    {t('visitor.phoneNumber')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="visitor-phone"
@@ -299,7 +305,7 @@ const VisitorInvitePage = () => {
                 {/* ID Number */}
                 <div>
                   <label htmlFor="visitor-id-number" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    ID / Passport Number <span className="text-red-500">*</span>
+                    {t('visitor.idPassportNumber')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="visitor-id-number"
@@ -315,7 +321,7 @@ const VisitorInvitePage = () => {
 
                 {/* Vehicle Plate */}
                 <div>
-                  <label htmlFor="visitor-vehicle" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
+                  <label htmlFor="visitor-vehicle" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('visitor.vehiclePlate')}</label>
                   <input
                     id="visitor-vehicle"
                     type="text"
@@ -341,13 +347,13 @@ const VisitorInvitePage = () => {
                       className="w-5 h-5 mt-0.5 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
                     />
                     <label htmlFor="consent-bulk" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                      <span className="font-medium">I consent to SecureGate processing my personal data</span>
+                      <span className="font-medium">{t('visitor.privacyConsent')}</span>
                       <span className="text-gray-600 dark:text-gray-200"> for visitor management and security purposes in accordance with the </span>
                       <Link to="/privacy-policy" className="text-blue-600 dark:text-blue-400 underline" target="_blank">Privacy Policy</Link>.
                     </label>
                   </div>
                   {confirmError && (
-                    <p className="text-red-600 dark:text-red-400 text-sm mt-2">{confirmError}</p>
+                    <p className="text-red-700 dark:text-red-400 text-sm mt-2">{confirmError}</p>
                   )}
                 </div>
 
@@ -359,9 +365,9 @@ const VisitorInvitePage = () => {
                   {confirmLoading ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-                      Registering...
+                      {t('visitor.registering')}
                     </span>
-                  ) : 'Register & Get Pass ➔'}
+                  ) : `${t('visitor.registerGetPass')} ➔`}
                 </Button>
               </form>
             </div>
@@ -379,7 +385,7 @@ const VisitorInvitePage = () => {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 text-center">
-              <h1 className="text-2xl font-bold text-white mb-1">You're Invited! 🎉</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">{t('visitor.youreInvited')} 🎉</h1>
               <p className="text-brand-100 text-sm">
                 {visitor.resident?.name || 'Your host'} has invited you
               </p>
@@ -388,7 +394,7 @@ const VisitorInvitePage = () => {
             <div className="p-6 space-y-6" data-tour="visitor-otp">
               {/* Visit Summary */}
               <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Visit Details</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('visitor.visitDetails')}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-200">Date:</span>
@@ -409,10 +415,10 @@ const VisitorInvitePage = () => {
 
               {/* Additional Info (Optional) */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Complete Your Details <span className="text-gray-500 dark:text-gray-300 font-normal text-sm">(optional)</span></h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('visitor.completeRegistration')} <span className="text-gray-500 dark:text-gray-300 font-normal text-sm">(optional)</span></h3>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Purpose of Visit</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('visitor.purposeOfVisit')}</label>
                   <select
                     value={additionalInfo.purpose}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, purpose: e.target.value }))}
@@ -429,7 +435,7 @@ const VisitorInvitePage = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="self-reg-vehicle" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
+                  <label htmlFor="self-reg-vehicle" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('visitor.vehiclePlate')}</label>
                   <input
                     id="self-reg-vehicle"
                     type="text"
@@ -443,7 +449,7 @@ const VisitorInvitePage = () => {
 
                 <div>
                   <label htmlFor="self-reg-id" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    ID / Passport Number <span className="text-red-500">*</span>
+                    {t('visitor.idPassportNumber')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="self-reg-id"
@@ -472,13 +478,13 @@ const VisitorInvitePage = () => {
                     className="w-5 h-5 mt-0.5 text-brand-600 rounded border-gray-300 dark:border-slate-600 focus:ring-brand-500"
                   />
                   <label htmlFor="consent" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                    <span className="font-medium">I consent to SecureGate processing my personal data</span>
+                    <span className="font-medium">{t('visitor.privacyConsent')}</span>
                     <span className="text-gray-600 dark:text-gray-200"> for visitor management and security purposes in accordance with the </span>
                     <Link to="/privacy-policy" className="text-blue-600 dark:text-blue-400 underline" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
                   </label>
                 </div>
                 {confirmError && (
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-2">{confirmError}</p>
+                  <p className="text-red-700 dark:text-red-400 text-sm mt-2">{confirmError}</p>
                 )}
               </div>
 
@@ -494,10 +500,10 @@ const VisitorInvitePage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Confirming...
+                    {t('visitor.confirming')}
                   </span>
                 ) : (
-                  '✅ Confirm & Get My Pass'
+                  `✅ ${t('visitor.confirmGetPass')}`
                 )}
               </Button>
             </div>
@@ -516,8 +522,8 @@ const VisitorInvitePage = () => {
       <div className="max-w-2xl mx-auto p-4 md:py-12 py-6">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 md:p-8 text-white text-center" data-tour="visitor-invite-header">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Visitor Pass</h1>
-            <p className="text-brand-100 text-sm md:text-base">Your digital access to the estate</p>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">{t('visitor.visitorPass')}</h1>
+            <p className="text-brand-100 text-sm md:text-base">{t('visitor.yourDigitalAccess')}</p>
           </div>
           <div className="p-6 md:p-8">
             <div className="space-y-6">
@@ -530,64 +536,78 @@ const VisitorInvitePage = () => {
                 </p>
               </div>
 
-              {/* Expiry Countdown */}
-              {expiryCountdown && (
-                <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${expiryCountdown.expired
-                  ? 'bg-red-100 text-red-700 border border-red-200'
-                  : expiryCountdown.color === 'red'
-                    ? 'bg-red-50 text-red-600 border border-red-200'
-                    : expiryCountdown.color === 'orange'
-                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                      : 'bg-brand-50 text-brand-600 border border-brand-200'
-                  }`}>
-                  {expiryCountdown.expired ? (
-                    <>⚠️ This pass has expired</>
-                  ) : (
-                    <>⏱️ Pass valid: <strong>{expiryCountdown.text}</strong></>
-                  )}
+              {/* Expiry Countdown / Expired Screen */}
+              {expiryCountdown?.expired ? (
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-8 text-center border border-red-200 dark:border-red-800">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">This invitation has expired</h3>
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-1">
+                    This pass was valid until {formatDate(visitor.tokenExpiresAt || visitor.expiresAt || visitor.expires_at)}.
+                  </p>
+                  <p className="text-sm text-red-700 dark:text-red-400">
+                    Please ask your host to send a new invitation.
+                  </p>
                 </div>
+              ) : (
+                <>
+                  {/* Near-expiry warning */}
+                  {expiryCountdown && (
+                    <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
+                      expiryCountdown.color === 'red'
+                        ? 'bg-red-50 text-red-600 border border-red-200'
+                        : expiryCountdown.color === 'orange'
+                          ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                          : 'bg-brand-50 text-brand-600 border border-brand-200'
+                    }`}>
+                      <span aria-hidden="true">⏱️</span> Pass valid: <strong>{expiryCountdown.text}</strong>
+                    </div>
+                  )}
+
+                  <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6" data-tour="visitor-qr">
+                    <div className="qr-code-container">
+                      {qrImageSrc ? (
+                        <img
+                          src={qrImageSrc}
+                          alt="Visitor QR Code"
+                          className="qr-code mx-auto"
+                          style={{ width: 200, height: 200 }}
+                        />
+                      ) : (
+                        <QRCodeSVG
+                          value={qrFallbackValue}
+                          size={200}
+                          level="H"
+                          includeMargin={true}
+                          className="qr-code"
+                        />
+                      )}
+                    </div>
+                    <p className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
+                      <span aria-hidden="true">📱</span> {t('visitor.presentQR')}
+                    </p>
+                    <p className="qr-code-text">
+                      Visit Code: <strong>{visitCode}</strong>
+                    </p>
+
+                    {/* Phase 1.2: Save Pass Button */}
+                    <Button
+                      onClick={() => setShowSavePassModal(true)}
+                      className="w-full mt-4 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      {t('visitor.savePassToDevice')}
+                    </Button>
+                  </div>
+                </>
               )}
-
-              <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6" data-tour="visitor-qr">
-                <div className="qr-code-container">
-                  {/* Use pre-generated QR code from server if available, otherwise generate client-side */}
-                  {qrImageSrc ? (
-                    <img
-                      src={qrImageSrc}
-                      alt="Visitor QR Code"
-                      className="qr-code mx-auto"
-                      style={{ width: 200, height: 200 }}
-                    />
-                  ) : (
-                    <QRCodeSVG
-                      value={qrFallbackValue}
-                      size={200}
-                      level="H"
-                      includeMargin={true}
-                      className="qr-code"
-                    />
-                  )}
-                </div>
-                <p className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
-                  📱 Show this QR code at the gate
-                </p>
-                <p className="qr-code-text">
-                  Visit Code: <strong>{visitCode}</strong>
-                </p>
-
-                {/* Phase 1.2: Save Pass Button */}
-                <Button
-                  onClick={() => setShowSavePassModal(true)}
-                  className="w-full mt-4 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Save Pass to Device
-                </Button>
-              </div>
               <div className="details-section">
-                <h2>Visit Details</h2>
+                <h2>{t('visitor.visitDetails')}</h2>
                 <div className="detail-item">
                   <span className="detail-label">Name:</span>
                   <span className="detail-value">{visitor.name}</span>
@@ -621,20 +641,20 @@ const VisitorInvitePage = () => {
               </div>
               {visitor.status === 'pending_approval' && (
                 <div className="status-message status-message-pending" data-tour="visitor-confirm">
-                  <p>⏳ <strong>Awaiting Approval</strong></p>
-                  <p>Your host has been notified. Please wait for approval.</p>
+                  <p>⏳ <strong>{t('visitor.awaitingApproval')}</strong></p>
+                  <p>{t('visitor.awaitingApprovalMsg')}</p>
                 </div>
               )}
               {visitor.status === 'approved' && (
                 <div className="status-message status-message-success" data-tour="visitor-confirm">
-                  <p>✅ <strong>Visit Approved!</strong></p>
-                  <p>You may proceed to the gate. Please have your ID ready.</p>
+                  <p>✅ <strong>{t('visitor.visitApproved')}</strong></p>
+                  <p>{t('visitor.visitApprovedMsg')}</p>
                 </div>
               )}
               {visitor.status === 'rejected' && (
                 <div className="status-message status-message-error">
-                  <p>❌ <strong>Visit Denied</strong></p>
-                  <p>Please contact your host for more information.</p>
+                  <p>❌ <strong>{t('visitor.visitDenied')}</strong></p>
+                  <p>{t('visitor.visitDeniedMsg')}</p>
                 </div>
               )}
               {estateInfo && (
@@ -643,7 +663,7 @@ const VisitorInvitePage = () => {
                     <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    Estate Details
+                    {t('visitor.estateDetails')}
                   </h3>
                   <div className="space-y-2">
                     <p className="font-semibold text-gray-900 dark:text-white">{estateInfo.name}</p>
@@ -682,10 +702,10 @@ const VisitorInvitePage = () => {
           {/* Footer */}
           <div className="invite-footer">
             <p className="footer-text">
-              This invite is valid until {formatDate(visitor.tokenExpiresAt)}
+              {t('visitor.inviteValidUntil')} {formatDate(visitor.tokenExpiresAt)}
             </p>
             <Button className="btn-refresh" onClick={fetchVisitorDetails}>
-              🔄 Refresh Status
+              🔄 {t('visitor.refreshStatus')}
             </Button>
           </div>
         </div>
