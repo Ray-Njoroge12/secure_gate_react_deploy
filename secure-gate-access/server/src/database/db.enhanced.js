@@ -23,21 +23,6 @@ const config = new EnvironmentConfig();
 const dbConfig = config.getDatabaseConfig();
 
 const SHOULD_LOG_DB = process.env.NODE_ENV !== 'test';
-const IS_RENDER_ENVIRONMENT = Boolean(
-  process.env.RENDER === 'true' ||
-  process.env.RENDER_SERVICE_ID ||
-  process.env.RENDER_EXTERNAL_URL
-);
-const getExplicitEnvValue = (...names) => {
-  for (const name of names) {
-    const value = process.env[name];
-    if (value !== undefined && value !== '') {
-      return value;
-    }
-  }
-
-  return undefined;
-};
 const logDb = (...args) => {
   if (SHOULD_LOG_DB) {
     console.log(...args);
@@ -53,15 +38,6 @@ class DatabaseManager extends EventEmitter {
 
     // Support DATABASE_URL (Render provides this) or individual PG* variables
     const connectionString = process.env.DATABASE_URL;
-    const explicitRenderFallbackVars = [
-      { name: 'PGHOST', value: getExplicitEnvValue('PGHOST', 'PG_HOST', 'POSTGRES_HOST') },
-      { name: 'PGDATABASE', value: getExplicitEnvValue('PGDATABASE', 'PG_DATABASE', 'POSTGRES_DB') },
-      { name: 'PGUSER', value: getExplicitEnvValue('PGUSER', 'PG_USER', 'POSTGRES_USER') },
-      { name: 'PGPASSWORD', value: getExplicitEnvValue('PGPASSWORD', 'PG_PASSWORD', 'POSTGRES_PASSWORD') }
-    ];
-    const missingRenderFallbackVars = explicitRenderFallbackVars
-      .filter(({ value }) => !value)
-      .map(({ name }) => name);
     const pgHost = process.env.PGHOST || process.env.PG_HOST || process.env.POSTGRES_HOST || 'localhost';
     const pgPort = Number(process.env.PGPORT || process.env.PG_PORT || process.env.POSTGRES_PORT) || 5432;
     const pgUser = process.env.PGUSER || process.env.PG_USER || process.env.POSTGRES_USER || 'postgres';
@@ -78,11 +54,6 @@ class DatabaseManager extends EventEmitter {
       }
     } else {
       logDb(`📊 Database: Using individual PG* variables (host: ${pgHost})`);
-      if (IS_RENDER_ENVIRONMENT && missingRenderFallbackVars.length > 0) {
-        console.warn(
-          `⚠️ Render environment missing DATABASE_URL and explicit ${missingRenderFallbackVars.join(', ')} configuration - falling back to available PG* values/defaults`
-        );
-      }
     }
 
     this.config = {
@@ -222,9 +193,12 @@ class DatabaseManager extends EventEmitter {
 
     this.emit('initializationFailed', { error: lastError, attempts: maxAttempts });
 
-    // In production, we might want to continue without DB and let health checks fail
-    // This allows the server to start and potentially recover
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DB_FAILURE === 'true') {
+    // ALLOW_DB_FAILURE is not honoured in production — the server must not start without a database
+    if (process.env.ALLOW_DB_FAILURE === 'true') {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('🚨 ALLOW_DB_FAILURE=true is not permitted in production. The server cannot start without a database connection.');
+        throw lastError;
+      }
       console.warn('⚠️ Running without database connection (ALLOW_DB_FAILURE=true)');
       return false;
     }

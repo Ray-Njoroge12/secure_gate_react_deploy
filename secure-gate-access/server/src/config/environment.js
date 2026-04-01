@@ -393,7 +393,9 @@ class EnvironmentConfig {
       database: process.env.PGDATABASE || 'secure_gate',
       password: process.env.PGPASSWORD || 'postgres',
       port: Number(process.env.PGPORT || 5432),
-      ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false,
+      ssl: process.env.PGSSLMODE === 'require'
+        ? { rejectUnauthorized: process.env.PGSSLREJECT_UNAUTHORIZED !== 'false' }
+        : false,
       pool: {
         max: Number(process.env.PGPOOL_MAX || 20),
         idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT || 30000),
