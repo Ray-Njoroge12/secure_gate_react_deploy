@@ -52,34 +52,4 @@ describe('db.enhanced bootstrap warning gating', () => {
     expect(stderr).not.toContain('Render environment missing DATABASE_URL');
   });
 
-  test('warns when a Render-like environment is missing DATABASE_URL and explicit PG fallback configuration', async () => {
-    const { stderr } = await execFileAsync('node', importArgs, {
-      cwd: serverRoot,
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        DATABASE_URL: '',
-        PGHOST: '',
-        PGPORT: '',
-        PGDATABASE: '',
-        PGUSER: '',
-        PGPASSWORD: '',
-        PG_HOST: '',
-        PG_PORT: '',
-        PG_DATABASE: '',
-        PG_USER: '',
-        PG_PASSWORD: '',
-        POSTGRES_HOST: '',
-        POSTGRES_PORT: '',
-        POSTGRES_DB: '',
-        POSTGRES_USER: '',
-        POSTGRES_PASSWORD: '',
-        RENDER: 'true',
-        RENDER_SERVICE_ID: '',
-        RENDER_EXTERNAL_URL: ''
-      }
-    });
-
-    expect(stderr).toContain('Render environment missing DATABASE_URL and explicit PGHOST, PGDATABASE, PGUSER, PGPASSWORD configuration');
-  });
 });

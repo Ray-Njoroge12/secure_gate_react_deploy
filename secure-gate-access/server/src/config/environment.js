@@ -394,7 +394,7 @@ class EnvironmentConfig {
       password: process.env.PGPASSWORD || 'postgres',
       port: Number(process.env.PGPORT || 5432),
       ssl: process.env.PGSSLMODE === 'require'
-        ? { rejectUnauthorized: process.env.PGSSLREJECT_UNAUTHORIZED !== 'false' }
+        ? { rejectUnauthorized: process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false' }
         : false,
       pool: {
         max: Number(process.env.PGPOOL_MAX || 20),

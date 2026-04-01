@@ -348,13 +348,19 @@ async function startServer() {
 
       // In production with DATABASE_URL, this is critical
       if (process.env.DATABASE_URL) {
-        console.error('🚨 Cannot connect to Render PostgreSQL - check DATABASE_URL');
+        console.error('🚨 Cannot connect to database - check DATABASE_URL');
         console.error('💡 Ensure the database is created and connection details are correct');
+      }
+
+      // Prevent ALLOW_DB_FAILURE from bypassing the guard in production
+      if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DB_FAILURE === 'true') {
+        console.error('FATAL: ALLOW_DB_FAILURE=true is not permitted in production. Exiting.');
+        process.exit(1);
       }
 
       // Allow server to start without DB for health checks in some cases
       if (process.env.ALLOW_DB_FAILURE !== 'true') {
-        console.error('� Server startup blocked - database connection required');
+        console.error('Server startup blocked - database connection required');
         console.error('💡 Set ALLOW_DB_FAILURE=true to start without database');
         process.exit(1);
       } else {
