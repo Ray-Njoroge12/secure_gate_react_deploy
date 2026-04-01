@@ -11,6 +11,7 @@ BEGIN
     SELECT 1 FROM users
     WHERE role NOT IN ('super_admin', 'admin', 'guard', 'resident', 'pending')
   ) THEN
+    -- Note: requires migration 006 which adds the `resource` column to audit_logs
     INSERT INTO audit_logs (action, resource, details, created_at)
     SELECT
       'schema_migration_role_cleanup',

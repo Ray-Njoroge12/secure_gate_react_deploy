@@ -1,9 +1,12 @@
 /**
- * Schema Integrity Tests
+ * Schema Integrity Integration Tests
  *
  * These tests run against a live test database and verify that the schema
  * matches our security and integrity requirements. They require a running
  * PostgreSQL instance (test DB).
+ *
+ * This is a schema-state integration test — it exercises the real DB layer
+ * and must not be run as a unit test.
  *
  * Run with: npm run test:integration -- --testPathPattern=schemaIntegrity
  */
@@ -19,6 +22,10 @@ afterAll(async () => {
 });
 
 describe('Schema: users table', () => {
+  afterAll(async () => {
+    await dbManager.query("DELETE FROM users WHERE email = '__test_role@test.com'");
+  });
+
   it('has a CHECK constraint on the role column', async () => {
     const result = await dbManager.query(`
       SELECT conname, pg_get_constraintdef(oid) AS def
@@ -28,10 +35,12 @@ describe('Schema: users table', () => {
         AND conname = 'users_role_check'
     `);
     expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].def).toContain('super_admin');
-    expect(result.rows[0].def).toContain('resident');
-    expect(result.rows[0].def).toContain('guard');
-    expect(result.rows[0].def).toContain('admin');
+    const constraintDef = result.rows[0].def;
+    expect(constraintDef).toContain('super_admin');
+    expect(constraintDef).toContain('resident');
+    expect(constraintDef).toContain('guard');
+    expect(constraintDef).toContain('admin');
+    expect(constraintDef).toContain('pending');
   });
 
   it('rejects an invalid role value', async () => {
