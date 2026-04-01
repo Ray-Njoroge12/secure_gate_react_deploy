@@ -3,7 +3,21 @@ import pkg from 'pg';
 import { EventEmitter } from 'events';
 import { setTimeout as setTimeoutPromise } from 'timers/promises';
 import EnvironmentConfig from '../config/environment.js';
-
+ 
+// Lightweight dd-trace helper (lazy import to avoid hard failure when not installed)
+let _ddTracerInitialized = false;
+let _ddTracer = null;
+async function getDdTracer() {
+  if (_ddTracerInitialized) return _ddTracer;
+  _ddTracerInitialized = true;
+  try {
+    const mod = await import('dd-trace');
+    _ddTracer = mod.default || mod;
+  } catch (e) {
+    _ddTracer = null;
+  }
+  return _ddTracer;
+}
 const { Pool, Client } = pkg;
 const config = new EnvironmentConfig();
 const dbConfig = config.getDatabaseConfig();
@@ -678,7 +692,28 @@ class DatabaseManager extends EventEmitter {
       timeout = 30000
     } = options;
 
+    // Initialize a tracing span for this logical query (covers retries)
     let lastError;
+    let _ddSpan = null;
+    try {
+      const tracer = await getDdTracer();
+      if (tracer) {
+        try {
+          _ddSpan = tracer.startSpan('db.query', {
+            service: process.env.DD_SERVICE || process.env.npm_package_name || 'secure-gate-server',
+            resource: typeof text === 'string' ? text.split('\n')[0].slice(0, 200) : 'query',
+            tags: {
+              'db.system': 'postgres',
+              'estate_id': options.estateId || process.env.ESTATE_ID || 'unknown'
+            }
+          });
+        } catch (e) {
+          _ddSpan = null;
+        }
+      }
+    } catch (e) {
+      _ddSpan = null;
+    }
 
     for (let attempt = 1; attempt <= retries + 1; attempt++) {
       let timeoutId;
@@ -711,6 +746,16 @@ class DatabaseManager extends EventEmitter {
           attempt
         });
 
+        // Add tracing tags and finish span if present
+        try {
+          if (_ddSpan) {
+            try { _ddSpan.setTag('db.row_count', result.rowCount); } catch (e) {}
+            try { _ddSpan.setTag('db.response_time_ms', responseTime); } catch (e) {}
+            try { _ddSpan.finish(); } catch (e) {}
+            _ddSpan = null;
+          }
+        } catch (e) {}
+
         return result;
 
       } catch (error) {
@@ -728,6 +773,7 @@ class DatabaseManager extends EventEmitter {
         // Don't retry on certain types of errors
         if (error.code && ['23505', '23503', '23514'].includes(error.code)) {
           // Constraint violations - don't retry
+          try { if (_ddSpan) { _ddSpan.setTag('error', true); _ddSpan.setTag('error.message', error.message); _ddSpan.finish(); _ddSpan = null; } } catch (e) {}
           throw error;
         }
 

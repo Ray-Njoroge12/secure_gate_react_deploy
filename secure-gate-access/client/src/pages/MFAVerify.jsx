@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
 import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * MFA Verification Component
@@ -10,6 +11,7 @@ import Button from '../components/ui/Button';
 const MFAVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { completeMfa } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
@@ -67,14 +69,16 @@ const MFAVerify = () => {
       });
 
       if (response.data.success) {
-        // MFA verification successful - redirect to dashboard
+        // MFA verification successful - update auth context then redirect
         sessionStorage.removeItem('mfa_session'); // Clear temp session
-        
-        // Get user info from response
+
+        // Get user info from response and update AuthContext so ProtectedRoute
+        // sees isAuthenticated=true before navigation
         const user = response.data.data?.user;
         if (user) {
-          // Redirect based on role
+          completeMfa(user);
           if (user.role === 'admin') navigate('/dashboard/admin');
+          else if (user.role === 'super_admin') navigate('/dashboard/super-admin');
           else if (user.role === 'guard') navigate('/dashboard/guard');
           else if (user.role === 'resident') navigate('/dashboard/resident');
           else navigate('/dashboard');

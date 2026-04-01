@@ -1,0 +1,36 @@
+{
+  "monitors": [
+    {
+      "name": "[Alert] secure-gate-server - p95 APM latency",
+      "type": "metric alert",
+      "query": "avg(last_5m):p95:trace.span.duration{service:secure-gate-server} > 1000",
+      "message": "High p95 latency detected for `secure-gate-server` ({{value}}ms). Investigate APM traces and top resources. @pagerduty",
+      "tags": ["service:secure-gate-server","team:backend","monitor:apm"],
+      "options": {
+        "notify_audit": false,
+        "require_full_window": true,
+        "evaluation_delay": 60,
+        "new_host_delay": 300,
+        "no_data_timeframe": 10,
+        "notify_no_data": false,
+        "renotify_interval": 60
+      }
+    },
+    {
+      "name": "[Warning] secure-gate-server - p50 APM latency",
+      "type": "metric alert",
+      "query": "avg(last_5m):p50:trace.span.duration{service:secure-gate-server} > 500",
+      "message": "Elevated p50 latency for `secure-gate-server` ({{value}}ms). Check service performance. @slack-backend",
+      "tags": ["service:secure-gate-server","team:backend","monitor:apm"],
+      "options": {
+        "notify_audit": false,
+        "require_full_window": true,
+        "evaluation_delay": 60,
+        "new_host_delay": 300,
+        "no_data_timeframe": 10,
+        "notify_no_data": false,
+        "renotify_interval": 120
+      }
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+- generic [ref=e71]:
+  - link "Skip to main content" [ref=e72] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Main navigation" [ref=e73]:
+    - generic [ref=e74]:
+      - button "Go to dashboard" [ref=e75] [cursor=pointer]:
+        - img [ref=e77]
+        - heading "SecureGate" [level=2] [ref=e79]
+      - generic [ref=e80]: Resident
+    - navigation "Resident navigation" [ref=e81]:
+      - list [ref=e82]:
+        - listitem [ref=e83]:
+          - link "Navigate to Dashboard" [ref=e84] [cursor=pointer]:
+            - /url: /dashboard/resident
+            - img [ref=e86]
+            - generic [ref=e89]:
+              - generic [ref=e91]: Dashboard
+              - paragraph [ref=e92]: Overview & quick actions
+        - listitem [ref=e93]:
+          - link "Navigate to Quick Invite" [ref=e94] [cursor=pointer]:
+            - /url: /resident/quick-invite
+            - img [ref=e96]
+            - generic [ref=e100]: Quick Invite
+        - listitem [ref=e101]:
+          - link "Navigate to Visitor History" [ref=e102] [cursor=pointer]:
+            - /url: /resident/visitor-history
+            - img [ref=e104]
+            - generic [ref=e108]: Visitor History
+        - listitem [ref=e109]:
+          - link "Navigate to Bulk Invite" [ref=e110] [cursor=pointer]:
+            - /url: /resident/bulk-invite
+            - img [ref=e112]
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - generic [ref=e116]: Bulk Invite
+                - generic "Multi badge" [ref=e117]: Multi
+              - paragraph [ref=e118]: Invite multiple guests
+        - listitem [ref=e119]:
+          - link "Navigate to Favorites" [ref=e120] [cursor=pointer]:
+            - /url: /resident/favorite-visitors
+            - img [ref=e122]
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - generic [ref=e126]: Favorites
+                - generic "New badge" [ref=e127]: New
+              - paragraph [ref=e128]: Quick invite frequent guests
+        - listitem [ref=e129]:
+          - link "Navigate to Approvals" [ref=e130] [cursor=pointer]:
+            - /url: /resident/approvals
+            - img [ref=e132]
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - generic [ref=e136]: Approvals
+                - generic "New badge" [ref=e137]: New
+              - paragraph [ref=e138]: Walk-in visitor requests
+        - listitem [ref=e139]:
+          - link "Navigate to Deliveries" [ref=e140] [cursor=pointer]:
+            - /url: /resident/deliveries
+            - img [ref=e142]
+            - generic [ref=e144]:
+              - generic [ref=e145]:
+                - generic [ref=e146]: Deliveries
+                - generic "New badge" [ref=e147]: New
+              - paragraph [ref=e148]: Track packages & parcels
+        - listitem [ref=e149]:
+          - link "Navigate to Rideshare" [ref=e150] [cursor=pointer]:
+            - /url: /resident/rideshare
+            - img [ref=e152]
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - generic [ref=e156]: Rideshare
+                - generic "New badge" [ref=e157]: New
+              - paragraph [ref=e158]: Uber/Lyft pre-auth
+        - listitem [ref=e159]:
+          - link "Navigate to Recurring Passes" [ref=e160] [cursor=pointer]:
+            - /url: /resident/recurring-passes
+            - img [ref=e162]
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - generic [ref=e166]: Recurring Passes
+                - generic "New badge" [ref=e167]: New
+              - paragraph [ref=e168]: Regular visitor access
+        - listitem [ref=e169]:
+          - link "Navigate to Auto-Approval" [ref=e170] [cursor=pointer]:
+            - /url: /resident/auto-approval
+            - img [ref=e172]
+            - generic [ref=e174]:
+              - generic [ref=e175]:
+                - generic [ref=e176]: Auto-Approval
+                - generic "New badge" [ref=e177]: New
+              - paragraph [ref=e178]: Trusted visitor rules
+        - listitem [ref=e179]:
+          - link "Navigate to Privacy" [ref=e180] [cursor=pointer]:
+            - /url: /resident/privacy
+            - img [ref=e182]
+            - generic [ref=e184]:
+              - generic [ref=e186]: Privacy
+              - paragraph [ref=e187]: Data & consent settings
+        - listitem [ref=e188]:
+          - link "Navigate to Settings" [ref=e189] [cursor=pointer]:
+            - /url: /resident/settings
+            - img [ref=e191]
+            - generic [ref=e196]: Settings
+    - button "Logout from application" [ref=e198] [cursor=pointer]:
+      - img [ref=e200]
+      - text: Logout
+  - generic [ref=e202]:
+    - banner "Page header" [ref=e203]:
+      - generic [ref=e204]:
+        - heading "Quick Invite" [level=1] [ref=e607]
+        - 'generic "Current role: Resident" [ref=e206]': Resident
+      - generic [ref=e207]:
+        - 'button "Theme: System" [ref=e208] [cursor=pointer]':
+          - img [ref=e209]
+        - button "Notifications" [ref=e211] [cursor=pointer]:
+          - img [ref=e212]
+        - button "Open profile menu" [ref=e216] [cursor=pointer]:
+          - img [ref=e219]
+    - main [ref=e222]:
+      - generic [ref=e710]:
+        - generic [ref=e711]:
+          - img [ref=e713]
+          - heading "Invite sent! 🎉" [level=2] [ref=e716]
+          - paragraph [ref=e717]: James Kamau will receive an SMS with their invite link
+        - generic [ref=e718]:
+          - generic [ref=e719]:
+            - paragraph [ref=e720]: "Share invite via:"
+            - generic [ref=e721]:
+              - button "Send invite via WhatsApp to James Kamau" [ref=e722] [cursor=pointer]:
+                - img [ref=e723]
+                - text: Send via WhatsApp to James Kamau
+              - button "Share via WhatsApp - choose contact" [ref=e725] [cursor=pointer]:
+                - img [ref=e726]
+                - text: Share via WhatsApp (choose contact)
+            - button "Copy invite link" [active] [ref=e729] [cursor=pointer]:
+              - img [ref=e730]
+              - text: Copied Link!
+          - generic [ref=e733]:
+            - paragraph [ref=e734]:
+              - img [ref=e735]
+              - text: "Next Steps:"
+            - list [ref=e737]:
+              - listitem [ref=e738]: Guest receives SMS with link
+              - listitem [ref=e739]: They confirm details & get QR code
+          - generic [ref=e740]:
+            - button "Done" [ref=e741] [cursor=pointer]
+            - button "Invite Another Guest" [ref=e742] [cursor=pointer]
+  - generic:
+    - generic:
+      - generic:
+        - generic: Quick Invite
+        - button "Quick Invite":
+          - img
+      - generic:
+        - generic: Bulk Invite
+        - button "Bulk Invite":
+          - img
+      - generic:
+        - generic: Generate Pass
+        - button "Generate Pass":
+          - img
+    - button "Quick action" [ref=e426] [cursor=pointer]:
+      - img [ref=e428]
+  - button "Emergency Panic Button" [ref=e430] [cursor=pointer]:
+    - img [ref=e431]

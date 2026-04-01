@@ -61,3 +61,51 @@
   "is_read_only": false,
   "notify_list": []
 }
+{
+  "title": "Secure Gate - Server APM Overview",
+  "description": "Quick dashboard for secure-gate-server: trace durations and errors.",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Average trace duration (service)",
+        "requests": [
+          {
+            "q": "avg:trace.duration{service:secure-gate-server}.rollup(avg,60)",
+            "display_type": "line"
+          }
+        ],
+        "yaxis": {
+          "label": "ms",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Trace count by resource",
+        "requests": [
+          {
+            "q": "sum:trace.hits{service:secure-gate-server} by {resource}.rollup(sum, 60)",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Error count (last 5m)",
+        "requests": [
+          {
+            "q": "sum:trace.errors{service:secure-gate-server}.rollup(sum,300)",
+            "aggregator": "sum"
+          }
+        ]
+      }
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false
+}

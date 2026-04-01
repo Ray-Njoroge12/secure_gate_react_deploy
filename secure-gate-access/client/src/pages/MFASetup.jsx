@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
 import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * MFA Setup Component
@@ -10,6 +11,7 @@ import Button from '../components/ui/Button';
 const MFASetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, completeMfa } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -18,7 +20,7 @@ const MFASetup = () => {
   // Get message and return URL from navigation state or query params
   const searchParams = new URLSearchParams(location.search);
   const setupMessage = location.state?.message;
-  const returnUrl = location.state?.returnUrl || searchParams.get('returnUrl') || '/dashboard';
+  const returnUrl = location.state?.returnUrl || location.state?.redirectTo || searchParams.get('returnUrl') || '/dashboard';
   
   // MFA setup data
   const [mfaData, setMfaData] = useState({
@@ -77,6 +79,10 @@ const MFASetup = () => {
         }));
         setStep(3);
         setSuccess('MFA enabled successfully! Save your backup codes.');
+        // Update auth context so Login.jsx redirect-guard sees mfaEnabled=true
+        if (user) {
+          completeMfa({ ...user, mfaEnabled: true });
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid verification code');

@@ -1,0 +1,169 @@
+- generic [ref=e71]:
+  - link "Skip to main content" [ref=e72] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Main navigation" [ref=e73]:
+    - generic [ref=e74]:
+      - button "Go to dashboard" [ref=e75] [cursor=pointer]:
+        - img [ref=e77]
+        - heading "SecureGate" [level=2] [ref=e79]
+      - generic [ref=e80]: Administrator
+    - navigation "Administrator navigation" [ref=e191]:
+      - list [ref=e192]:
+        - listitem [ref=e193]:
+          - link "Navigate to Overview" [ref=e194] [cursor=pointer]:
+            - /url: /dashboard/admin
+            - img [ref=e196]
+            - generic [ref=e200]: Overview
+        - listitem [ref=e201]:
+          - link "Navigate to User Approvals" [ref=e202] [cursor=pointer]:
+            - /url: /dashboard/admin/approvals
+            - img [ref=e204]
+            - generic [ref=e208]: User Approvals
+        - listitem [ref=e209]:
+          - link "Navigate to Guards" [ref=e210] [cursor=pointer]:
+            - /url: /dashboard/admin/guards
+            - img [ref=e212]
+            - generic [ref=e216]: Guards
+        - listitem [ref=e217]:
+          - link "Navigate to Residents" [ref=e218] [cursor=pointer]:
+            - /url: /dashboard/admin/residents
+            - img [ref=e220]
+            - generic [ref=e224]: Residents
+        - listitem [ref=e225]:
+          - link "Navigate to Visitor Logs" [ref=e226] [cursor=pointer]:
+            - /url: /dashboard/admin/visitors
+            - img [ref=e228]
+            - generic [ref=e232]: Visitor Logs
+        - listitem [ref=e233]:
+          - link "Navigate to Reports" [ref=e234] [cursor=pointer]:
+            - /url: /dashboard/admin/reports
+            - img [ref=e236]
+            - generic [ref=e240]: Reports
+        - listitem [ref=e241]:
+          - link "Navigate to Companies" [ref=e242] [cursor=pointer]:
+            - /url: /dashboard/admin/companies
+            - img [ref=e244]
+            - generic [ref=e248]: Companies
+        - listitem [ref=e249]:
+          - link "Navigate to Integrations" [ref=e250] [cursor=pointer]:
+            - /url: /dashboard/admin/integrations
+            - img [ref=e252]
+            - generic [ref=e256]: Integrations
+        - listitem [ref=e257]:
+          - link "Navigate to Settings" [ref=e258] [cursor=pointer]:
+            - /url: /dashboard/admin/settings
+            - img [ref=e260]
+            - generic [ref=e265]: Settings
+    - button "Logout from application" [ref=e82] [cursor=pointer]:
+      - img [ref=e84]
+      - text: Logout
+  - generic [ref=e86]:
+    - banner "Page header" [ref=e87]:
+      - generic [ref=e88]:
+        - heading "Super Admin Dashboard" [level=1] [ref=e266]
+        - 'generic "Current role: Super Admin" [ref=e89]': Super Admin
+      - generic [ref=e90]:
+        - 'button "Theme: System" [ref=e91] [cursor=pointer]':
+          - img [ref=e92]
+        - button "Notifications" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+        - button "Open profile menu" [ref=e99] [cursor=pointer]:
+          - img [ref=e102]
+    - main [ref=e105]:
+      - generic [ref=e267]:
+        - generic [ref=e268]:
+          - heading "Platform Overview" [level=2] [ref=e269]
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - img [ref=e272]
+              - text: "System: Operational"
+            - button "MFA is enabled. Click to manage." [ref=e274] [cursor=pointer]:
+              - img [ref=e275]
+              - text: "MFA: On"
+            - button "Security Help" [ref=e278] [cursor=pointer]
+            - button "Add Estate" [ref=e279] [cursor=pointer]:
+              - generic [ref=e280]:
+                - generic [ref=e281]: Add Estate
+                - img [ref=e283]
+            - button "Refresh Data" [ref=e284] [cursor=pointer]:
+              - generic [ref=e286]: Refresh Data
+        - tablist "Dashboard sections" [ref=e287]:
+          - tab "Platform Overview" [selected] [ref=e288] [cursor=pointer]
+          - tab "System Health Monitor" [ref=e289] [cursor=pointer]
+        - tabpanel "Platform Overview" [ref=e290]:
+          - generic [ref=e291]:
+            - generic [ref=e292]:
+              - generic [ref=e293]:
+                - paragraph [ref=e294]: Active Estates
+                - heading "1" [level=3] [ref=e295]
+              - img [ref=e297]
+            - generic [ref=e301]:
+              - generic [ref=e302]:
+                - paragraph [ref=e303]: Total Users
+                - heading "31" [level=3] [ref=e304]
+              - img [ref=e306]
+            - generic [ref=e311]:
+              - generic [ref=e312]:
+                - paragraph [ref=e313]: Total Visitors
+                - heading "142" [level=3] [ref=e314]
+              - img [ref=e316]
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - paragraph [ref=e323]: Total Incidents
+                - heading "70" [level=3] [ref=e324]
+              - img [ref=e326]
+          - generic [ref=e328]:
+            - heading "Global User Search" [level=3] [ref=e330]:
+              - img [ref=e331]
+              - text: Global User Search
+            - generic [ref=e334]:
+              - generic [ref=e335]: Search users by name, email, or phone
+              - textbox "Search users by name, email, or phone" [ref=e336]:
+                - /placeholder: Search users by name, email, or phone (min 3 chars to preserve privacy)...
+              - img [ref=e337]
+              - button "Search" [disabled] [ref=e340]
+          - generic [ref=e341]:
+            - generic [ref=e342]:
+              - heading "Manage Estates" [level=3] [ref=e343]:
+                - img [ref=e344]
+                - text: Manage Estates
+              - generic [ref=e348]: 1 Estates found
+            - table [ref=e350]:
+              - rowgroup [ref=e351]:
+                - row "Estate Name Status Created Users Visitors Actions" [ref=e352]:
+                  - columnheader "Estate Name" [ref=e353]
+                  - columnheader "Status" [ref=e354]
+                  - columnheader "Created" [ref=e355]
+                  - columnheader "Users" [ref=e356]
+                  - columnheader "Visitors" [ref=e357]
+                  - columnheader "Actions" [ref=e358]
+              - rowgroup [ref=e359]:
+                - 'row "Nothing Ever ID: 46 active Invalid Date 4402 142 Manage Suspend Decommission Estate" [ref=e360]':
+                  - 'cell "Nothing Ever ID: 46" [ref=e361]':
+                    - generic [ref=e362]: Nothing Ever
+                    - generic [ref=e363]: "ID: 46"
+                  - cell "active" [ref=e364]:
+                    - generic [ref=e365]: active
+                  - cell "Invalid Date" [ref=e366]
+                  - cell "4402" [ref=e367]:
+                    - generic [ref=e368]: "4402"
+                  - cell "142" [ref=e369]:
+                    - generic [ref=e370]: "142"
+                  - cell "Manage Suspend Decommission Estate" [ref=e371]:
+                    - button "Manage" [ref=e372] [cursor=pointer]:
+                      - text: Manage
+                      - img [ref=e373]
+                    - button "Suspend" [ref=e375] [cursor=pointer]
+                    - button "Decommission Estate" [ref=e376] [cursor=pointer]:
+                      - img [ref=e377]
+          - generic [ref=e381]:
+            - heading "Super Admin Privileges" [level=3] [ref=e382]
+            - paragraph [ref=e383]: You have full root access to the platform. Actions performed here affect the entire system and all estates.
+  - generic:
+    - generic:
+      - generic:
+        - generic: User Approvals
+        - button "User Approvals":
+          - img
+    - button "Quick action" [ref=e155] [cursor=pointer]:
+      - img [ref=e157]

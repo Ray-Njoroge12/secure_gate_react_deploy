@@ -1,0 +1,69 @@
+- generic [ref=e65]:
+  - link "Skip to main content" [ref=e66] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Main navigation" [ref=e67]:
+    - generic [ref=e68]:
+      - button "Go to dashboard" [ref=e69] [cursor=pointer]:
+        - img [ref=e71]
+        - heading "SecureGate" [level=2] [ref=e73]
+      - generic [ref=e74]: user
+    - navigation "user navigation":
+      - list
+    - button "Logout from application" [ref=e76] [cursor=pointer]:
+      - img [ref=e78]
+      - text: Logout
+  - generic [ref=e80]:
+    - banner "Page header" [ref=e81]:
+      - generic [ref=e82]:
+        - heading [level=1]
+        - 'generic "Current role: Administrator" [ref=e83]': Administrator
+      - generic [ref=e84]:
+        - 'button "Theme: System" [ref=e85] [cursor=pointer]':
+          - img [ref=e86]
+        - button "Notifications" [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+        - button "Open profile menu" [ref=e93] [cursor=pointer]:
+          - img [ref=e96]
+    - main [ref=e99]:
+      - generic [ref=e102]:
+        - generic [ref=e103]:
+          - heading "🔐 Enable Two-Factor Authentication" [level=1] [ref=e104]
+          - paragraph [ref=e105]: Add an extra layer of security to your account
+          - paragraph [ref=e107]: ⚠️ Multi-Factor Authentication is required for Admin accounts.
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - generic [ref=e111]: "1"
+            - generic [ref=e112]: Setup
+          - generic [ref=e115]:
+            - generic [ref=e116]: "2"
+            - generic [ref=e117]: Verify
+          - generic [ref=e119]:
+            - generic [ref=e120]: "3"
+            - generic [ref=e121]: Complete
+        - generic [ref=e122]:
+          - status [ref=e123]:
+            - paragraph [ref=e124]: QR Code generated! Scan it with Google Authenticator.
+          - generic [ref=e125]:
+            - heading "Scan QR Code" [level=2] [ref=e126]
+            - generic [ref=e127]:
+              - img "MFA QR Code" [ref=e129]
+              - generic [ref=e130]:
+                - heading "📱 Instructions:" [level=3] [ref=e131]
+                - list [ref=e132]:
+                  - listitem [ref=e133]: Download Google Authenticator on your phone
+                  - listitem [ref=e134]: Open the app and tap "+" or "Add account"
+                  - listitem [ref=e135]: Select "Scan a QR code"
+                  - listitem [ref=e136]: Scan the QR code above
+                  - listitem [ref=e137]: Enter the 6-digit code shown in the app below
+              - generic [ref=e138]:
+                - paragraph [ref=e139]: "Can't scan? Enter this code manually:"
+                - code [ref=e140]: EVEW45ZTOZZGGUJBFBJGKIK5OFOUGTKDJQVD6TBJGI7DUW22FQUQ
+              - generic [ref=e141]:
+                - generic [ref=e142]:
+                  - generic [ref=e143]: "Enter 6-digit code from Google Authenticator:"
+                  - textbox "Enter 6-digit code from Google Authenticator:" [active] [ref=e144]:
+                    - /placeholder: "000000"
+                - button "Verify and Enable MFA" [disabled] [ref=e145]
+        - paragraph [ref=e147]: Need help? Contact support at support@securegate.com
+  - button "Quick action" [ref=e149] [cursor=pointer]:
+    - img [ref=e151]

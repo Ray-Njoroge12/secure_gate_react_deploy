@@ -236,7 +236,7 @@ function App() {
                       <Route
                         path="/mfa/setup"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user">
                               <MFASetup />
                             </AppShell>

@@ -15,6 +15,7 @@ import { attachUserFromToken, authenticateToken, requireEstate, requireRole } fr
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { attachRequestAudit } from '../middleware/auditLogging.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
+import { traceRoute } from '../middleware/traceMiddleware.js';
 import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
 import { minimizeData } from '../middleware/dataMinimization.js';
@@ -259,12 +260,14 @@ const dailyBulkInviteLimit = rateLimit({
 router.post('/',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
+  traceRoute('controller.visitor.create', (req) => ({ estate_id: req.user?.estate_id || 'unknown' })),
   validateRequest(ValidationSchemas.visitorCreation),
   attachRequestAudit,
   createVisitor
 );
 router.get('/',
   authenticateToken,
+  traceRoute('controller.visitor.getMyVisitors', (req) => ({ estate_id: req.user?.estate_id || 'unknown' })),
   requireEstate,
   minimizeData('visitor'),
   attachRequestAudit,
@@ -274,6 +277,7 @@ router.get('/',
 router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);
 router.post('/bulk-invite',
   authenticateToken,  // Must authenticate first to get user ID for rate limiting
+  traceRoute('controller.visitor.bulkInvite', (req) => ({ estate_id: req.user?.estate_id || 'unknown' })),
   bulkInviteLimit,    // Hourly limit: 5 bulk invites per hour
   dailyBulkInviteLimit, // Daily limit: 20 bulk invites per day
   validateRequest(ValidationSchemas.bulkInviteCreation),
@@ -288,6 +292,7 @@ router.post('/complete/:inviteCode',
   validateParams(ValidationSchemas.inviteCodeParam),
   validateRequest(ValidationSchemas.inviteCompletion),
   attachRequestAudit,
+  traceRoute('controller.visitor.completeInvite', (req) => ({ inviteCode: req.params.inviteCode })),
   completeInvite
 );
 
@@ -296,6 +301,7 @@ router.post('/complete/:inviteCode',
 router.post('/self-check-in/:inviteCode',
   completeInviteLimiter,  // Reuse same rate limiter (similar abuse risk)
   attachRequestAudit,
+  traceRoute('controller.visitor.selfCheckIn', (req) => ({ inviteCode: req.params.inviteCode })),
   selfCheckIn
 );
 

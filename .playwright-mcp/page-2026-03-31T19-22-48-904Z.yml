@@ -1,0 +1,63 @@
+- generic [ref=e4]:
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - img [ref=e13]
+      - heading "Welcome Back" [level=1] [ref=e15]
+      - paragraph [ref=e16]: Sign in to your Secure Gate account
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e21]:
+          - img [ref=e23]
+          - generic [ref=e26]:
+            - textbox "Email Address" [ref=e27]:
+              - /placeholder: ""
+              - text: resident1@securegate.com
+            - generic [ref=e28]: Email Address*
+        - generic [ref=e30]:
+          - img [ref=e32]
+          - generic [ref=e35]:
+            - textbox "Password" [ref=e36]:
+              - /placeholder: ""
+              - text: ResidentPass123!
+            - generic [ref=e37]: Password*
+          - button "Show password" [ref=e39] [cursor=pointer]:
+            - img [ref=e40]
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - checkbox "Remember me" [ref=e47]
+            - generic [ref=e50]: Remember me
+          - button "Forgot password?" [ref=e51] [cursor=pointer]
+      - button "Sign In" [ref=e67] [cursor=pointer]:
+        - generic [ref=e68]:
+          - generic [ref=e69]: Sign In
+          - img [ref=e97]
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - img [ref=e54]
+          - text: SSL Secured
+        - generic [ref=e57]:
+          - img [ref=e58]
+          - text: 2FA Available
+    - paragraph [ref=e61]:
+      - text: Don't have an account?
+      - link "Sign up" [ref=e62] [cursor=pointer]:
+        - /url: /register
+    - paragraph [ref=e63]:
+      - text: By signing in, you agree to our
+      - link "Terms of Service" [ref=e64] [cursor=pointer]:
+        - /url: /terms-of-service
+      - text: and
+      - link "Privacy Policy" [ref=e65] [cursor=pointer]:
+        - /url: /privacy-policy
+    - paragraph [ref=e66]: "Tip: Press Ctrl + Enter to sign in quickly."
+  - alert [ref=e99]:
+    - generic [ref=e100]:
+      - img [ref=e102]
+      - generic [ref=e104]:
+        - heading "Login Failed" [level=3] [ref=e105]
+        - generic [ref=e106]: Server error. Please try again later.
+        - button "Retry" [ref=e108] [cursor=pointer]:
+          - img [ref=e110]
+          - text: Retry
+      - button "Close alert" [ref=e115] [cursor=pointer]:
+        - img [ref=e116]

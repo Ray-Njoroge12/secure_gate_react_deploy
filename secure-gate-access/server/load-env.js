@@ -67,7 +67,7 @@ try {
         const tracer = tracerModule.default;
         tracer.init({
           service: process.env.DD_SERVICE || process.env.npm_package_name || 'secure-gate-server',
-          env: process.env.NODE_ENV || 'development',
+          env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
           hostname: process.env.DD_AGENT_HOST || 'localhost',
           port: parseInt(process.env.DD_TRACE_AGENT_PORT || '8126', 10),
           version: process.env.npm_package_version,

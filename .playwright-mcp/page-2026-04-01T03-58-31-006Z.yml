@@ -1,0 +1,143 @@
+- generic [ref=e71]:
+  - link "Skip to main content" [ref=e72] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Main navigation" [ref=e73]:
+    - generic [ref=e74]:
+      - button "Go to dashboard" [ref=e75] [cursor=pointer]:
+        - img [ref=e77]
+        - heading "SecureGate" [level=2] [ref=e79]
+      - generic [ref=e80]: Administrator
+    - navigation "Administrator navigation" [ref=e191]:
+      - list [ref=e192]:
+        - listitem [ref=e193]:
+          - link "Navigate to Overview" [ref=e194] [cursor=pointer]:
+            - /url: /dashboard/admin
+            - img [ref=e196]
+            - generic [ref=e200]: Overview
+        - listitem [ref=e201]:
+          - link "Navigate to User Approvals" [ref=e202] [cursor=pointer]:
+            - /url: /dashboard/admin/approvals
+            - img [ref=e204]
+            - generic [ref=e208]: User Approvals
+        - listitem [ref=e209]:
+          - link "Navigate to Guards" [ref=e210] [cursor=pointer]:
+            - /url: /dashboard/admin/guards
+            - img [ref=e212]
+            - generic [ref=e216]: Guards
+        - listitem [ref=e217]:
+          - link "Navigate to Residents" [ref=e218] [cursor=pointer]:
+            - /url: /dashboard/admin/residents
+            - img [ref=e220]
+            - generic [ref=e224]: Residents
+        - listitem [ref=e225]:
+          - link "Navigate to Visitor Logs" [ref=e226] [cursor=pointer]:
+            - /url: /dashboard/admin/visitors
+            - img [ref=e228]
+            - generic [ref=e232]: Visitor Logs
+        - listitem [ref=e233]:
+          - link "Navigate to Reports" [ref=e234] [cursor=pointer]:
+            - /url: /dashboard/admin/reports
+            - img [ref=e236]
+            - generic [ref=e240]: Reports
+        - listitem [ref=e241]:
+          - link "Navigate to Companies" [ref=e242] [cursor=pointer]:
+            - /url: /dashboard/admin/companies
+            - img [ref=e244]
+            - generic [ref=e248]: Companies
+        - listitem [ref=e249]:
+          - link "Navigate to Integrations" [ref=e250] [cursor=pointer]:
+            - /url: /dashboard/admin/integrations
+            - img [ref=e252]
+            - generic [ref=e256]: Integrations
+        - listitem [ref=e257]:
+          - link "Navigate to Settings" [ref=e258] [cursor=pointer]:
+            - /url: /dashboard/admin/settings
+            - img [ref=e260]
+            - generic [ref=e265]: Settings
+    - button "Logout from application" [ref=e82] [cursor=pointer]:
+      - img [ref=e84]
+      - text: Logout
+  - generic [ref=e86]:
+    - banner "Page header" [ref=e87]:
+      - generic [ref=e88]:
+        - heading "Super Admin Dashboard" [level=1] [ref=e266]
+        - 'generic "Current role: Super Admin" [ref=e89]': Super Admin
+      - generic [ref=e90]:
+        - 'button "Theme: System" [ref=e91] [cursor=pointer]':
+          - img [ref=e92]
+        - button "Notifications" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+        - button "Open profile menu" [ref=e99] [cursor=pointer]:
+          - img [ref=e102]
+    - main [ref=e105]:
+      - generic [ref=e267]:
+        - generic [ref=e268]:
+          - heading "Platform Overview" [level=2] [ref=e269]
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - img [ref=e272]
+              - text: "System: Operational"
+            - button "MFA is enabled. Click to manage." [ref=e274] [cursor=pointer]:
+              - img [ref=e275]
+              - text: "MFA: On"
+            - button "Security Help" [ref=e278] [cursor=pointer]
+            - button "Add Estate" [ref=e279] [cursor=pointer]:
+              - generic [ref=e280]:
+                - generic [ref=e281]: Add Estate
+                - img [ref=e283]
+            - button "Refresh Data" [ref=e284] [cursor=pointer]:
+              - generic [ref=e286]: Refresh Data
+        - tablist "Dashboard sections" [ref=e287]:
+          - tab "Platform Overview" [ref=e288] [cursor=pointer]
+          - tab "System Health Monitor" [active] [selected] [ref=e289] [cursor=pointer]
+        - tabpanel "System Health Monitor" [ref=e384]:
+          - generic [ref=e385]:
+            - generic [ref=e386]:
+              - generic [ref=e387]:
+                - img [ref=e389]
+                - generic [ref=e391]: Latency (P95)
+              - heading "672ms" [level=3] [ref=e392]
+              - paragraph [ref=e393]: "P99: 672ms"
+            - generic [ref=e394]:
+              - generic [ref=e395]:
+                - img [ref=e397]
+                - generic [ref=e399]: Error Rate
+              - heading "0%" [level=3] [ref=e400]
+              - paragraph [ref=e401]: 11 Total Requests
+            - generic [ref=e402]:
+              - generic [ref=e403]:
+                - img [ref=e405]
+                - generic [ref=e409]: DB Utilization
+              - heading "20.0%" [level=3] [ref=e410]
+              - paragraph [ref=e411]: 4 / 20 Conn.
+            - generic [ref=e412]:
+              - generic [ref=e413]:
+                - img [ref=e415]
+                - generic [ref=e418]: Queue Depth
+              - heading "0" [level=3] [ref=e419]
+              - paragraph [ref=e420]: Pending Jobs
+          - generic [ref=e422]:
+            - heading "System Status Details" [level=3] [ref=e423]:
+              - img [ref=e424]
+              - text: System Status Details
+            - generic [ref=e427]:
+              - generic [ref=e428]:
+                - generic [ref=e429]: Auth Anomalies
+                - generic [ref=e430]: "1"
+              - generic [ref=e431]:
+                - generic [ref=e432]: Last Snapshot
+                - generic [ref=e433]: 06:58:29
+              - generic [ref=e434]:
+                - generic [ref=e435]: Notification Queue
+                - generic [ref=e436]: "0"
+              - generic [ref=e437]:
+                - generic [ref=e438]: Export Queue
+                - generic [ref=e439]: "0"
+  - generic:
+    - generic:
+      - generic:
+        - generic: User Approvals
+        - button "User Approvals":
+          - img
+    - button "Quick action" [ref=e155] [cursor=pointer]:
+      - img [ref=e157]

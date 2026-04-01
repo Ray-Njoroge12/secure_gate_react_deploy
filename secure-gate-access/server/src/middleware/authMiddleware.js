@@ -103,7 +103,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     let userQuery;
     if (typeof userIdentifier === 'string' && userIdentifier.includes('@')) {
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id, company_id
+        `SELECT id, email, username, role, estate_id, company_id, mfa_enabled
          FROM users
          WHERE LOWER(email) = LOWER($1)
            AND estate_id IS NOT DISTINCT FROM $2`,
@@ -123,7 +123,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
         throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
       }
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id, company_id
+        `SELECT id, email, username, role, estate_id, company_id, mfa_enabled
          FROM users
          WHERE id = $1
            AND estate_id IS NOT DISTINCT FROM $2`,
@@ -154,7 +154,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       username: dbUser.username,
       role: dbUser.role,
       estate_id: dbUser.estate_id ?? payload.estate_id ?? null,
-      company_id: dbUser.company_id ?? null
+      company_id: dbUser.company_id ?? null,
+      mfa_enabled: dbUser.mfa_enabled ?? false
     });
 
     return next();
@@ -216,7 +217,7 @@ export async function attachUserFromToken(req, res, next) {
     if (userIdentifier.includes('@')) {
       // Email lookup for legacy tokens
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id
+        `SELECT id, email, username, role, estate_id, mfa_enabled
          FROM users
          WHERE LOWER(email) = LOWER($1)
            AND estate_id = $2`,
@@ -225,7 +226,7 @@ export async function attachUserFromToken(req, res, next) {
     } else {
       // ID lookup for standardized tokens (sub claim)
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id
+        `SELECT id, email, username, role, estate_id, mfa_enabled
          FROM users
          WHERE id = $1
            AND estate_id = $2`,
@@ -240,7 +241,8 @@ export async function attachUserFromToken(req, res, next) {
         email: dbUser.email,
         username: dbUser.username,
         role: dbUser.role,
-        estate_id: dbUser.estate_id ?? estateId ?? null
+        estate_id: dbUser.estate_id ?? estateId ?? null,
+        mfa_enabled: dbUser.mfa_enabled ?? false
       });
     }
   } catch (err) {

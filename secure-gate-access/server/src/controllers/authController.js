@@ -308,7 +308,7 @@ export const getProfile = async (req, res) => {
     return successResponse(res, {
         user: {
             id: user.id, username: user.username, email: user.email, role: user.role,
-            estate_id: user.estate_id, mfa_enabled: !!user.mfa_enabled
+            estate_id: user.estate_id, mfaEnabled: !!user.mfa_enabled
         }
     }, 'Profile retrieved');
 };

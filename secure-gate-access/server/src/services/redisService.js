@@ -3,6 +3,21 @@ import { createClient } from 'redis';
 import { EventEmitter } from 'events';
 import MemoryCacheService from './memoryCacheService.js';
 
+// Lightweight dd-trace helper (lazy import)
+let _redisDdTracerInitialized = false;
+let _redisDdTracer = null;
+async function getDdTracer() {
+  if (_redisDdTracerInitialized) return _redisDdTracer;
+  _redisDdTracerInitialized = true;
+  try {
+    const mod = await import('dd-trace');
+    _redisDdTracer = mod.default || mod;
+  } catch (e) {
+    _redisDdTracer = null;
+  }
+  return _redisDdTracer;
+}
+
 /**
  * Redis Service for caching and session management
  * Provides high-performance caching with fallback mechanisms
@@ -193,13 +208,36 @@ class RedisService extends EventEmitter {
       return false;
     }
 
+    let _span = null;
     try {
+      const tracer = await getDdTracer();
+      if (tracer) {
+        try {
+          _span = tracer.startSpan('redis.command', {
+            service: process.env.DD_SERVICE || process.env.npm_package_name || 'secure-gate-server',
+            resource: `redis.setEx`,
+            tags: { 'redis.key': key, 'estate_id': process.env.ESTATE_ID || 'unknown' }
+          });
+        } catch (e) { _span = null; }
+      }
+
       this.cacheStats.operations++;
       const serializedValue = JSON.stringify(value);
       await this.client.setEx(key, ttlSeconds, serializedValue);
       console.log(`[REDIS] Cache set: ${key} (TTL: ${ttlSeconds}s)`);
+
+      if (_span) {
+        try { _span.setTag('redis.ttl', ttlSeconds); } catch (e) {}
+        try { _span.finish(); } catch (e) {}
+        _span = null;
+      }
+
       return true;
     } catch (error) {
+      if (_span) {
+        try { _span.setTag('error', true); _span.setTag('error.message', error.message); _span.finish(); } catch (e) {}
+        _span = null;
+      }
       console.error('[REDIS] Cache set error:', error.message);
       this.cacheStats.errors++;
       return false;
@@ -220,20 +258,35 @@ class RedisService extends EventEmitter {
       return null;
     }
 
+    let _span = null;
     try {
+      const tracer = await getDdTracer();
+      if (tracer) {
+        try {
+          _span = tracer.startSpan('redis.command', {
+            service: process.env.DD_SERVICE || process.env.npm_package_name || 'secure-gate-server',
+            resource: `redis.get`,
+            tags: { 'redis.key': key, 'estate_id': process.env.ESTATE_ID || 'unknown' }
+          });
+        } catch (e) { _span = null; }
+      }
+
       this.cacheStats.operations++;
       const value = await this.client.get(key);
 
       if (value === null) {
         this.cacheStats.misses++;
         console.log(`[REDIS] Cache miss: ${key}`);
+        if (_span) { try { _span.setTag('redis.hit', false); _span.finish(); } catch (e) {} }
         return null;
       }
 
       this.cacheStats.hits++;
       console.log(`[REDIS] Cache hit: ${key}`);
+      if (_span) { try { _span.setTag('redis.hit', true); _span.finish(); } catch (e) {} }
       return JSON.parse(value);
     } catch (error) {
+      if (_span) { try { _span.setTag('error', true); _span.setTag('error.message', error.message); _span.finish(); } catch (e) {} }
       console.error('[REDIS] Cache get error:', error.message);
       this.cacheStats.errors++;
       this.cacheStats.misses++;
@@ -254,12 +307,27 @@ class RedisService extends EventEmitter {
       return false;
     }
 
+    let _span = null;
     try {
+      const tracer = await getDdTracer();
+      if (tracer) {
+        try {
+          _span = tracer.startSpan('redis.command', {
+            service: process.env.DD_SERVICE || process.env.npm_package_name || 'secure-gate-server',
+            resource: `redis.del`,
+            tags: { 'redis.key': key, 'estate_id': process.env.ESTATE_ID || 'unknown' }
+          });
+        } catch (e) { _span = null; }
+      }
+
       this.cacheStats.operations++;
       const result = await this.client.del(key);
       console.log(`[REDIS] Cache deleted: ${key} (found: ${result > 0})`);
+
+      if (_span) { try { _span.setTag('redis.deleted', result > 0); _span.finish(); } catch (e) {} }
       return result > 0;
     } catch (error) {
+      if (_span) { try { _span.setTag('error', true); _span.setTag('error.message', error.message); _span.finish(); } catch (e) {} }
       console.error('[REDIS] Cache delete error:', error.message);
       this.cacheStats.errors++;
       return false;

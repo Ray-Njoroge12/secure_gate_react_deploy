@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/authMiddleware.js';
 import { attachRequestAudit } from '../middleware/auditLogging.js';
 import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import * as authController from '../controllers/authController.js';
+import { traceRoute } from '../middleware/traceMiddleware.js';
 import {
   validatePasswordResetRequest,
   validatePasswordReset,
@@ -49,10 +50,10 @@ const refreshLimiter = rateLimit({
 });
 
 // Authentication Routes
-router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), asyncHandler(authController.register));
-router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHandler(authController.login));
-router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(authController.logout));
-router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(authController.refresh));
+router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), traceRoute('auth.register'), asyncHandler(authController.register));
+router.post('/login', authLimiter, validateLogin, attachRequestAudit(), traceRoute('auth.login'), asyncHandler(authController.login));
+router.post('/logout', authenticateToken, attachRequestAudit(), traceRoute('auth.logout'), asyncHandler(authController.logout));
+router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAudit(), traceRoute('auth.refresh'), asyncHandler(authController.refresh));
 
 // Profile Routes
 router.get('/profile', authenticateToken, attachRequestAudit(), asyncHandler(authController.getProfile));
@@ -63,9 +64,9 @@ router.get('/me', authenticateToken, asyncHandler(authController.getProfile));
 router.get('/check-email', asyncHandler(authController.checkEmail));
 router.get('/verify-email', asyncHandler(authController.verifyEmail));
 router.post('/change-password', authenticateToken, attachRequestAudit(), asyncHandler(changePassword));
-router.post('/verify-password', authenticateToken, authLimiter, asyncHandler(authController.verifyPassword));
-router.post('/forgot-password', authLimiter, attachRequestAudit(), validatePasswordResetRequest, asyncHandler(authController.forgotPassword));
-router.post('/reset-password', authLimiter, attachRequestAudit(), validatePasswordReset, asyncHandler(authController.resetPassword));
+router.post('/verify-password', authenticateToken, authLimiter, traceRoute('auth.verifyPassword'), asyncHandler(authController.verifyPassword));
+router.post('/forgot-password', authLimiter, attachRequestAudit(), validatePasswordResetRequest, traceRoute('auth.forgotPassword'), asyncHandler(authController.forgotPassword));
+router.post('/reset-password', authLimiter, attachRequestAudit(), validatePasswordReset, traceRoute('auth.resetPassword'), asyncHandler(authController.resetPassword));
 
 // Security Tokens
 router.get('/csrf-token', asyncHandler(authController.getCsrfToken));

@@ -1,0 +1,225 @@
+- generic [ref=e119]:
+  - link "Skip to main content" [ref=e120] [cursor=pointer]:
+    - /url: "#main-content"
+  - complementary "Main navigation" [ref=e121]:
+    - generic [ref=e122]:
+      - button "Go to dashboard" [ref=e123] [cursor=pointer]:
+        - img [ref=e125]
+        - heading "SecureGate" [level=2] [ref=e127]
+      - generic [ref=e128]: Resident
+    - navigation "Resident navigation" [ref=e129]:
+      - list [ref=e130]:
+        - listitem [ref=e131]:
+          - link "Navigate to Dashboard" [ref=e132] [cursor=pointer]:
+            - /url: /dashboard/resident
+            - img [ref=e134]
+            - generic [ref=e137]:
+              - generic [ref=e139]: Dashboard
+              - paragraph [ref=e140]: Overview & quick actions
+        - listitem [ref=e141]:
+          - link "Navigate to Quick Invite" [ref=e142] [cursor=pointer]:
+            - /url: /resident/quick-invite
+            - img [ref=e144]
+            - generic [ref=e148]: Quick Invite
+        - listitem [ref=e149]:
+          - link "Navigate to Visitor History" [ref=e150] [cursor=pointer]:
+            - /url: /resident/visitor-history
+            - img [ref=e152]
+            - generic [ref=e156]: Visitor History
+        - listitem [ref=e157]:
+          - link "Navigate to Bulk Invite" [ref=e158] [cursor=pointer]:
+            - /url: /resident/bulk-invite
+            - img [ref=e160]
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - generic [ref=e164]: Bulk Invite
+                - generic "Multi badge" [ref=e165]: Multi
+              - paragraph [ref=e166]: Invite multiple guests
+        - listitem [ref=e167]:
+          - link "Navigate to Favorites" [ref=e168] [cursor=pointer]:
+            - /url: /resident/favorite-visitors
+            - img [ref=e170]
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - generic [ref=e174]: Favorites
+                - generic "New badge" [ref=e175]: New
+              - paragraph [ref=e176]: Quick invite frequent guests
+        - listitem [ref=e177]:
+          - link "Navigate to Approvals" [ref=e178] [cursor=pointer]:
+            - /url: /resident/approvals
+            - img [ref=e180]
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - generic [ref=e184]: Approvals
+                - generic "New badge" [ref=e185]: New
+              - paragraph [ref=e186]: Walk-in visitor requests
+        - listitem [ref=e187]:
+          - link "Navigate to Deliveries" [ref=e188] [cursor=pointer]:
+            - /url: /resident/deliveries
+            - img [ref=e190]
+            - generic [ref=e192]:
+              - generic [ref=e193]:
+                - generic [ref=e194]: Deliveries
+                - generic "New badge" [ref=e195]: New
+              - paragraph [ref=e196]: Track packages & parcels
+        - listitem [ref=e197]:
+          - link "Navigate to Rideshare" [ref=e198] [cursor=pointer]:
+            - /url: /resident/rideshare
+            - img [ref=e200]
+            - generic [ref=e202]:
+              - generic [ref=e203]:
+                - generic [ref=e204]: Rideshare
+                - generic "New badge" [ref=e205]: New
+              - paragraph [ref=e206]: Uber/Lyft pre-auth
+        - listitem [ref=e207]:
+          - link "Navigate to Recurring Passes" [ref=e208] [cursor=pointer]:
+            - /url: /resident/recurring-passes
+            - img [ref=e210]
+            - generic [ref=e212]:
+              - generic [ref=e213]:
+                - generic [ref=e214]: Recurring Passes
+                - generic "New badge" [ref=e215]: New
+              - paragraph [ref=e216]: Regular visitor access
+        - listitem [ref=e217]:
+          - link "Navigate to Auto-Approval" [ref=e218] [cursor=pointer]:
+            - /url: /resident/auto-approval
+            - img [ref=e220]
+            - generic [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]: Auto-Approval
+                - generic "New badge" [ref=e225]: New
+              - paragraph [ref=e226]: Trusted visitor rules
+        - listitem [ref=e227]:
+          - link "Navigate to Privacy" [ref=e228] [cursor=pointer]:
+            - /url: /resident/privacy
+            - img [ref=e230]
+            - generic [ref=e232]:
+              - generic [ref=e234]: Privacy
+              - paragraph [ref=e235]: Data & consent settings
+        - listitem [ref=e236]:
+          - link "Navigate to Settings" [ref=e237] [cursor=pointer]:
+            - /url: /resident/settings
+            - img [ref=e239]
+            - generic [ref=e244]: Settings
+    - button "Logout from application" [ref=e246] [cursor=pointer]:
+      - img [ref=e248]
+      - text: Logout
+  - generic [ref=e250]:
+    - banner "Page header" [ref=e251]:
+      - generic [ref=e252]:
+        - heading "Quick Invite" [level=1] [ref=e253]
+        - 'generic "Current role: Resident" [ref=e254]': Resident
+      - generic [ref=e255]:
+        - 'button "Theme: System" [ref=e256] [cursor=pointer]':
+          - img [ref=e257]
+        - button "Notifications" [ref=e259] [cursor=pointer]:
+          - img [ref=e260]
+        - button "Open profile menu" [ref=e264] [cursor=pointer]:
+          - img [ref=e267]
+    - main [ref=e270]:
+      - generic [ref=e272]:
+        - generic [ref=e276]:
+          - button "Back to dashboard" [ref=e277] [cursor=pointer]:
+            - img [ref=e278]
+          - generic [ref=e280]:
+            - heading "Quick Invite" [level=1] [ref=e282]
+            - paragraph [ref=e283]: Invite a guest in seconds
+        - generic [ref=e284]:
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - generic [ref=e289]:
+                - img [ref=e290]
+                - text: Guest Name
+              - textbox "Guest Name" [ref=e293]:
+                - /placeholder: John Doe
+            - generic [ref=e294]:
+              - generic [ref=e295]:
+                - img [ref=e296]
+                - text: Phone Number
+              - textbox "Phone Number" [ref=e299]:
+                - /placeholder: 0712 345 678
+              - paragraph [ref=e300]:
+                - img [ref=e301]
+                - text: They'll receive an SMS with the invite link
+            - generic [ref=e303]:
+              - generic [ref=e304]:
+                - img [ref=e305]
+                - text: When are they visiting?
+              - radiogroup "Visit date" [ref=e307]:
+                - 'radio "Select date: Today" [ref=e308] [cursor=pointer]':
+                  - generic [ref=e309]: Today
+                  - generic [ref=e310]: Tue, 31 Mar
+                - 'radio "Select date: Tomorrow" [ref=e311] [cursor=pointer]':
+                  - generic [ref=e312]: Tomorrow
+                  - generic [ref=e313]: Wed, 1 Apr
+                - 'radio "Select date: Thu, 2 Apr" [ref=e314] [cursor=pointer]':
+                  - generic [ref=e315]: Thu, 2 Apr
+                - 'radio "Select date: Pick Date" [ref=e316] [cursor=pointer]':
+                  - generic [ref=e317]: Pick Date
+                  - generic [ref=e318]: 📅
+            - generic [ref=e319]:
+              - generic [ref=e320]:
+                - img [ref=e321]
+                - text: Approximate time (optional)
+              - radiogroup "Visit time" [ref=e324]:
+                - 'radio "Select time: Morning" [ref=e325] [cursor=pointer]':
+                  - generic [ref=e326]: Morning
+                  - generic [ref=e327]: ~9:00 AM
+                - 'radio "Select time: Afternoon" [ref=e328] [cursor=pointer]':
+                  - generic [ref=e329]: Afternoon
+                  - generic [ref=e330]: ~2:00 PM
+                - 'radio "Select time: Evening" [ref=e331] [cursor=pointer]':
+                  - generic [ref=e332]: Evening
+                  - generic [ref=e333]: ~6:00 PM
+                - 'radio "Select time: Pick Time" [ref=e334] [cursor=pointer]':
+                  - generic [ref=e335]: Pick Time
+                  - generic [ref=e336]: ⏰
+            - generic [ref=e337]:
+              - generic [ref=e338]:
+                - img [ref=e339]
+                - text: Pass Validity
+              - radiogroup "Pass validity duration" [ref=e342]:
+                - radio "1 Hour Quick Visit" [checked] [ref=e343] [cursor=pointer]:
+                  - generic [ref=e344]: 1 Hour
+                  - generic [ref=e345]: Quick Visit
+                - radio "6 Hours Standard" [ref=e346] [cursor=pointer]:
+                  - generic [ref=e347]: 6 Hours
+                  - generic [ref=e348]: Standard
+                - radio "12 Hours Full Day" [ref=e349] [cursor=pointer]:
+                  - generic [ref=e350]: 12 Hours
+                  - generic [ref=e351]: Full Day
+                - radio "24 Hours Overnight" [ref=e352] [cursor=pointer]:
+                  - generic [ref=e353]: 24 Hours
+                  - generic [ref=e354]: Overnight
+            - generic [ref=e355]:
+              - generic [ref=e356]: Share residence details (optional)
+              - generic [ref=e357]:
+                - checkbox "Allow unit PIN sharing If enabled, your guest will see a unit PIN on their pass page. This is optional and can be left off for privacy." [ref=e358]
+                - generic [ref=e359]:
+                  - generic [ref=e360]: Allow unit PIN sharing
+                  - generic [ref=e361]: If enabled, your guest will see a unit PIN on their pass page. This is optional and can be left off for privacy.
+            - paragraph [ref=e363]:
+              - img [ref=e364]
+              - generic [ref=e366]: Your guest will complete their details and accept the privacy policy when they open the invite link.
+            - button "Send Invite" [ref=e367] [cursor=pointer]:
+              - img [ref=e368]
+              - text: Send Invite
+          - paragraph [ref=e372]: "💡 Tip: Your guest can add purpose, vehicle info, and more when they open the link"
+  - generic:
+    - generic:
+      - generic:
+        - generic: Quick Invite
+        - button "Quick Invite":
+          - img
+      - generic:
+        - generic: Bulk Invite
+        - button "Bulk Invite":
+          - img
+      - generic:
+        - generic: Generate Pass
+        - button "Generate Pass":
+          - img
+    - button "Quick action" [ref=e374] [cursor=pointer]:
+      - img [ref=e376]
+  - button "Emergency Panic Button" [ref=e378] [cursor=pointer]:
+    - img [ref=e379]

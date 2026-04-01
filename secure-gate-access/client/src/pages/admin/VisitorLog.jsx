@@ -202,7 +202,7 @@ const VisitorLog = ({ estateId }) => {
         onClose={() => setActionDialog({ isOpen: false, type: null, visitor: null })}
         onConfirm={confirmAction}
         title={actionDialog.type === 'check-in' ? 'Check In Visitor' : 'Check Out Visitor'}
-        message={`Are you sure you want to ${actionDialog.type.replace('-', ' ')} ${actionDialog.visitor?.name}?`}
+        message={`Are you sure you want to ${actionDialog.type?.replace('-', ' ')} ${actionDialog.visitor?.name}?`}
         confirmText={actionDialog.type === 'check-in' ? 'Check In' : 'Check Out'}
         variant={actionDialog.type === 'check-in' ? 'success' : 'warning'}
         isLoading={!!processingId}

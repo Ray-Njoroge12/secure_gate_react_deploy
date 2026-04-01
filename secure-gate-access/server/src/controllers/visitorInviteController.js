@@ -21,6 +21,7 @@ import encryptionService from '../services/encryptionService.js';
 import { generateOTP, generateSecureToken } from '../utils/tokenHelper.js';
 import { sanitizeString } from '../utils/sanitizeInput.js';
 import phoneValidator from '../utils/phoneValidator.js';
+import { startSpan } from '../utils/tracing.js';
 
 /**
  * Decrypt visitor ID number if encrypted version exists
@@ -778,7 +779,15 @@ export const createPass = async (req, res) => {
  * 2. Without guests: Creates a shareable invite link for self-registration
  */
 export const bulkInvite = async (req, res) => {
+  let _bulkSpan = null;
   try {
+    try {
+      _bulkSpan = await startSpan('bulk.invite', {
+        service: process.env.DD_SERVICE || process.env.npm_package_name || 'secure-gate-server',
+        resource: 'bulkInvite',
+        tags: { estate_id: req.user?.estate_id || process.env.ESTATE_ID || 'unknown' }
+      });
+    } catch (e) { _bulkSpan = null; }
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
@@ -854,6 +863,9 @@ export const bulkInvite = async (req, res) => {
     );
 
     const bulkInvite = bulkResult.rows[0];
+    if (_bulkSpan) {
+      try { _bulkSpan.setTag('bulkInviteId', bulkInvite.id); _bulkSpan.setTag('numGuests', bulkInvite.num_guests); } catch (e) {}
+    }
     const inviteLink = `${CLIENT_ORIGIN}/invite/${inviteCode}`;
 
     // If guests array provided, pre-register them (legacy mode)
@@ -956,6 +968,11 @@ export const bulkInvite = async (req, res) => {
       preRegistered: createdVisitors.length
     });
 
+    if (_bulkSpan) {
+      try { _bulkSpan.setTag('outcome', 'success'); } catch (e) {}
+      try { _bulkSpan.finish(); } catch (e) {}
+    }
+
     respond(res, {
       message: 'Event invite created successfully',
       bulkInviteId: bulkInvite.id,
@@ -973,6 +990,10 @@ export const bulkInvite = async (req, res) => {
 
   } catch (error) {
     console.error('[bulkInvite] Error:', error);
+    if (_bulkSpan) {
+      try { _bulkSpan.setTag('error', true); _bulkSpan.setTag('error.message', error.message); } catch (e) {}
+      try { _bulkSpan.finish(); } catch (e) {}
+    }
     respondError(res, 500, 'Failed to create event invite');
   }
 };
