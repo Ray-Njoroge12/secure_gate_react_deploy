@@ -11,14 +11,24 @@ const mockTracer = {
 
 jest.unstable_mockModule('dd-trace', () => ({ default: mockTracer }));
 
+jest.unstable_mockModule('../../../src/utils/tracing.js', () => ({
+  getTracer: jest.fn().mockResolvedValue(mockTracer),
+  startSpan: jest.fn(),
+  traceAsync: jest.fn()
+}));
+
 // Dynamic import AFTER mock registration
 const { traceRoute } = await import('../../../src/middleware/traceMiddleware.js');
+const { getTracer: mockGetTracer } = await import('../../../src/utils/tracing.js');
 
 describe('traceRoute middleware', () => {
   let req, res, next;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Restore implementations reset by resetMocks between tests
+    mockTracer.trace.mockImplementation((name, opts, cb) => { cb(mockSpan, mockDone); });
+    mockGetTracer.mockResolvedValue(mockTracer);
     req = {
       method: 'GET',
       path: '/api/visitors',
@@ -111,13 +121,15 @@ describe('traceRoute middleware', () => {
   });
 
   test('calls next() immediately when tracer returns null', async () => {
-    // Simulate tracer unavailability by resetting the module cache
-    // This is tested via the catch path — we verify next() always gets called
+    // Actually test the null-tracer path: getTracer returns null, so next() is
+    // called directly in the `if (!tracer) return next()` branch
+    mockGetTracer.mockResolvedValueOnce(null);
+
     const middleware = traceRoute('any.op');
     middleware(req, res, next);
     await flush();
 
-    // next() must have been called regardless of tracer state
     expect(next).toHaveBeenCalled();
+    expect(mockTracer.trace).not.toHaveBeenCalled();
   });
 });

@@ -1,20 +1,4 @@
-// Lazy-load dd-trace singleton. load-env.js initializes it before this module
-// is ever imported, so by the time the first request arrives the tracer is
-// already initialized and import('dd-trace') resolves from Node's module cache.
-let _tracer = null;
-let _tracerReady = false;
-
-async function getTracer() {
-  if (_tracerReady) return _tracer;
-  _tracerReady = true;
-  try {
-    const m = await import('dd-trace');
-    _tracer = m.default || m;
-  } catch (e) {
-    _tracer = null;
-  }
-  return _tracer;
-}
+import { getTracer } from '../utils/tracing.js';
 
 /**
  * traceRoute middleware: wraps a route in a dd-trace span using tracer.trace().
