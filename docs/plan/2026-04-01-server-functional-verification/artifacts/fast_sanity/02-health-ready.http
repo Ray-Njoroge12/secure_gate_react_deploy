@@ -1,0 +1,26 @@
+HTTP/1.1 200 OK
+X-Request-ID: f9d34753-d73d-47e1-bb5f-5dc3d7503b31
+X-Correlation-ID: f9d34753-d73d-47e1-bb5f-5dc3d7503b31
+X-Permitted-Cross-Domain-Policies: none
+Server: SecureGate
+Content-Security-Policy-Report-Only: default-src 'self';script-src 'self' 'nonce-QDD9xiKesYWIhQvxQhYpWg==' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google-analytics.com;style-src 'self' 'nonce-QDD9xiKesYWIhQvxQhYpWg==' https://fonts.googleapis.com https://cdn.jsdelivr.net;img-src 'self' data: https: blob: *.gravatar.com *.amazonaws.com;font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:;connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*;media-src 'self' blob: data:;object-src 'none';base-uri 'self';form-action 'self';frame-src 'self' https://www.google.com;child-src 'self' blob:;worker-src 'self' blob:;manifest-src 'self';frame-ancestors 'none'
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-site
+Origin-Agent-Cluster: ?1
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Vary: Origin, Accept-Encoding
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: X-CSRF-Token,X-Request-ID,API-Version,API-Version-Status
+Content-Type: application/json; charset=utf-8
+Content-Length: 57
+ETag: W/"39-+KaUsMz1+E6p2ZJYV33cCfIV98w"
+Date: Wed, 01 Apr 2026 17:48:47 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ready","timestamp":"2026-04-01T17:48:47.075Z"}

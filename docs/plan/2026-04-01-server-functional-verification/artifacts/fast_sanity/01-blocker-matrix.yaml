@@ -1,0 +1,30 @@
+task_id: FS-001
+plan_id: 2026-04-01-server-functional-verification
+generated_at: 2026-04-01T00:00:00Z
+overall_status: blocked
+blockers:
+  blocker_env:
+    status: clear
+    classification: warnings_only
+    summary: Environment validation succeeded with non-fatal warnings.
+    evidence:
+      - file: docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-validate-env.log
+        snippet: "✅ Environment is valid with warnings"
+      - file: docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-validate-env.log
+        snippet: "Environment: development"
+  blocker_db:
+    status: clear
+    classification: connected
+    summary: Database connectivity validated by environment validator.
+    evidence:
+      - file: docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-validate-env.log
+        snippet: "Database: ✅ Connected via URL"
+  blocker_port:
+    status: blocked
+    classification: listener_detected
+    summary: Port 5001 already has an active listener; port 3001 has no active listener.
+    evidence:
+      - file: docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-port-5001.log
+        snippet: "node 87079 ... TCP *:5001 (LISTEN)"
+      - file: docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-port-3001.log
+        snippet: "empty file (no LISTEN entries)"

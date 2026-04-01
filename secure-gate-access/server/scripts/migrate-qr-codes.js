@@ -6,6 +6,9 @@
  * 
  * Date: January 7, 2026
  * Run: node scripts/migrate-qr-codes.js
+ * 
+ * Fix: April 1, 2026 - Corrected table name from 'qr_token_mapping' to 'qr_tokens'
+ *      to match actual schema in migration 038 and qrTokenService.js
  */
 
 import pool from '../src/config/database.js';
@@ -25,17 +28,17 @@ async function migrateQRCodes() {
   try {
     await client.query('BEGIN');
 
-    // Check if qr_token_mapping table exists
+    // Check if qr_tokens table exists
     const tableCheck = await client.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
-        WHERE table_name = 'qr_token_mapping'
+        WHERE table_name = 'qr_tokens'
       );
     `);
 
     if (!tableCheck.rows[0].exists) {
-      console.error('❌ ERROR: qr_token_mapping table does not exist!');
-      console.log('Please run migration 038_add_qr_token_mapping.sql first.');
+      console.error('❌ ERROR: qr_tokens table does not exist!');
+      console.log('Please run migration 038_add_qr_token_mapping.sql first (creates qr_tokens table).');
       process.exit(1);
     }
 
@@ -45,7 +48,7 @@ async function migrateQRCodes() {
       FROM visitors v
       WHERE v.status IN ('pending', 'verified', 'checked_in')
       AND NOT EXISTS (
-        SELECT 1 FROM qr_token_mapping qtm 
+        SELECT 1 FROM qr_tokens qtm 
         WHERE qtm.visitor_id = v.id
       )
     `);
@@ -74,7 +77,7 @@ async function migrateQRCodes() {
         FROM visitors v
         WHERE v.status IN ('pending', 'verified', 'checked_in')
         AND NOT EXISTS (
-          SELECT 1 FROM qr_token_mapping qtm 
+          SELECT 1 FROM qr_tokens qtm 
           WHERE qtm.visitor_id = v.id
         )
         ORDER BY v.id
@@ -109,7 +112,7 @@ async function migrateQRCodes() {
     
     const verifyResult = await client.query(`
       SELECT COUNT(*) as tokens_created
-      FROM qr_token_mapping
+      FROM qr_tokens
       WHERE created_at >= NOW() - INTERVAL '1 hour'
     `);
 

@@ -297,6 +297,11 @@ export const logout = async (req, res) => {
     res.clearCookie('accessToken', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
 
+    // Backward-compat: some older clients stored refresh token cookie on this legacy path.
+    if ((cookieOptions.path || '/') !== '/api/auth/refresh') {
+        res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth/refresh' });
+    }
+
     return successResponse(res, {}, 'Logout successful');
 };
 

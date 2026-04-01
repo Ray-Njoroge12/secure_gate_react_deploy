@@ -16,6 +16,25 @@ import loggingService from '../services/loggingService.js';
 
 const router = express.Router();
 
+const getAlertingSnapshot = () => {
+  const statistics = performanceAlertingService.getStatistics();
+  const activeAlerts = Array.from(performanceAlertingService.activeEscalations.values()).map((escalation) => ({
+    ...escalation.alert,
+    escalationLevel: escalation.level,
+    status: escalation.acknowledged ? 'acknowledged' : 'active'
+  }));
+  const historicalAlerts = (performanceAlertingService.alertHistory || []).map((alert) => ({
+    ...alert,
+    status: 'historical'
+  }));
+
+  return {
+    statistics,
+    activeAlerts,
+    historicalAlerts
+  };
+};
+
 /**
  * Basic health check (public endpoint)
  * GET /health
@@ -70,6 +89,29 @@ router.get('/ready', asyncHandler(async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+}));
+
+/**
+ * Startup probe for orchestrators
+ * GET /health/startup
+ */
+router.get('/startup', asyncHandler(async (req, res) => {
+  const startupProbe = await systemHealthService.getStartupProbe(req);
+  const statusCode = startupProbe.status === 'started' ? 200 : 503;
+
+  res.status(statusCode).json(startupProbe);
+}));
+
+/**
+ * Fast ping endpoint for basic process checks
+ * GET /health/ping
+ */
+router.get('/ping', asyncHandler(async (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 }));
 
 /**
@@ -145,7 +187,7 @@ router.get('/metrics',
   requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
-      const metrics = await performanceMonitoringService.getSystemMetrics();
+      const metrics = performanceMonitoringService.getMetrics();
 
       successResponse(res, metrics, 'System metrics retrieved');
 
@@ -169,14 +211,33 @@ router.get('/alerts',
   asyncHandler(async (req, res) => {
     try {
       const { severity, limit = 50, status = 'active' } = req.query;
+      const normalizedStatus = typeof status === 'string' ? status : 'active';
+      const parsedLimit = Number.parseInt(limit, 10);
+      const maxLimit = Number.isNaN(parsedLimit) ? 50 : Math.min(parsedLimit, 100);
 
-      const alerts = await performanceAlertingService.getAlerts({
-        severity,
-        limit: Math.min(parseInt(limit), 100),
-        status
-      });
+      const { statistics, activeAlerts, historicalAlerts } = getAlertingSnapshot();
+      let alerts = activeAlerts;
 
-      successResponse(res, alerts, 'Performance alerts retrieved');
+      if (normalizedStatus === 'history' || normalizedStatus === 'historical') {
+        alerts = historicalAlerts;
+      } else if (normalizedStatus === 'all') {
+        alerts = [...activeAlerts, ...historicalAlerts];
+      }
+
+      if (severity) {
+        alerts = alerts.filter((alert) => alert.severity === severity);
+      }
+
+      alerts = alerts
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .slice(0, maxLimit);
+
+      successResponse(res, {
+        alerts,
+        count: alerts.length,
+        status: normalizedStatus,
+        statistics
+      }, 'Performance alerts retrieved');
 
     } catch (error) {
       loggingService.logError('Failed to get performance alerts', error, {
@@ -200,11 +261,7 @@ router.post('/alerts/:alertId/acknowledge',
       const { alertId } = req.params;
       const { reason } = req.body;
 
-      await performanceAlertingService.acknowledgeAlert(alertId, {
-        acknowledgedBy: req.user.id,
-        acknowledgedAt: new Date(),
-        reason
-      });
+      performanceAlertingService.acknowledgeAlert(alertId, req.user.id);
 
       loggingService.logAudit(
         'Alert acknowledged',
@@ -300,8 +357,8 @@ router.get('/launch-readiness',
   asyncHandler(async (req, res) => {
     try {
       const healthReport = await systemHealthService.performHealthCheck();
-      const metrics = await performanceMonitoringService.getSystemMetrics();
-      const alerts = await performanceAlertingService.getAlerts({ status: 'active' });
+      const metrics = performanceMonitoringService.getMetrics();
+      const { activeAlerts } = getAlertingSnapshot();
 
       // Calculate launch readiness score
       const readinessChecks = {
@@ -309,8 +366,8 @@ router.get('/launch-readiness',
         databaseConnectivity: healthReport.components?.database?.status === 'healthy',
         externalServices: healthReport.components?.external_services?.status !== 'unhealthy',
         systemResources: healthReport.components?.system_resources?.status !== 'unhealthy',
-        criticalAlerts: alerts.filter(a => a.severity === 'critical').length === 0,
-        performanceMetrics: metrics.api?.averageResponseTime < 2000
+        criticalAlerts: activeAlerts.filter((a) => a.severity === 'critical').length === 0,
+        performanceMetrics: (metrics.realTime?.responseTime?.current || 0) < 2000
       };
 
       const passedChecks = Object.values(readinessChecks).filter(Boolean).length;
@@ -750,7 +807,8 @@ router.get('/prometheus',
   asyncHandler(async (req, res) => {
     try {
       const healthReport = await systemHealthService.performHealthCheck();
-      const metrics = await performanceMonitoringService.getSystemMetrics();
+      const metricsSnapshot = performanceMonitoringService.getMetrics();
+      const realTimeMetrics = metricsSnapshot.realTime || {};
 
       // Generate Prometheus format metrics
       let prometheusMetrics = '';
@@ -767,16 +825,16 @@ router.get('/prometheus',
       prometheusMetrics += `system_health_response_time_ms ${healthReport.responseTime || 0}\n\n`;
 
       // System resource metrics
-      if (metrics.cpu) {
+      if (typeof realTimeMetrics.system?.cpuUsage === 'number') {
         prometheusMetrics += `# HELP system_cpu_usage CPU usage percentage\n`;
         prometheusMetrics += `# TYPE system_cpu_usage gauge\n`;
-        prometheusMetrics += `system_cpu_usage ${metrics.cpu.usage}\n\n`;
+        prometheusMetrics += `system_cpu_usage ${realTimeMetrics.system.cpuUsage}\n\n`;
       }
 
-      if (metrics.memory) {
+      if (typeof realTimeMetrics.system?.memoryUsage?.percentage === 'number') {
         prometheusMetrics += `# HELP system_memory_usage Memory usage percentage\n`;
         prometheusMetrics += `# TYPE system_memory_usage gauge\n`;
-        prometheusMetrics += `system_memory_usage ${metrics.memory.usage}\n\n`;
+        prometheusMetrics += `system_memory_usage ${realTimeMetrics.system.memoryUsage.percentage}\n\n`;
       }
 
       // Component health metrics

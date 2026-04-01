@@ -33,6 +33,7 @@ import { unifiedAuditMiddleware } from './middleware/auditLogging.js';
 // Import cache middleware
 import cacheMiddleware from './middleware/cacheMiddleware.js';
 import { ROUTE_CACHE_CONFIG } from './config/cacheConfig.js';
+import { rateLimiters, speedLimiters } from './config/rateLimits.js';
 
 // Domain-based route loading
 import loadRoutes from './routes/routeLoader.js';

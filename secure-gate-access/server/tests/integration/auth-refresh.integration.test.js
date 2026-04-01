@@ -85,7 +85,7 @@ describe('Auth refresh/logout integration', () => {
 
     expect(accessCookie).toMatch(/Expires=Thu, 01 Jan 1970/i);
     expect(refreshCookie).toMatch(/Expires=Thu, 01 Jan 1970/i);
-    expect(refreshCookie).toContain('Path=/api/auth/refresh');
+    expect(refreshCookie).toContain('Path=/');
   });
 
   it('rejects refresh without a token', async () => {

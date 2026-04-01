@@ -46,16 +46,17 @@ describe('Wave 8 specialty mounted routes', () => {
     ]);
   });
 
-  it('returns 404 for unmounted session and compliance route families', async () => {
-    const responses = await Promise.all([
+  it('keeps session metrics protected and legacy compliance status unmounted', async () => {
+    const [sessionMetricsResponse, complianceStatusResponse] = await Promise.all([
       request(app).get('/api/sessions/metrics'),
       request(app).get('/api/compliance/status')
     ]);
 
-    responses.forEach((response) => {
-      expect(response.status).toBe(404);
-      expect(response.body.error.code).toBe('NOT_FOUND');
-    });
+    expect(sessionMetricsResponse.status).toBe(401);
+    expect(sessionMetricsResponse.body.error.code).toBe('AUTH_TOKEN_MISSING');
+
+    expect(complianceStatusResponse.status).toBe(404);
+    expect(complianceStatusResponse.body.error.code).toBe('NOT_FOUND');
   });
 
   it('exposes public health, database health, Kenya DPA, and SSE smoke endpoints', async () => {

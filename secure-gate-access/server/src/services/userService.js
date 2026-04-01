@@ -270,13 +270,13 @@ class UserService {
    */
   async authenticateUser(username, password, estateId = null) {
     if (!username || !password) {
-      throw new Error('Username and password required');
+      throw new AppError('Username and password required', 400, 'VALIDATION_ERROR');
     }
 
     // Check if account is locked
     const lockoutInfo = accountSecurity.getLockoutInfo(username);
     if (lockoutInfo && lockoutInfo.isLocked) {
-      throw new Error(`Account is locked until ${lockoutInfo.lockedUntil}`);
+      throw new AppError(`Account is locked until ${lockoutInfo.lockedUntil}`, 423, 'ACCOUNT_LOCKED');
     }
 
     try {
@@ -295,7 +295,7 @@ class UserService {
       if (result.rows.length === 0) {
         // Record failed attempt even for non-existent users (security)
         accountSecurity.recordFailedAttempt(username, 'unknown');
-        throw new Error('Invalid credentials');
+        throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
       }
 
       const user = result.rows[0];
@@ -306,7 +306,7 @@ class UserService {
       if (!isValid) {
         // Record failed attempt
         accountSecurity.recordFailedAttempt(username, 'unknown');
-        throw new Error('Invalid credentials');
+        throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
       }
 
       // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
@@ -330,10 +330,10 @@ class UserService {
 
       return user;
     } catch (error) {
-      if (error.message.includes('Invalid credentials')) {
-        throw error; // Re-throw authentication errors
+      if (error instanceof AppError) {
+        throw error;
       }
-      throw new Error(`Authentication failed: ${error.message}`);
+      throw new AppError(`Authentication failed: ${error.message}`, 500, 'INTERNAL_ERROR');
     }
   }
 

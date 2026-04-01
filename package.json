@@ -5,6 +5,9 @@
   "scripts": {
     "start": "cd secure-gate-access/server && npm start",
     "postinstall": "cd secure-gate-access/server && npm install",
+    "prepare": "sh scripts/setup-git-hooks.sh",
+    "verify:customizations": "node scripts/verify-agent-customizations.cjs",
+    "check:staged-syntax": "node scripts/check-staged-syntax.cjs",
     "build": "echo 'No build step needed for backend'"
   },
   "engines": {

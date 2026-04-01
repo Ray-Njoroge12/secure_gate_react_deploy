@@ -51,7 +51,27 @@ import { startDataRetentionScheduler, stopDataRetentionScheduler } from './src/s
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_DEVELOPMENT = NODE_ENV === 'development' || NODE_ENV === 'local';
+const PRODUCTION_DEFAULT_PORT = 5000;
+const DEVELOPMENT_PREFERRED_PORT = 5001;
+
+function parsePortValue(rawPort) {
+  const parsed = Number(rawPort);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+    return null;
+  }
+  return parsed;
+}
+
+const explicitPort = process.env.PORT ? parsePortValue(process.env.PORT) : null;
+if (process.env.PORT && explicitPort === null) {
+  console.error(`🚨 Server startup blocked - invalid PORT value: ${process.env.PORT}`);
+  console.error('💡 PORT must be an integer between 1 and 65535.');
+  process.exit(1);
+}
+
+const REQUESTED_PORT = explicitPort ?? (IS_DEVELOPMENT ? DEVELOPMENT_PREFERRED_PORT : PRODUCTION_DEFAULT_PORT);
 
 // Enhanced error handling for unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
@@ -241,6 +261,43 @@ async function checkPortAvailability(port) {
   });
 }
 
+async function resolveStartupPort(preferredPort) {
+  const preferredPortAvailable = await checkPortAvailability(preferredPort);
+  if (preferredPortAvailable) {
+    console.log(`✅ Port ${preferredPort} is available`);
+    return preferredPort;
+  }
+
+  console.warn(`⚠️ Preferred startup port ${preferredPort} is already in use.`);
+  console.warn(`💡 Check active listeners: lsof -nP -iTCP:${preferredPort} -sTCP:LISTEN`);
+
+  if (!IS_DEVELOPMENT) {
+    console.error(`🚨 Server startup blocked - port ${preferredPort} is already in use`);
+    console.error('💡 Set a free PORT value before starting the server.');
+    return null;
+  }
+
+  if (preferredPort === DEVELOPMENT_PREFERRED_PORT) {
+    console.error(`🚨 Development startup blocked - port ${DEVELOPMENT_PREFERRED_PORT} is already in use`);
+    console.error('💡 Another local backend session may already be running. Stop it before starting a new one.');
+    return null;
+  }
+
+  const fallbackPortAvailable = await checkPortAvailability(DEVELOPMENT_PREFERRED_PORT);
+  if (!fallbackPortAvailable) {
+    console.error(`🚨 Development startup blocked - fallback port ${DEVELOPMENT_PREFERRED_PORT} is already in use`);
+    console.error('💡 Another local backend session may already be running. Stop it before starting a new one.');
+    return null;
+  }
+
+  console.warn(`↪️ Auto-fallback enabled in development: switching to port ${DEVELOPMENT_PREFERRED_PORT}`);
+  if (preferredPort === 5000) {
+    console.warn('💡 Port 5000 is commonly occupied by macOS services; using 5001 for local backend startup.');
+  }
+
+  return DEVELOPMENT_PREFERRED_PORT;
+}
+
 // Validate database connectivity
 async function validateDatabaseConnection() {
   try {
@@ -262,14 +319,11 @@ async function validateDatabaseConnection() {
 // Graceful startup with validation
 async function startServer() {
   try {
-    // Check if port is available
-    const portAvailable = await checkPortAvailability(PORT);
-    if (!portAvailable) {
-      console.error(`🚨 Server startup blocked - port ${PORT} is already in use`);
-      console.error('💡 Try running: taskkill /f /im node.exe');
+    const startupPort = await resolveStartupPort(REQUESTED_PORT);
+    if (!startupPort) {
       process.exit(1);
     }
-    console.log(`✅ Port ${PORT} is available`);
+    process.env.PORT = String(startupPort);
 
     // Initialize the database connection first
     console.log('🔄 Initializing database connection...');
@@ -325,13 +379,13 @@ async function startServer() {
     metricsService.start();
 
     // Start server
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      getStartupConsoleMessages({ port: PORT, nodeEnv: process.env.NODE_ENV })
+    const server = app.listen(startupPort, '0.0.0.0', () => {
+      getStartupConsoleMessages({ port: startupPort, nodeEnv: process.env.NODE_ENV })
         .forEach((message) => console.log(message));
 
       // Log server startup event
       loggingService.logInfo('Server started successfully', {
-        port: PORT,
+        port: startupPort,
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString()
       });

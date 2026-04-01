@@ -1,0 +1,142 @@
+plan_id: 2026-04-01-channel-trace-helper
+objective: Add a small query/report helper for channel attempt trace fields to speed incident triage.
+created_at: 2026-04-01T00:00:00Z
+created_by: gem-planner
+status: completed
+research_confidence: high
+
+tldr: |
+  Minimal execution plan:
+  - Concrete files:
+    - Create: secure-gate-access/server/scripts/channel-trace-report.js
+    - Edit: secure-gate-access/server/package.json
+  - Acceptance criteria:
+    - Helper parses structured JSON log lines from app-error.log and app-YYYY-MM-DD.log.
+    - Output includes incident summary plus channel and error aggregates from MessagingGateway attempts[] and PerformanceAlertingService deliveryTrace[].
+    - Script handles malformed/non-JSON lines without failing the run.
+    - npm script entry executes helper with optional CLI arguments for file selection and output format.
+  - Minimal validation commands:
+    - cd secure-gate-access/server && node scripts/channel-trace-report.js --files logs/app-error.log,logs/app-2026-04-01.log
+    - cd secure-gate-access/server && npm run report:channel-trace -- --files logs/app-error.log,logs/app-2026-04-01.log
+  - Rollback notes:
+    - Revert secure-gate-access/server/package.json script addition.
+    - Remove secure-gate-access/server/scripts/channel-trace-report.js.
+    - No schema, migration, or runtime service wiring changes are introduced.
+
+open_questions:
+  - Should default output be human-readable text, JSON, or dual-mode with --format text|json?
+
+pre_mortem:
+  overall_risk_level: low
+  critical_failure_modes:
+    - scenario: Mixed non-JSON lines or rotated log-format variants cause incomplete parsing and misleading aggregates.
+      likelihood: medium
+      impact: medium
+      mitigation: Parse line-by-line with try/catch, track skipped-line counts, and print parse-quality summary in output.
+  assumptions:
+    - Existing log files remain JSON-line structured and include metadata.attempts and/or metadata.deliveryTrace where relevant.
+    - A script-only implementation is sufficient for triage without adding database persistence.
+
+implementation_specification:
+  code_structure: Single ESM CLI helper under server/scripts that reads one or more log files, extracts trace arrays from log metadata, normalizes attempt records, and prints compact aggregate reports.
+  affected_areas:
+    - secure-gate-access/server/scripts/channel-trace-report.js
+    - secure-gate-access/server/package.json
+  component_details:
+    - component: channel-trace-report CLI
+      responsibility: Parse JSONL log files and summarize incidents, channel attempts, and error signatures from attempts[] and deliveryTrace[].
+      interfaces:
+        - node scripts/channel-trace-report.js --files <comma-separated-log-paths> [--format text|json]
+    - component: npm script alias
+      responsibility: Provide stable command surface for incident triage runs.
+      interfaces:
+        - npm run report:channel-trace -- --files logs/app-error.log,logs/app-YYYY-MM-DD.log
+  dependencies:
+    - component: channel-trace-report CLI
+      relationship: reads server log files under secure-gate-access/server/logs
+    - component: npm script alias
+      relationship: invokes channel-trace-report CLI through node
+  integration_points:
+    - Structured logs produced by MessagingGateway and PerformanceAlertingService
+    - Existing server package scripts convention in secure-gate-access/server/package.json
+
+contracts:
+  - from_task: T1
+    to_task: T2
+    interface: Executable helper script with stable CLI arguments and non-zero exit only for hard IO errors
+    format: node CLI command contract (--files and optional --format)
+
+tasks:
+  - id: T1
+    title: Create channel trace report helper script
+    description: |
+      Create secure-gate-access/server/scripts/channel-trace-report.js as an ESM CLI utility.
+      The script must read app-error.log and app-YYYY-MM-DD.log inputs, parse JSON lines,
+      extract metadata.attempts[] and metadata.deliveryTrace[], normalize records to a common
+      shape (channel, status, error, source, timestamp), and produce:
+      1) incident totals, 2) channel aggregate counts, and 3) error aggregate counts.
+      Malformed lines must be skipped with counters included in output.
+    wave: 1
+    agent: gem-implementer
+    priority: high
+    status: completed
+    dependencies: []
+    context_files:
+      - secure-gate-access/server/src/services/messagingGateway.js: Source of attempts[] trace shape and failure log metadata.
+      - secure-gate-access/server/src/services/performanceAlertingService.js: Source of deliveryTrace[] trace shape and alerting log metadata.
+      - secure-gate-access/server/logs/app-error.log: Real-world structured log sample for parsing validation.
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 220
+    focus_area: log-trace parsing and aggregation
+    verification:
+      - Execute helper directly with explicit files and verify summary sections are present.
+      - Confirm skipped malformed-line count is reported and run does not crash.
+    acceptance_criteria:
+      - Script parses both attempts[] and deliveryTrace[] when present.
+      - Output includes incident summary and channel/error aggregates.
+      - Script exits successfully when at least one file is readable and parseable.
+    failure_modes:
+      - scenario: Trace keys differ across log producers and records are under-counted.
+        likelihood: medium
+        impact: medium
+        mitigation: Normalize both metadata.attempts and metadata.deliveryTrace and include source tagging.
+    tech_stack:
+      - Node.js ESM
+      - Built-in fs/path APIs
+    test_coverage: Manual CLI smoke validation against existing log samples.
+
+  - id: T2
+    title: Add npm command and run minimal triage validations
+    description: |
+      Add a package script entry in secure-gate-access/server/package.json to invoke the helper
+      (npm run report:channel-trace). Run two minimal command checks to validate direct and npm alias execution.
+    wave: 2
+    agent: gem-implementer
+    priority: medium
+    status: completed
+    dependencies:
+      - T1
+    context_files:
+      - secure-gate-access/server/package.json: Add scripts.report:channel-trace entry.
+      - secure-gate-access/server/scripts/channel-trace-report.js: CLI target for npm script.
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 30
+    focus_area: command surface and execution verification
+    verification:
+      - cd secure-gate-access/server && node scripts/channel-trace-report.js --files logs/app-error.log,logs/app-2026-04-01.log
+      - cd secure-gate-access/server && npm run report:channel-trace -- --files logs/app-error.log,logs/app-2026-04-01.log
+    acceptance_criteria:
+      - npm script runs the helper without path errors.
+      - Both validation commands produce non-empty summary output.
+      - No unrelated files are changed.
+    failure_modes:
+      - scenario: npm script alias points to wrong path or unsupported args.
+        likelihood: low
+        impact: medium
+        mitigation: Keep CLI flags stable and verify both direct node and npm alias executions.
+    tech_stack:
+      - npm scripts
+      - Node.js CLI invocation
+    test_coverage: Command-level smoke checks only (no new test suite).

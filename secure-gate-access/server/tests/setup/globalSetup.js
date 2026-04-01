@@ -3,7 +3,6 @@
  * Initializes shared resources before all tests
  */
 
-import db from '../../src/database/db.enhanced.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -34,6 +33,8 @@ export default async function globalSetup() {
   }
 
   try {
+    const { default: db } = await import('../../src/database/db.enhanced.js');
+
     // Initialize shared database connection
     if (shouldLog) {
       console.log('🔄 Initializing shared database connection...');

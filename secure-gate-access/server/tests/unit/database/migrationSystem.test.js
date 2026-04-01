@@ -11,6 +11,13 @@ function extractOrder(filename) {
   return m ? parseInt(m[1], 10) : null;
 }
 
+// Non-numeric migration files that predate the numbering convention.
+// These are known exceptions — any NEW file added here requires a code review justification.
+const KNOWN_NON_NUMERIC_FILES = new Set([
+  'add-event-management-tables.sql',
+  'add-guard-management-tables.sql',
+]);
+
 describe('Migration system', () => {
   let sqlFiles;
 
@@ -20,7 +27,7 @@ describe('Migration system', () => {
   });
 
   it('every .sql file has a numeric prefix', () => {
-    const nonNumeric = sqlFiles.filter(f => extractOrder(f) === null && !f.startsWith('add-'));
+    const nonNumeric = sqlFiles.filter(f => extractOrder(f) === null && !KNOWN_NON_NUMERIC_FILES.has(f));
     expect(nonNumeric).toEqual([]);
   });
 

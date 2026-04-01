@@ -1,0 +1,598 @@
+plan_id: cleanup-2026-04-01-1732
+objective: Execute phased system cleanup to remove obsolete debug scripts, archive milestone artifacts, consolidate scattered tests, and fix migration bugs
+created_at: "2026-04-01T17:32:00Z"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+tldr: |
+  Five-wave cleanup plan addressing technical debt across 6 categories: (1) Remove 10 debug scripts safely,
+  (2) Archive 3 historical scripts with documentation, (3) Delete 7 zombie/duplicate tests testing non-existent services,
+  (4) Archive production-readiness-tests milestone directory, (5) Consolidate 3 scattered validation tests into server/tests/,
+  (6) Remove empty compliance_audits directory. Includes bug fix for migrate-qr-codes.js table reference.
+
+open_questions:
+  - Should disabled smoke tests (8 files) be reviewed for potential re-enablement or archived?
+  - Is there value in consolidating the 2 archive scripts (repro_privacy.js, repro_history_full.js) documentation before archival?
+  - Should the migrate-qr-codes.js bug fix be a separate task or combined with archival?
+
+pre_mortem:
+  overall_risk_level: low
+  critical_failure_modes:
+    - scenario: Accidental deletion of actively-used script
+      likelihood: low
+      impact: medium
+      mitigation: All deletions verified against git history and grep for imports/references before removal
+    - scenario: Archive destination conflicts with existing files
+      likelihood: low
+      impact: low
+      mitigation: Check archive paths exist and are empty before moving files
+    - scenario: Consolidated tests fail in new location due to path issues
+      likelihood: medium
+      impact: low
+      mitigation: Update relative imports and run tests after consolidation to verify
+  assumptions:
+    - All scripts identified for deletion have been verified as unused via grep/git analysis
+    - Archive directory structure (archive/scripts/debug/) will be created if not existing
+    - documentation/archive/milestone-validation/ structure exists or can be created
+    - Server tests directory accepts additional test files without configuration changes
+
+implementation_specification:
+  code_structure: |
+    Cleanup operations organized by risk level and dependency:
+    - Wave 1: Safe deletions (no dependencies, verified unused)
+    - Wave 2: Archive operations (preserve historical context)
+    - Wave 3: Bug fix (isolated change with clear scope)
+    - Wave 4: Consolidation (move and update imports)
+    - Wave 5: Directory cleanup (remove empty structures)
+  affected_areas:
+    - secure-gate-access/server/scripts/ (debug and migration scripts)
+    - secure-gate-access/server/tests/unit/ (zombie tests)
+    - production-readiness-tests/ (milestone archive)
+    - disaster-recovery-validation/, privacy-validation/, performance-validation/ (consolidation)
+    - compliance_audits/ (empty directory removal)
+    - archive/scripts/debug/ (archive destination)
+  component_details:
+    - component: Debug Script Removal
+      responsibility: Remove 10 debug/repro scripts verified as unused
+      interfaces:
+        - No external interfaces - standalone scripts
+    - component: Historical Script Archive
+      responsibility: Preserve 3 scripts with historical/diagnostic value
+      interfaces:
+        - Move to archive/scripts/debug/ with README
+    - component: Test Zombie Cleanup
+      responsibility: Remove tests for non-existent services
+      interfaces:
+        - No service dependencies - tests reference phantom services
+    - component: Migration Bug Fix
+      responsibility: Fix table name reference in migrate-qr-codes.js
+      interfaces:
+        - Database schema (qr_tokens table)
+    - component: Validation Test Consolidation
+      responsibility: Move scattered validation tests to server/tests/
+      interfaces:
+        - Jest test runner configuration
+        - Relative import paths
+  dependencies:
+    - component: Wave 2 (Archive)
+      relationship: Depends on Wave 1 completion for clean state verification
+    - component: Wave 4 (Consolidation)
+      relationship: Depends on Wave 3 (bug fix) to ensure clean baseline
+    - component: Wave 5 (Directory Cleanup)
+      relationship: Depends on all file operations complete
+  integration_points:
+    - Git repository (all changes tracked via commits per wave)
+    - Jest test configuration (may need path updates for consolidated tests)
+    - Archive directory structure (documentation/archive/milestone-validation/)
+
+contracts:
+  - from_task: wave1-delete-debug-scripts
+    to_task: wave2-archive-scripts
+    interface: Clean working directory with debug scripts removed
+    format: Git commit confirming deletions
+  - from_task: wave2-archive-scripts
+    to_task: wave3-fix-migration-bug
+    interface: Archive complete with historical context preserved
+    format: README.md in archive directory documenting moved scripts
+  - from_task: wave3-fix-migration-bug
+    to_task: wave4-consolidate-tests
+    interface: Migration script corrected and tested
+    format: Updated migrate-qr-codes.js with qr_tokens reference
+  - from_task: wave4-consolidate-tests
+    to_task: wave5-cleanup-directories
+    interface: All tests relocated and passing
+    format: Jest test run output showing passing tests
+
+tasks:
+  # ============================================================================
+  # WAVE 1: Safe Deletions (No Dependencies)
+  # ============================================================================
+  - id: wave1-delete-debug-scripts
+    title: Remove 10 verified unused debug/repro scripts
+    description: |
+      Delete the following debug scripts that have been verified as unused:
+      
+      Debug scripts (6):
+      - secure-gate-access/server/scripts/debug-manual-check.js
+      - secure-gate-access/server/scripts/debug_manual_check.js
+      - secure-gate-access/server/scripts/debug-guard-data.js
+      - secure-gate-access/server/scripts/debug_active_visitors.js
+      - secure-gate-access/server/scripts/debug-reveal.js
+      - secure-gate-access/server/scripts/debug_visibility.js
+      - secure-gate-access/server/scripts/debug_guard_history_live.js
+      - secure-gate-access/server/scripts/debug_history_response.js
+      
+      Repro scripts (2):
+      - secure-gate-access/server/scripts/repro_revoke.js
+      - secure-gate-access/server/scripts/repro_history.js
+      
+      Pre-deletion verification:
+      1. grep -r for any imports/requires of these files
+      2. Check package.json scripts for references
+      3. Verify no CI/CD pipeline dependencies
+    wave: 1
+    agent: gem-implementer
+    priority: high
+    status: pending
+    dependencies: []
+    context_files:
+      secure-gate-access/server/scripts/: Debug scripts location
+      package.json: Check for script references
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 0
+    focus_area: secure-gate-access/server/scripts/
+    tech_stack:
+      - bash (file operations)
+      - git (commit tracking)
+    test_coverage: null
+    verification:
+      - "grep -r 'debug-manual-check\\|debug_manual_check\\|debug-guard-data' --include='*.js' returns no results"
+      - "All 10 files confirmed deleted via ls command"
+      - "Git status shows 10 deleted files staged"
+    acceptance_criteria:
+      - All 10 debug/repro scripts removed from filesystem
+      - No import/require errors when running existing tests
+      - Git commit created with descriptive message
+    failure_modes:
+      - scenario: Script is actually referenced somewhere
+        likelihood: low
+        impact: medium
+        mitigation: Pre-deletion grep scan; if found, skip that file and report
+
+  - id: wave1-delete-zombie-tests
+    title: Remove 7 test files for non-existent services
+    description: |
+      Delete test files that reference services that don't exist in the codebase:
+      
+      Zombie service tests (4):
+      - secure-gate-access/server/tests/unit/gdprComplianceService.test.js
+      - secure-gate-access/server/tests/unit/owaspValidationService.test.js
+      - secure-gate-access/server/tests/unit/iso27001CertificationService.test.js
+      - secure-gate-access/server/tests/unit/transportSecurity.test.js
+      
+      Duplicate/obsolete tests (3):
+      - secure-gate-access/server/tests/unit/authMiddleware-simple.test.js (skeleton only, 954 bytes)
+      - secure-gate-access/server/tests/unit/services/encryptionService.test.js (duplicate, less comprehensive)
+      - secure-gate-access/server/tests/unit/services/qrCodeService.test.js (duplicate, less comprehensive)
+      
+      Note: Keep the more comprehensive versions at unit/ level:
+      - encryptionService.test.js (17579 bytes) - KEEP
+      - qrCodeService.test.js (21269 bytes) - KEEP
+    wave: 1
+    agent: gem-implementer
+    priority: high
+    status: pending
+    dependencies: []
+    context_files:
+      secure-gate-access/server/tests/unit/: Test files location
+      secure-gate-access/server/tests/unit/services/: Duplicate test location
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 0
+    focus_area: secure-gate-access/server/tests/unit/
+    tech_stack:
+      - bash (file operations)
+      - git (commit tracking)
+    test_coverage: null
+    verification:
+      - "npm test runs without errors after deletion"
+      - "All 7 test files confirmed deleted"
+      - "Comprehensive versions of encryption/qrCode tests still exist"
+    acceptance_criteria:
+      - 7 zombie/duplicate test files removed
+      - Test suite runs successfully without these files
+      - No reduction in actual test coverage (zombie tests provided no real coverage)
+    failure_modes:
+      - scenario: Deleting wrong version of duplicate test
+        likelihood: low
+        impact: medium
+        mitigation: Verify file sizes match research findings before deletion
+
+  # ============================================================================
+  # WAVE 2: Archive Operations (Depends on Wave 1)
+  # ============================================================================
+  - id: wave2-archive-debug-scripts
+    title: Archive 2 debug scripts with historical value
+    description: |
+      Move the following scripts to archive/scripts/debug/ for historical reference:
+      - secure-gate-access/server/scripts/repro_privacy.js
+      - secure-gate-access/server/scripts/repro_history_full.js
+      
+      Steps:
+      1. Create archive/scripts/debug/ directory if not exists
+      2. Move files preserving git history (git mv)
+      3. Create README.md in archive/scripts/debug/ documenting:
+         - Original purpose of each script
+         - Date archived and reason
+         - Warning that these are historical artifacts
+    wave: 2
+    agent: gem-implementer
+    priority: medium
+    status: pending
+    dependencies:
+      - wave1-delete-debug-scripts
+    context_files:
+      secure-gate-access/server/scripts/repro_privacy.js: Privacy debugging script
+      secure-gate-access/server/scripts/repro_history_full.js: History debugging script
+      archive/scripts/: Archive destination
+    estimated_effort: small
+    estimated_files: 3
+    estimated_lines: 30
+    focus_area: archive/scripts/debug/
+    tech_stack:
+      - bash (file operations)
+      - git mv (preserve history)
+    test_coverage: null
+    verification:
+      - "archive/scripts/debug/ contains 2 .js files and README.md"
+      - "git log --follow archive/scripts/debug/repro_privacy.js shows history"
+      - "Original locations are empty"
+    acceptance_criteria:
+      - Both scripts moved to archive with git history preserved
+      - README.md documents purpose and archive date
+      - No dangling references to original paths
+    failure_modes:
+      - scenario: Archive directory already has conflicting files
+        likelihood: low
+        impact: low
+        mitigation: Check directory contents before moving; rename if conflict
+
+  - id: wave2-archive-migration-script
+    title: Archive revert_mfa_changes.js migration script
+    description: |
+      Move the following migration script to archive/scripts/legacy/:
+      - secure-gate-access/server/scripts/revert_mfa_changes.js
+      
+      This script was used for a one-time MFA migration revert and should be
+      preserved for reference but not in active scripts directory.
+      
+      Steps:
+      1. Verify archive/scripts/legacy/ exists (create if needed)
+      2. Move file with git mv
+      3. Update existing README if present, or create new one
+    wave: 2
+    agent: gem-implementer
+    priority: medium
+    status: pending
+    dependencies:
+      - wave1-delete-debug-scripts
+    context_files:
+      secure-gate-access/server/scripts/revert_mfa_changes.js: Migration revert script
+      archive/scripts/legacy/: Archive destination
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 15
+    focus_area: archive/scripts/legacy/
+    tech_stack:
+      - bash (file operations)
+      - git mv (preserve history)
+    test_coverage: null
+    verification:
+      - "archive/scripts/legacy/revert_mfa_changes.js exists"
+      - "Original location secure-gate-access/server/scripts/revert_mfa_changes.js is gone"
+    acceptance_criteria:
+      - Script moved to legacy archive with history preserved
+      - Documentation updated to reflect archive
+    failure_modes:
+      - scenario: Script is referenced in runbook or documentation
+        likelihood: low
+        impact: low
+        mitigation: Grep for references and update paths if found
+
+  - id: wave2-archive-production-readiness
+    title: Archive production-readiness-tests directory
+    description: |
+      Move entire production-readiness-tests/ directory to:
+      documentation/archive/milestone-validation/task-13/
+      
+      This directory contains Task 13 milestone validation artifacts that are
+      historical records, not active tests. Contents include:
+      - Validation guides and checklists
+      - Certification generators and their tests
+      - Report generators
+      - Various subdirectories for different validation types
+      
+      Steps:
+      1. Create documentation/archive/milestone-validation/task-13/ structure
+      2. Move entire production-readiness-tests/ with git mv
+      3. Create index README documenting the milestone context
+    wave: 2
+    agent: gem-implementer
+    priority: medium
+    status: pending
+    dependencies:
+      - wave1-delete-zombie-tests
+    context_files:
+      production-readiness-tests/: Source directory (704KB total)
+      documentation/archive/: Archive destination parent
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 50
+    focus_area: documentation/archive/milestone-validation/
+    tech_stack:
+      - bash (directory operations)
+      - git mv (preserve history)
+    test_coverage: null
+    verification:
+      - "documentation/archive/milestone-validation/task-13/ contains all files from production-readiness-tests/"
+      - "production-readiness-tests/ directory no longer exists at root"
+      - "File count matches original (32+ items including subdirectories)"
+    acceptance_criteria:
+      - Entire directory tree moved to archive location
+      - Git history preserved for all files
+      - Root-level README references the milestone archive location
+    failure_modes:
+      - scenario: Some tests are actually run by CI/CD
+        likelihood: low
+        impact: high
+        mitigation: Check CI config for references to production-readiness-tests before moving
+
+  # ============================================================================
+  # WAVE 3: Bug Fix (Depends on Wave 2)
+  # ============================================================================
+  - id: wave3-fix-migration-bug
+    title: Fix table name reference in migrate-qr-codes.js
+    description: |
+      Fix bug in secure-gate-access/server/scripts/migrate-qr-codes.js:
+      - Current: References 'qr_token_mapping' table
+      - Correct: Should reference 'qr_tokens' table
+      
+      Steps:
+      1. Read current file to understand context
+      2. Identify all references to 'qr_token_mapping'
+      3. Replace with 'qr_tokens'
+      4. Verify the script syntax is valid
+      5. Add comment noting the fix and date
+    wave: 3
+    agent: gem-implementer
+    priority: high
+    status: pending
+    dependencies:
+      - wave2-archive-migration-script
+    context_files:
+      secure-gate-access/server/scripts/migrate-qr-codes.js: Migration script with bug
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 10
+    focus_area: secure-gate-access/server/scripts/
+    tech_stack:
+      - JavaScript
+      - SQL (table references)
+    test_coverage: null
+    verification:
+      - "grep 'qr_token_mapping' migrate-qr-codes.js returns no results"
+      - "grep 'qr_tokens' migrate-qr-codes.js returns expected references"
+      - "node --check migrate-qr-codes.js exits with 0 (syntax valid)"
+    acceptance_criteria:
+      - All 'qr_token_mapping' references changed to 'qr_tokens'
+      - Script passes syntax validation
+      - Comment added documenting the fix
+    failure_modes:
+      - scenario: Multiple table references with different correct names
+        likelihood: low
+        impact: medium
+        mitigation: Verify database schema to confirm 'qr_tokens' is correct table
+
+  # ============================================================================
+  # WAVE 4: Consolidation (Depends on Wave 3)
+  # ============================================================================
+  - id: wave4-consolidate-validation-tests
+    title: Consolidate scattered validation tests into server/tests/
+    description: |
+      Move validation tests from scattered directories to consolidated location:
+      
+      Source files:
+      - disaster-recovery-validation/disaster-recovery-test.js (0 bytes - empty)
+      - privacy-validation/privacy-compliance-test.js (27015 bytes)
+      - performance-validation/performance-test-suite.js (35847 bytes)
+      
+      Target: secure-gate-access/server/tests/validation/
+      
+      Steps:
+      1. Create secure-gate-access/server/tests/validation/ directory
+      2. Move non-empty files (skip empty disaster-recovery-test.js)
+      3. Update any relative imports in moved files
+      4. Run tests to verify they work in new location
+      5. Delete empty source directories after successful move
+    wave: 4
+    agent: gem-implementer
+    priority: medium
+    status: pending
+    dependencies:
+      - wave3-fix-migration-bug
+    context_files:
+      privacy-validation/privacy-compliance-test.js: Privacy test to move
+      performance-validation/performance-test-suite.js: Performance test to move
+      disaster-recovery-validation/: Empty test file (skip)
+      secure-gate-access/server/tests/: Target parent directory
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 50
+    focus_area: secure-gate-access/server/tests/validation/
+    tech_stack:
+      - JavaScript/Jest
+      - bash (file operations)
+    test_coverage: null
+    verification:
+      - "secure-gate-access/server/tests/validation/ contains 2 test files"
+      - "npm test -- --testPathPattern=validation passes"
+      - "Source directories are empty or removed"
+    acceptance_criteria:
+      - 2 non-empty test files consolidated in new location
+      - Tests pass in new location without path errors
+      - Source directories cleaned up
+      - Empty disaster-recovery-test.js deleted (not moved)
+    failure_modes:
+      - scenario: Tests have hardcoded relative paths that break
+        likelihood: medium
+        impact: medium
+        mitigation: Review imports before moving; update paths as needed
+
+  # ============================================================================
+  # WAVE 5: Directory Cleanup (Depends on Wave 4)
+  # ============================================================================
+  - id: wave5-cleanup-empty-directories
+    title: Remove empty directories
+    description: |
+      Remove empty directories after all file operations complete:
+      
+      Directories to remove:
+      - compliance_audits/ (contains only empty kenya_dpa/ subdirectory)
+      - disaster-recovery-validation/ (empty after test consolidation)
+      - privacy-validation/ (empty after test consolidation)
+      - performance-validation/ (empty after test consolidation)
+      
+      Steps:
+      1. Verify each directory is truly empty (no hidden files)
+      2. Remove with rmdir (safe - fails if not empty)
+      3. Update any documentation that references these paths
+    wave: 5
+    agent: gem-implementer
+    priority: low
+    status: pending
+    dependencies:
+      - wave4-consolidate-validation-tests
+    context_files:
+      compliance_audits/: Empty compliance directory
+      disaster-recovery-validation/: Empty after consolidation
+      privacy-validation/: Empty after consolidation
+      performance-validation/: Empty after consolidation
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    focus_area: Project root directory structure
+    tech_stack:
+      - bash (rmdir)
+    test_coverage: null
+    verification:
+      - "ls -la compliance_audits 2>&1 returns 'No such file or directory'"
+      - "ls -la disaster-recovery-validation 2>&1 returns 'No such file or directory'"
+      - "ls -la privacy-validation 2>&1 returns 'No such file or directory'"
+      - "ls -la performance-validation 2>&1 returns 'No such file or directory'"
+    acceptance_criteria:
+      - All 4 empty directories removed
+      - No orphaned references in documentation
+    failure_modes:
+      - scenario: Directory contains hidden files (e.g., .gitkeep)
+        likelihood: low
+        impact: low
+        mitigation: Use ls -la to check for hidden files before removal
+
+  # ============================================================================
+  # WAVE 5: Documentation (Parallel with cleanup)
+  # ============================================================================
+  - id: wave5-document-changes
+    title: Document cleanup changes in project README or CHANGELOG
+    description: |
+      Create documentation of all cleanup changes for project history:
+      
+      Document:
+      1. List of removed debug/repro scripts (10 files)
+      2. List of archived scripts with new locations (3 files)
+      3. Test files removed and why (7 zombie/duplicate tests)
+      4. Production-readiness-tests archive location
+      5. Consolidated validation test location
+      6. Bug fix in migrate-qr-codes.js
+      
+      Format: Add CLEANUP_LOG.md or append to CHANGELOG.md
+    wave: 5
+    agent: gem-documentation-writer
+    priority: low
+    status: pending
+    dependencies:
+      - wave4-consolidate-validation-tests
+    context_files:
+      CHANGELOG.md: Existing changelog if present
+      docs/: Documentation directory
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 100
+    focus_area: docs/
+    task_type: documentation
+    audience: developers
+    coverage_matrix:
+      - Cleanup summary
+      - Removed files list
+      - Archived files with new locations
+      - Bug fixes applied
+    verification:
+      - "Documentation file exists with all sections"
+      - "File counts match actual changes"
+    acceptance_criteria:
+      - Complete record of all cleanup operations
+      - Clear indication of what was removed vs archived
+      - Links to archive locations for preserved files
+
+  # ============================================================================
+  # REVIEW TASK (After all waves)
+  # ============================================================================
+  - id: review-cleanup-completion
+    title: Final review of cleanup execution
+    description: |
+      Review all cleanup operations for completeness and correctness:
+      
+      Verify:
+      1. All 10 debug scripts deleted
+      2. All 3 scripts properly archived with documentation
+      3. All 7 zombie tests deleted
+      4. Production-readiness-tests archived
+      5. Validation tests consolidated and passing
+      6. Empty directories removed
+      7. Migration bug fixed
+      8. Documentation complete
+      
+      Run final test suite to ensure no regressions.
+    wave: 5
+    agent: gem-reviewer
+    priority: high
+    status: pending
+    dependencies:
+      - wave5-cleanup-empty-directories
+      - wave5-document-changes
+    context_files:
+      secure-gate-access/server/scripts/: Should have fewer files
+      secure-gate-access/server/tests/: Should have validation/ subdirectory
+      archive/: Should have new archived content
+      documentation/archive/milestone-validation/task-13/: Should contain production-readiness-tests
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    focus_area: Entire project
+    requires_review: true
+    review_depth: standard
+    security_sensitive: false
+    verification:
+      - "git status shows clean working directory after commits"
+      - "npm test passes with no errors"
+      - "File counts match expected totals"
+    acceptance_criteria:
+      - All wave tasks completed successfully
+      - No test regressions
+      - Documentation accurate and complete
+    failure_modes:
+      - scenario: Missed file or incorrect deletion
+        likelihood: low
+        impact: medium
+        mitigation: Cross-reference with original research findings

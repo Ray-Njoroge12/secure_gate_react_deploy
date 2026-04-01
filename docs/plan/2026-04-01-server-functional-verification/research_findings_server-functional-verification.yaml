@@ -1,0 +1,532 @@
+plan_id: 2026-04-01-server-functional-verification
+objective: Verify server functionality thoroughly (startup, stop, key functionality checks, and failure points) without fixing code.
+focus_area: secure-gate-access/server runtime and validation surface
+created_at: 2026-04-01T17:19:19Z
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Startup entry is secure-gate-access/server/server.js via npm scripts that call node --import ./load-env.js server.js, with environment validation, DB initialization, and migrations before listen.
+  - Health routes are mounted at both /health and /api/health; public probes are available while detailed/operational routes are admin-gated.
+  - Graceful shutdown logic is distributed across server.js, integration health module, app-level middleware wiring, and DB manager signal hooks.
+  - Integration and smoke validation depend on PostgreSQL readiness; Redis is non-blocking and falls back to memory in multiple paths.
+  - Critical integration verification is explicitly scoped by npm run test:critical to auth-refresh, invite-lifecycle, estate-scoping, webhook-signature, and notification-queue tests.
+
+research_metadata:
+  methodology: Hybrid retrieval (semantic_search + grep_search), route/dependency relationship tracing, targeted read_file inspection, and metadata verification with wc -l.
+  scope: Server startup/stop lifecycle, health endpoints, package scripts, test harness setup, and environment/dependency prerequisites.
+  confidence: medium
+  coverage: 82
+
+files_analyzed:
+  - file: server.js
+    path: secure-gate-access/server/server.js
+    purpose: Main server bootstrap and lifecycle orchestration.
+    key_elements:
+      - element: EnvironmentConfig.validateAndReport
+        type: function_call
+        location: secure-gate-access/server/server.js:32
+        description: Performs environment validation before app startup and blocks production when invalid.
+      - element: startServer
+        type: function
+        location: secure-gate-access/server/server.js:320
+        description: Resolves startup port, initializes database, runs migrations, starts monitoring, and starts HTTP listener.
+      - element: gracefulShutdown
+        type: function
+        location: secure-gate-access/server/server.js:412
+        description: Handles SIGTERM/SIGINT with listener close, service stop, DB disconnect, and explicit exit codes.
+      - element: setupBasicHealthEndpoints
+        type: function
+        location: secure-gate-access/server/server.js:185
+        description: Registers fallback health endpoints if enhanced health integration fails.
+    language: javascript
+    lines: 489
+
+  - file: load-env.js
+    path: secure-gate-access/server/load-env.js
+    purpose: Early environment file loading and optional Datadog tracer initialization.
+    key_elements:
+      - element: dotenv path resolution
+        type: pattern
+        location: secure-gate-access/server/load-env.js:24
+        description: Loads .env/.env.staging from server dir or monorepo root fallback.
+      - element: dd-trace initialization gate
+        type: pattern
+        location: secure-gate-access/server/load-env.js:55
+        description: Enables tracing when ENABLE_DD_TRACE=true or NODE_ENV=production.
+    language: javascript
+    lines: 90
+
+  - file: app.js
+    path: secure-gate-access/server/src/app.js
+    purpose: Express app wiring, middleware order, and domain route mounting.
+    key_elements:
+      - element: loadRoutes(systemDomain)
+        type: function_call
+        location: secure-gate-access/server/src/app.js:226
+        description: Mounts system routes first so health endpoints are early-available.
+      - element: CORS production guards
+        type: pattern
+        location: secure-gate-access/server/src/app.js:108
+        description: Throws on invalid/missing CLIENT_ORIGIN in production/staging contexts.
+      - element: signal handlers
+        type: pattern
+        location: secure-gate-access/server/src/app.js:280
+        description: Registers SIGTERM/SIGINT handlers using gracefulShutdownHandler.
+    language: javascript
+    lines: 283
+
+  - file: system.domain.js
+    path: secure-gate-access/server/src/routes/domains/system.domain.js
+    purpose: Declarative mapping for system/health/database/cache/webhook route prefixes.
+    key_elements:
+      - element: /health and /api/health mounts
+        type: route_mapping
+        location: secure-gate-access/server/src/routes/domains/system.domain.js:17
+        description: Maps the same health router under both external and API-prefixed paths.
+      - element: /api/system mount
+        type: route_mapping
+        location: secure-gate-access/server/src/routes/domains/system.domain.js:19
+        description: Exposes authenticated system information and DB health endpoints.
+    language: javascript
+    lines: 25
+
+  - file: healthRoutes.js
+    path: secure-gate-access/server/src/routes/healthRoutes.js
+    purpose: Public probes plus admin health, metrics, and shutdown operations.
+    key_elements:
+      - element: GET /
+        type: route
+        location: secure-gate-access/server/src/routes/healthRoutes.js:42
+        description: Public basic health endpoint returning status, timestamp, uptime, and version.
+      - element: GET /ready
+        type: route
+        location: secure-gate-access/server/src/routes/healthRoutes.js:68
+        description: Readiness endpoint based on systemHealthService.performHealthCheck.
+      - element: GET /detailed
+        type: route
+        location: secure-gate-access/server/src/routes/healthRoutes.js:121
+        description: Admin-only detailed health report with audit logging.
+      - element: POST /shutdown/graceful
+        type: route
+        location: secure-gate-access/server/src/routes/healthRoutes.js:546
+        description: Admin-only route that triggers systemHealthService graceful shutdown initiation.
+    language: javascript
+    lines: 857
+
+  - file: systemRoutes.js
+    path: secure-gate-access/server/src/routes/systemRoutes.js
+    purpose: Authenticated admin-only system status and integration health APIs.
+    key_elements:
+      - element: router.use(authenticateToken)
+        type: middleware
+        location: secure-gate-access/server/src/routes/systemRoutes.js:8
+        description: Applies authentication to all /api/system endpoints.
+      - element: router.use(requireRole('admin'))
+        type: middleware
+        location: secure-gate-access/server/src/routes/systemRoutes.js:9
+        description: Restricts all /api/system endpoints to admin role.
+      - element: GET /database/health
+        type: route
+        location: secure-gate-access/server/src/routes/systemRoutes.js:40
+        description: Executes DB query check and returns status connected/healthy.
+    language: javascript
+    lines: 133
+
+  - file: databaseHealthRoutes.js
+    path: secure-gate-access/server/src/routes/databaseHealthRoutes.js
+    purpose: Database-specific health and pool diagnostic endpoints.
+    key_elements:
+      - element: GET /health
+        type: route
+        location: secure-gate-access/server/src/routes/databaseHealthRoutes.js:14
+        description: Public DB connectivity endpoint with 200 healthy and 503 unhealthy responses.
+      - element: GET /health/detailed
+        type: route
+        location: secure-gate-access/server/src/routes/databaseHealthRoutes.js:51
+        description: Admin-only detailed DB health and pool status endpoint.
+    language: javascript
+    lines: 163
+
+  - file: environment.js
+    path: secure-gate-access/server/src/config/environment.js
+    purpose: Environment validation, AWS secrets loading, and DB/security configuration derivation.
+    key_elements:
+      - element: required secrets validation
+        type: pattern
+        location: secure-gate-access/server/src/config/environment.js:213
+        description: Enforces JWT secrets and warns/errors by environment criticality.
+      - element: database config validation
+        type: pattern
+        location: secure-gate-access/server/src/config/environment.js:168
+        description: Validates DATABASE_URL or PG* settings and pool bounds.
+      - element: optional service validation
+        type: pattern
+        location: secure-gate-access/server/src/config/environment.js:262
+        description: Validates optional Redis/SMTP/SMS provider configuration with warnings.
+      - element: production policy validation
+        type: pattern
+        location: secure-gate-access/server/src/config/environment.js:284
+        description: Enforces ENFORCE_HTTPS, SECURE_COOKIES, and CLIENT_ORIGIN constraints.
+    language: javascript
+    lines: 527
+
+  - file: session.js
+    path: secure-gate-access/server/src/config/session.js
+    purpose: Session middleware setup with Redis-backed and in-memory fallback stores.
+    key_elements:
+      - element: Redis connection gate
+        type: pattern
+        location: secure-gate-access/server/src/config/session.js:22
+        description: Uses Redis for sessions only when cache is enabled and Redis config is present.
+      - element: memory store fallback
+        type: pattern
+        location: secure-gate-access/server/src/config/session.js:68
+        description: Falls back to MemoryStore when Redis is unavailable.
+      - element: production session secret enforcement
+        type: pattern
+        location: secure-gate-access/server/src/config/session.js:93
+        description: Throws when SESSION_SECRET is weak/short in production.
+    language: javascript
+    lines: 271
+
+  - file: db.enhanced.js
+    path: secure-gate-access/server/src/database/db.enhanced.js
+    purpose: Database manager with retries, health monitoring, and shutdown hooks.
+    key_elements:
+      - element: initializeAsync
+        type: function
+        location: secure-gate-access/server/src/database/db.enhanced.js:145
+        description: Async DB manager initialization with retry and diagnostics.
+      - element: _doInitialize retry diagnostics
+        type: pattern
+        location: secure-gate-access/server/src/database/db.enhanced.js:158
+        description: Emits targeted failure hints for timeout, auth, DNS, and connectivity issues.
+      - element: signal shutdown handlers
+        type: pattern
+        location: secure-gate-access/server/src/database/db.enhanced.js:874
+        description: Registers SIGINT/SIGTERM handlers to close DB pool and exit process.
+    language: javascript
+    lines: 906
+
+  - file: tokenService.js
+    path: secure-gate-access/server/src/services/tokenService.js
+    purpose: JWT token generation/validation and revocation storage.
+    key_elements:
+      - element: constructor secret enforcement
+        type: pattern
+        location: secure-gate-access/server/src/services/tokenService.js:17
+        description: Throws CRITICAL startup error if JWT_SECRET/JWT_REFRESH_SECRET are missing.
+      - element: Redis revocation fallback
+        type: pattern
+        location: secure-gate-access/server/src/services/tokenService.js:55
+        description: Falls back to in-memory revocation storage when Redis initialization fails.
+    language: javascript
+    lines: 735
+
+  - file: smoke-test.js
+    path: secure-gate-access/server/scripts/smoke-test.js
+    purpose: Runtime smoke checks for health, login, and key endpoint availability.
+    key_elements:
+      - element: BASE_URL resolution
+        type: pattern
+        location: secure-gate-access/server/scripts/smoke-test.js:8
+        description: Uses --base-url argument or SMOKE_BASE_URL env with localhost:3001 default.
+      - element: server health assertions
+        type: test_case
+        location: secure-gate-access/server/scripts/smoke-test.js:58
+        description: Expects /health status 200 and healthy marker.
+      - element: readiness assertions
+        type: test_case
+        location: secure-gate-access/server/scripts/smoke-test.js:64
+        description: Accepts readiness 200 or 503 as valid readiness-state output.
+      - element: optional DB health test
+        type: test_case
+        location: secure-gate-access/server/scripts/smoke-test.js:113
+        description: Admin-token gated call to /api/system/database/health expecting healthy DB state.
+    language: javascript
+    lines: 223
+
+  - file: integration/setup.js
+    path: secure-gate-access/server/tests/integration/setup.js
+    purpose: Integration test bootstrap with test DB initialization and cleanup.
+    key_elements:
+      - element: force test DB name
+        type: pattern
+        location: secure-gate-access/server/tests/integration/setup.js:20
+        description: Sets PGDATABASE=secure_gate_test and NODE_ENV=test.
+      - element: setupTestDatabase
+        type: function
+        location: secure-gate-access/server/tests/integration/setup.js:33
+        description: Initializes DB manager and clears test data for isolation.
+    language: javascript
+    lines: 539
+
+  - file: 01-basic-smoke.test.js
+    path: secure-gate-access/server/tests/smoke/01-basic-smoke.test.js
+    purpose: In-memory smoke tests against Express app for basic availability and auth protections.
+    key_elements:
+      - element: /api/health smoke assertion
+        type: test_case
+        location: secure-gate-access/server/tests/smoke/01-basic-smoke.test.js:30
+        description: Expects 200 with status healthy.
+      - element: protected route auth assertion
+        type: test_case
+        location: secure-gate-access/server/tests/smoke/01-basic-smoke.test.js:54
+        description: Expects unauthorized response for unauthenticated protected endpoint access.
+    language: javascript
+    lines: 75
+
+  - file: package.json
+    path: secure-gate-access/server/package.json
+    purpose: Canonical command inventory for startup, testing, diagnostics, and DB utilities.
+    key_elements:
+      - element: start/dev scripts
+        type: script
+        location: secure-gate-access/server/package.json:8
+        description: Defines node and nodemon startup commands using load-env import hook.
+      - element: test:critical
+        type: script
+        location: secure-gate-access/server/package.json:19
+        description: Runs selected high-priority integration suites with passWithNoTests.
+      - element: validate:env
+        type: script
+        location: secure-gate-access/server/package.json:50
+        description: Executes environment validation script for diagnostics.
+    language: json
+    lines: 175
+
+  - file: DEPLOYMENT_GUIDE.md
+    path: documentation/guides/DEPLOYMENT_GUIDE.md
+    purpose: Operational documentation for smoke coverage and deployment-time health checks.
+    key_elements:
+      - element: smoke test coverage section
+        type: documentation
+        location: documentation/guides/DEPLOYMENT_GUIDE.md:114
+        description: Documents expected smoke checks for /health, /health/ready, /health/live, auth, and DB health.
+      - element: post-deployment verification commands
+        type: documentation
+        location: documentation/guides/DEPLOYMENT_GUIDE.md:366
+        description: Provides explicit curl-based health and integration verification examples.
+    language: markdown
+    lines: 831
+
+  - file: matrix.md
+    path: secure-gate-access/docs/testing/integration/matrix.md
+    purpose: Defines critical-path integration verification scope.
+    key_elements:
+      - element: CI gate critical list
+        type: documentation
+        location: secure-gate-access/docs/testing/integration/matrix.md:54
+        description: Specifies that test:critical covers auth refresh/logout, invite lifecycle, estate scoping, webhook signature, and notification retry.
+    language: markdown
+    lines: 54
+
+patterns_found:
+  - category: structure
+    pattern: Multi-layer startup validation before server listen
+    description: Startup path validates environment, checks port availability, initializes DB/migrations, then starts HTTP and optional services.
+    examples:
+      - file: secure-gate-access/server/server.js
+        location: secure-gate-access/server/server.js:320
+        snippet: "startServer() resolves port, runs dbManager.initializeAsync(), migrationService.runMigrations(), then app.listen()"
+      - file: secure-gate-access/server/src/config/environment.js
+        location: secure-gate-access/server/src/config/environment.js:284
+        snippet: "Production-specific validation errors are collected and can block startup"
+    prevalence: common
+
+  - category: architecture
+    pattern: Dual health route mounting for public and API-prefixed probes
+    description: Same health router is mounted under /health and /api/health for infrastructure and API clients.
+    examples:
+      - file: secure-gate-access/server/src/routes/domains/system.domain.js
+        location: secure-gate-access/server/src/routes/domains/system.domain.js:17
+        snippet: "{ prefix: '/health', router: healthRoutes } and { prefix: '/api/health', router: healthRoutes }"
+    prevalence: common
+
+  - category: error_handling
+    pattern: Explicit startup-blocking failures with actionable console hints
+    description: Invalid port, missing JWT secrets, DB failures, and production config violations emit targeted diagnostics then exit.
+    examples:
+      - file: secure-gate-access/server/server.js
+        location: secure-gate-access/server/server.js:69
+        snippet: "Server startup blocked - invalid PORT value"
+      - file: secure-gate-access/server/server.js
+        location: secure-gate-access/server/server.js:356
+        snippet: "Server startup blocked - database connection required"
+      - file: secure-gate-access/server/src/services/tokenService.js
+        location: secure-gate-access/server/src/services/tokenService.js:18
+        snippet: "CRITICAL: JWT secrets not configured"
+    prevalence: common
+
+  - category: testing
+    pattern: ESM-safe Jest invocation through npm scripts with environment forcing
+    description: Test scripts force NODE_ENV=test, NODE_NO_WARNINGS=1, and vm-modules execution to maintain compatibility.
+    examples:
+      - file: secure-gate-access/server/package.json
+        location: secure-gate-access/server/package.json:10
+        snippet: "NODE_ENV=test NODE_NO_WARNINGS=1 node --experimental-vm-modules ..."
+      - file: secure-gate-access/server/tests/integration/setup.js
+        location: secure-gate-access/server/tests/integration/setup.js:20
+        snippet: "process.env.PGDATABASE = 'secure_gate_test'"
+    prevalence: common
+
+  - category: structure
+    pattern: Redis optionality with memory fallback
+    description: Session/token/cache paths treat Redis as optional and continue with reduced durability when unavailable.
+    examples:
+      - file: secure-gate-access/server/src/config/session.js
+        location: secure-gate-access/server/src/config/session.js:68
+        snippet: "if (!sessionStore) sessionStore = new session.MemoryStore()"
+      - file: secure-gate-access/server/src/services/tokenService.js
+        location: secure-gate-access/server/src/services/tokenService.js:60
+        snippet: "Redis initialization failed - using fallback in-memory storage"
+    prevalence: occasional
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: server bootstrap
+      responsibility: Coordinates environment validation, dependency initialization, startup, and shutdown lifecycle.
+      location: secure-gate-access/server/server.js
+      relationship_to_domain: domain depends on this
+    - component: Express app wiring
+      responsibility: Middleware order, security stack, and domain route mounts.
+      location: secure-gate-access/server/src/app.js
+      relationship_to_domain: domain depends on this
+    - component: system domain route map
+      responsibility: Central mapping of health/system/database/cache/webhook route prefixes.
+      location: secure-gate-access/server/src/routes/domains/system.domain.js
+      relationship_to_domain: domain depends on this
+    - component: database manager
+      responsibility: Connection pool lifecycle, retries, health checks, and DB shutdown behavior.
+      location: secure-gate-access/server/src/database/db.enhanced.js
+      relationship_to_domain: domain depends on this
+  interfaces_used_by_domain:
+    - interface: npm scripts
+      location: secure-gate-access/server/package.json
+      usage_pattern: Entry point for startup and test validation runs.
+    - interface: HTTP health endpoints
+      location: secure-gate-access/server/src/routes/healthRoutes.js
+      usage_pattern: Public probes and admin diagnostics used by smoke checks and ops verification.
+    - interface: test setup harness
+      location: secure-gate-access/server/tests/integration/setup.js
+      usage_pattern: Initializes and sanitizes test DB state before integration suites.
+  data_flow_involving_domain: Runtime starts from npm script -> load-env -> environment validation -> app import (middleware + routes) -> DB init/migrations -> listen -> health/status endpoints consumed by smoke tests and diagnostics.
+  key_relationships_to_domain:
+    - from: secure-gate-access/server/server.js
+      to: secure-gate-access/server/src/config/environment.js
+      relationship: imports
+    - from: secure-gate-access/server/server.js
+      to: secure-gate-access/server/src/database/db.enhanced.js
+      relationship: calls
+    - from: secure-gate-access/server/src/app.js
+      to: secure-gate-access/server/src/routes/domains/system.domain.js
+      relationship: imports
+    - from: secure-gate-access/server/src/routes/domains/system.domain.js
+      to: secure-gate-access/server/src/routes/healthRoutes.js
+      relationship: composes
+    - from: secure-gate-access/server/scripts/smoke-test.js
+      to: secure-gate-access/server/src/routes/healthRoutes.js
+      relationship: calls
+
+related_technology_stack:
+  languages_used_in_domain:
+    - JavaScript (ES modules)
+    - JSON
+    - Markdown
+  frameworks_used_in_domain:
+    - name: Express
+      usage_in_domain: HTTP server, middleware chain, route mounting, and health endpoints.
+    - name: Jest
+      usage_in_domain: Unit/integration/smoke test execution through npm scripts.
+  libraries_used_in_domain:
+    - name: dotenv
+      purpose_in_domain: Loads environment files before startup imports.
+    - name: pg
+      purpose_in_domain: PostgreSQL connection pool and query execution.
+    - name: connect-redis + redis
+      purpose_in_domain: Optional Redis-backed session store.
+    - name: jsonwebtoken + argon2
+      purpose_in_domain: Auth token and password-related test/runtime flows.
+    - name: supertest
+      purpose_in_domain: In-memory API testing for smoke/integration suites.
+    - name: dd-trace
+      purpose_in_domain: Optional Datadog tracing initialization during bootstrap.
+  external_apis_used_in_domain:
+    - name: AWS Secrets Manager
+      integration_point: secure-gate-access/server/src/config/environment.js via secretsManagerService when USE_AWS_SECRETS=true.
+
+related_conventions:
+  naming_patterns_in_domain: npm scripts use grouped prefixes (test:*, db:*, setup:*); health endpoints use probe-style naming (/live, /ready, /startup, /detailed).
+  structure_of_domain: Startup orchestration in server.js, app wiring in src/app.js, route domains in src/routes/domains, and specialized route handlers in src/routes.
+  error_handling_in_domain: Startup and dependency failures emit explicit console diagnostics and use process.exit(1) for blocking states.
+  testing_in_domain: Integration harness forces NODE_ENV=test and secure_gate_test DB, with transaction/cleanup helpers in tests/integration/setup.js.
+  documentation_in_domain: Active operational references are in documentation/guides and secure-gate-access/docs/testing; archive docs contain historical variants.
+
+related_dependencies:
+  internal:
+    - component: secure-gate-access/server/src/config/environment.js
+      relationship_to_domain: Provides validated security/database config and startup gates.
+      direction: outbound
+    - component: secure-gate-access/server/src/database/db.enhanced.js
+      relationship_to_domain: Provides DB lifecycle and health used by startup and tests.
+      direction: outbound
+    - component: secure-gate-access/server/src/routes/healthRoutes.js
+      relationship_to_domain: Provides health probe and admin diagnostics endpoints for runtime verification.
+      direction: outbound
+    - component: secure-gate-access/server/tests/integration/setup.js
+      relationship_to_domain: Depends on DB manager and app wiring for integration validation.
+      direction: inbound
+    - component: secure-gate-access/server/scripts/smoke-test.js
+      relationship_to_domain: Consumes runtime endpoints for deployment and session verification.
+      direction: inbound
+  external:
+    - name: PostgreSQL
+      purpose_for_domain: Primary persistence; startup and integration checks depend on connectivity.
+    - name: Redis
+      purpose_for_domain: Optional session/cache/revocation backing with fallback behavior when unavailable.
+    - name: AWS Secrets Manager
+      purpose_for_domain: Optional secret source for production/staging startup.
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: JWT secret enforcement
+      location: secure-gate-access/server/src/services/tokenService.js:17
+      concern: Missing/weak secrets can block startup or weaken auth guarantees.
+    - area: CORS origin enforcement
+      location: secure-gate-access/server/src/app.js:108
+      concern: Invalid production origin configuration raises startup-time errors.
+    - area: admin health and shutdown endpoints
+      location: secure-gate-access/server/src/routes/healthRoutes.js:121
+      concern: Detailed diagnostics and shutdown controls are role-protected and must remain restricted.
+  authentication_patterns_in_domain: authenticateToken middleware gates system and detailed health endpoints.
+  authorization_patterns_in_domain: requireRole and requireRolePolicy('adminOnly') protect admin operations.
+  data_validation_in_domain: Environment validation checks enforce required secrets, DB config integrity, and production safety constraints.
+
+testing_patterns:
+  framework: Jest (ESM mode), Supertest, and custom node smoke script.
+  coverage_areas:
+    - Critical auth refresh/logout and token lifecycle
+    - Invite lifecycle and estate scoping
+    - Webhook signature and notification queue retry paths
+    - Public health endpoint responsiveness and auth protection behavior
+  test_organization: tests/unit, tests/integration, tests/smoke, with integration setup helpers and CI-focused critical subset.
+  mock_patterns:
+    - In-memory app tests via getTestApp and Supertest
+    - Integration setup uses real DB manager with test DB and cleanup helpers
+
+open_questions:
+  - question: Which port should be treated as canonical for this session verification run (3001 from .env.example/.smoke defaults vs 5001 development fallback in server.js when PORT is unset)?
+    context: Startup and smoke docs/scripts assume different defaults, affecting command reproducibility.
+  - question: Is app-level gracefulShutdownHandler wiring in src/app.js intentionally registered with process signals directly, despite handler signature expecting server instance?
+    context: Current shape suggests potential signal-time TypeError path distinct from server.js shutdown handler.
+  - question: Should /health/deep be considered active for operations checks?
+    context: Ops docs mention deep/internal health path, but route definitions expose /health/detailed and no /deep endpoint.
+
+gaps:
+  - area: Runtime confirmation of shutdown log ordering across multiple signal handlers
+    description: Multiple modules register SIGTERM/SIGINT handlers; this research verified definitions but did not execute stop path in-session.
+    impact: Exact stop-sequence observability and dominant handler behavior remain unverified without execution.
+  - area: Active documentation authority split
+    description: Some guides and scripts use divergent assumptions (base URL/port and endpoint variants).
+    impact: Verification operators may need to normalize commands before execution to avoid false negatives.

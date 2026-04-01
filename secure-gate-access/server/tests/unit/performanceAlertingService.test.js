@@ -6,7 +6,8 @@
  */
 
 import { jest } from '@jest/globals';
-import { PerformanceAlertingService } from '../../src/services/performanceAlertingService.js';
+
+let PerformanceAlertingService;
 
 // Mock dependencies
 const mockLoggingService = {
@@ -35,6 +36,10 @@ describe('PerformanceAlertingService', () => {
   let service;
   let originalSetTimeout;
   let timeoutCallbacks;
+
+  beforeAll(async () => {
+    ({ PerformanceAlertingService } = await import('../../src/services/performanceAlertingService.js'));
+  });
 
   beforeEach(() => {
     // Mock setTimeout for escalation testing
@@ -305,6 +310,7 @@ describe('PerformanceAlertingService', () => {
       expect(escalation.level).toBe(0);
       
       // Trigger escalation
+      escalation.nextEscalation = Date.now() - 1;
       await service.checkEscalation(escalationId);
       
       expect(escalation.level).toBe(1);
@@ -339,6 +345,7 @@ describe('PerformanceAlertingService', () => {
       
       // Escalate to maximum level
       for (let i = 0; i < escalation.maxLevel; i++) {
+        escalation.nextEscalation = Date.now() - 1;
         await service.checkEscalation(escalationId);
       }
       

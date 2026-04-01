@@ -32,6 +32,8 @@ class MessagingGateway {
 
         let lastError = null;
         let successfulChannel = null;
+        const attempts = [];
+        const recipientRef = recipient.phone || recipient.email || 'unknown-recipient';
 
         // Ensure site metadata is in data
         const enhancedData = {
@@ -41,34 +43,73 @@ class MessagingGateway {
         };
 
         for (const channel of channels) {
+            const startedAt = Date.now();
             try {
                 const result = await this.attemptSend(channel, recipient, templateName, enhancedData);
                 if (result && result.success) {
                     successfulChannel = channel;
+                    attempts.push({
+                        channel,
+                        status: 'sent',
+                        durationMs: Date.now() - startedAt
+                    });
                     break;
                 }
+
                 lastError = result?.error || 'Unknown error';
+                attempts.push({
+                    channel,
+                    status: 'failed',
+                    durationMs: Date.now() - startedAt,
+                    error: lastError
+                });
+
+                loggingService.logWarning('MessagingGateway: Channel attempt failed', {
+                    channel,
+                    recipient: recipientRef,
+                    template: templateName,
+                    reason: lastError
+                });
             } catch (err) {
                 lastError = err.message;
+                attempts.push({
+                    channel,
+                    status: 'failed',
+                    durationMs: Date.now() - startedAt,
+                    error: lastError
+                });
+
                 loggingService.logWarning(`MessagingGateway: Channel ${channel} failed`, {
                     error: err.message,
-                    recipient: recipient.phone || recipient.email,
+                    recipient: recipientRef,
                     template: templateName
                 });
             }
         }
 
         if (!successfulChannel) {
-            loggingService.logError('MessagingGateway: All channels failed', {
-                recipient: recipient.phone || recipient.email,
+            loggingService.logError('MessagingGateway: All channels failed', null, {
+                recipient: recipientRef,
                 channels,
                 lastError,
-                template: templateName
+                template: templateName,
+                attempts
             });
-            return { success: false, error: 'All channels failed', lastError };
+
+            return { success: false, error: 'All channels failed', lastError, attempts };
         }
 
-        return { success: true, channel: successfulChannel };
+        const hadFallback = attempts.some(attempt => attempt.status === 'failed');
+        if (hadFallback) {
+            loggingService.logInfo('MessagingGateway: Delivered via fallback channel', {
+                recipient: recipientRef,
+                template: templateName,
+                successfulChannel,
+                attempts
+            });
+        }
+
+        return { success: true, channel: successfulChannel, attempts };
     }
 
     /**

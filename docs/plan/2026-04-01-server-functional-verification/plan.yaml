@@ -1,0 +1,491 @@
+plan_id: 2026-04-01-server-functional-verification
+objective: Run thorough server verification (startup, stop, health, smoke, critical/unit/integration tests), identify failures/bugs, no fixes.
+created_at: 2026-04-01T00:00:00Z
+created_by: gem-planner
+status: pending_approval
+research_confidence: medium
+
+tldr: |
+  Execute a three-phase verification DAG: fast_sanity (preflight/start/stop/health),
+  core_functional (smoke + critical + unit), and deep_confidence (integration +
+  taxonomy + final report). Every task emits explicit pass/fail evidence artifacts.
+  Blockers are classified as env/db/ports and propagated so downstream tasks are
+  marked blocked or degraded instead of silently skipped.
+
+open_questions:
+  - Should admin-token-gated endpoints (for example /health/detailed and /api/system/database/health) be mandatory or optional when admin credentials are unavailable?
+  - If port 3001 is occupied but 5001 is free, should runtime verification proceed on 5001 as degraded-success or be classified as a hard blocker?
+
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: Verification appears green because runtime probes target the wrong port while server is running elsewhere.
+      likelihood: medium
+      impact: high
+      mitigation: Force explicit PORT assignment, capture listener evidence with lsof, and store probe URL in artifacts.
+    - scenario: Integration and critical suites fail due to DB provisioning issues, masking application-level behavior.
+      likelihood: medium
+      impact: critical
+      mitigation: Classify DB blockers separately from test regressions and preserve full failure logs with first-error signatures.
+    - scenario: Startup and shutdown handlers produce inconsistent behavior across signal paths and leave orphaned listeners.
+      likelihood: low
+      impact: high
+      mitigation: Record PID, signal used, post-stop port checks, and restart outcome as mandatory evidence.
+  assumptions:
+    - Node and npm are available in the workspace shell.
+    - PostgreSQL test/runtime dependencies may be unavailable and must be treated as explicit blockers, not fixed in this plan.
+    - Verification can write artifacts under docs/plan/2026-04-01-server-functional-verification/artifacts.
+
+implementation_specification:
+  code_structure: Non-code verification workflow driven by shell commands and npm scripts, with evidence artifacts organized by phase under docs/plan/2026-04-01-server-functional-verification/artifacts and a final report under docs/plan/2026-04-01-server-functional-verification.
+  affected_areas:
+    - docs/plan/2026-04-01-server-functional-verification/plan.yaml
+    - secure-gate-access/server/package.json
+    - secure-gate-access/server/server.js
+  component_details:
+    - component: fast_sanity verifier
+      responsibility: Validate environment and port prerequisites, execute startup/health probes, and verify graceful stop/restart behavior.
+      interfaces:
+        - npm run validate:env
+        - PORT=3001 npm start
+        - curl probes for /health, /api/health, /health/live, /health/ready
+    - component: core_functional test executor
+      responsibility: Run smoke, critical, and unit suites with explicit pass/fail capture.
+      interfaces:
+        - npm run test:smoke
+        - npm run test:critical
+        - npm run test:unit
+    - component: deep_confidence executor
+      responsibility: Run integration suite and capture full regression evidence for high-confidence validation.
+      interfaces:
+        - npm run test:integration
+    - component: evidence classifier and reporter
+      responsibility: Normalize results into pass/fail matrix and failure taxonomy, then produce final summary of confirmed functionality and failure points.
+      interfaces:
+        - blocker + failure taxonomy schema
+        - final verification report artifact
+  dependencies:
+    - component: secure-gate-access/server/package.json scripts
+      relationship: Provides canonical verification commands for startup and tests.
+    - component: secure-gate-access/server/src/routes/healthRoutes.js
+      relationship: Serves health endpoints used by fast_sanity probes.
+    - component: secure-gate-access/server/tests/integration/setup.js
+      relationship: Governs integration DB bootstrap behavior and blocker diagnosis.
+  integration_points:
+    - Startup entry through secure-gate-access/server/server.js using npm start
+    - Health probes through /health and /api/health route mounts
+    - Jest suite execution through server npm scripts with ESM flags
+    - Evidence and report generation in docs/plan/2026-04-01-server-functional-verification
+
+contracts:
+  - from_task: FS-001
+    to_task: FS-002
+    interface: blocker_matrix and preflight diagnostics
+    format: YAML + text logs at artifacts/fast_sanity/01-*
+  - from_task: FS-002
+    to_task: FS-003
+    interface: startup PID, startup log, and baseline probe responses
+    format: PID file + text logs at artifacts/fast_sanity/02-*
+  - from_task: FS-003
+    to_task: CF-001
+    interface: confirmed runtime base URL and restart status
+    format: text logs at artifacts/fast_sanity/03-*
+  - from_task: FS-003
+    to_task: CF-002
+    interface: confirmed runtime base URL and restart status
+    format: text logs at artifacts/fast_sanity/03-*
+  - from_task: FS-003
+    to_task: CF-003
+    interface: confirmed runtime base URL and restart status
+    format: text logs at artifacts/fast_sanity/03-*
+  - from_task: CF-001
+    to_task: DC-002
+    interface: smoke suite pass/fail result and failing test signatures
+    format: text log at artifacts/core_functional/01-smoke.log
+  - from_task: CF-002
+    to_task: DC-002
+    interface: critical suite pass/fail result and failing test signatures
+    format: text log at artifacts/core_functional/02-critical.log
+  - from_task: CF-003
+    to_task: DC-002
+    interface: unit suite pass/fail result and failing test signatures
+    format: text log at artifacts/core_functional/03-unit.log
+  - from_task: DC-001
+    to_task: DC-002
+    interface: integration suite pass/fail result and failing test signatures
+    format: text log at artifacts/deep_confidence/01-integration.log
+  - from_task: DC-002
+    to_task: DC-003
+    interface: normalized pass/fail matrix and failure taxonomy
+    format: YAML at artifacts/deep_confidence/02-failure-taxonomy.yaml
+
+tasks:
+  - id: FS-001
+    title: fast_sanity preflight blockers and baseline
+    description: |
+      Validate environment and listener prerequisites before runtime execution.
+      Classify blockers into taxonomy categories: blocker_env, blocker_db, blocker_port.
+      Do not fix blockers; record evidence and propagate blocked/degraded state.
+    wave: 1
+    agent: gem-devops
+    priority: high
+    status: pending
+    dependencies: []
+    context_files:
+      - secure-gate-access/server/package.json: canonical command inventory
+      - secure-gate-access/server/src/config/environment.js: env validation behavior
+      - docs/plan/2026-04-01-server-functional-verification/research_findings_server-functional-verification.yaml: blocker constraints
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 120
+    focus_area: fast_sanity
+    verification:
+      - mkdir -p docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity
+      - cd secure-gate-access/server && node -v > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-node-version.txt
+      - cd secure-gate-access/server && npm run validate:env > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-validate-env.log 2>&1
+      - lsof -nP -iTCP:3001 -sTCP:LISTEN > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-port-3001.log 2>&1 || true
+      - lsof -nP -iTCP:5001 -sTCP:LISTEN > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/01-port-5001.log 2>&1 || true
+    acceptance_criteria:
+      - Preflight logs exist: artifacts/fast_sanity/01-node-version.txt, artifacts/fast_sanity/01-validate-env.log, artifacts/fast_sanity/01-port-3001.log, artifacts/fast_sanity/01-port-5001.log.
+      - blocker_matrix artifact created at artifacts/fast_sanity/01-blocker-matrix.yaml with explicit status for env/db/ports.
+      - Pass evidence is explicit (all required checks passed) and fail evidence includes first failing command + stderr excerpt.
+    failure_modes:
+      - scenario: validate:env fails because required secrets or config are missing.
+        likelihood: medium
+        impact: high
+        mitigation: Classify as blocker_env, mark downstream runtime tasks blocked/degraded, continue non-runtime evidence collection.
+      - scenario: Required verification port is already occupied.
+        likelihood: medium
+        impact: medium
+        mitigation: Classify as blocker_port, capture listener process evidence, attempt agreed fallback policy only (no code/config fixes).
+    environment: development
+    requires_approval: false
+    security_sensitive: true
+
+  - id: FS-002
+    title: fast_sanity startup and health probe verification
+    description: |
+      Start the server in controlled mode, capture startup logs and PID, and probe core health endpoints.
+      Health probes must emit explicit HTTP status and response body evidence for pass/fail analysis.
+    wave: 2
+    agent: gem-devops
+    priority: high
+    status: pending
+    dependencies:
+      - FS-001
+    context_files:
+      - secure-gate-access/server/server.js: startup behavior and port handling
+      - secure-gate-access/server/src/routes/healthRoutes.js: health endpoint expectations
+      - secure-gate-access/server/src/routes/domains/system.domain.js: /health and /api/health mounting
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 200
+    focus_area: fast_sanity
+    verification:
+      - cd secure-gate-access/server && PORT=3001 npm start > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-startup.log 2>&1 & echo $! > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-server.pid
+      - sleep 12
+      - curl -sS -i http://localhost:3001/health > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-health-root.http
+      - curl -sS -i http://localhost:3001/api/health > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-health-api.http
+      - curl -sS -i http://localhost:3001/health/live > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-health-live.http
+      - curl -sS -i http://localhost:3001/health/ready > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-health-ready.http
+    acceptance_criteria:
+      - Startup evidence exists: artifacts/fast_sanity/02-startup.log and artifacts/fast_sanity/02-server.pid.
+      - Health probe evidence exists with explicit status lines and payloads: artifacts/fast_sanity/02-health-root.http, artifacts/fast_sanity/02-health-api.http, artifacts/fast_sanity/02-health-live.http, artifacts/fast_sanity/02-health-ready.http.
+      - Pass/fail statement recorded with expected status behavior (/health and /api/health must be reachable; /health/ready may be 200 or 503 and must be classified, not ignored).
+    failure_modes:
+      - scenario: Server fails to start due to DB initialization failure.
+        likelihood: medium
+        impact: critical
+        mitigation: Classify as blocker_db if dependency-related; otherwise classify as startup_failure with stack trace evidence.
+      - scenario: Health endpoints return unexpected status or malformed payload.
+        likelihood: medium
+        impact: high
+        mitigation: Classify as health_contract_failure and preserve full HTTP response evidence.
+    environment: development
+    requires_approval: false
+    security_sensitive: true
+
+  - id: FS-003
+    title: fast_sanity stop and restart verification
+    description: |
+      Validate graceful stop and restart behavior using captured PID and explicit signal handling.
+      Confirm listener release and successful post-restart health response.
+    wave: 3
+    agent: gem-devops
+    priority: high
+    status: pending
+    dependencies:
+      - FS-002
+    context_files:
+      - secure-gate-access/server/server.js: graceful shutdown logic
+      - secure-gate-access/server/src/app.js: additional signal handling
+      - secure-gate-access/server/src/database/db.enhanced.js: DB shutdown hooks
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 220
+    focus_area: fast_sanity
+    verification:
+      - kill -SIGTERM "$(cat docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/02-server.pid)"
+      - sleep 8
+      - lsof -nP -iTCP:3001 -sTCP:LISTEN > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/03-post-stop-port.log 2>&1 || true
+      - cd secure-gate-access/server && PORT=3001 npm start > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/03-restart.log 2>&1 & echo $! > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/03-server.pid
+      - sleep 12
+      - curl -sS -i http://localhost:3001/health > docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/03-restart-health.http
+      - kill -SIGTERM "$(cat docs/plan/2026-04-01-server-functional-verification/artifacts/fast_sanity/03-server.pid)"
+    acceptance_criteria:
+      - Stop evidence exists: artifacts/fast_sanity/03-post-stop-port.log showing listener release result.
+      - Restart evidence exists: artifacts/fast_sanity/03-restart.log, artifacts/fast_sanity/03-server.pid, and artifacts/fast_sanity/03-restart-health.http.
+      - Pass/fail evidence explicitly states whether stop and restart succeeded independently.
+    failure_modes:
+      - scenario: SIGTERM does not stop server cleanly and listener remains bound.
+        likelihood: low
+        impact: high
+        mitigation: Classify as shutdown_failure and capture lingering process/listener evidence.
+      - scenario: Restart succeeds but health probe fails.
+        likelihood: medium
+        impact: high
+        mitigation: Classify as startup_failure or health_contract_failure based on startup log and HTTP evidence.
+    environment: development
+    requires_approval: false
+    security_sensitive: true
+
+  - id: CF-001
+    title: core_functional smoke suite verification
+    description: |
+      Run smoke tests through npm script and capture deterministic output.
+      No retries unless failure is explicitly classified as flaky_or_nondeterministic.
+    wave: 4
+    agent: gem-devops
+    priority: high
+    status: pending
+    dependencies:
+      - FS-003
+    context_files:
+      - secure-gate-access/server/package.json: test:smoke script
+      - secure-gate-access/server/tests/smoke/01-basic-smoke.test.js: smoke expectations
+      - secure-gate-access/server/src/routes/healthRoutes.js: health contract under test
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 120
+    focus_area: core_functional
+    verification:
+      - cd secure-gate-access/server && npm run test:smoke > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/core_functional/01-smoke.log 2>&1
+    acceptance_criteria:
+      - Smoke log exists at artifacts/core_functional/01-smoke.log.
+      - Pass/fail outcome is explicit with suite/test counts and non-zero exit evidence on failure.
+    failure_modes:
+      - scenario: Smoke tests fail due to endpoint contract drift.
+        likelihood: medium
+        impact: high
+        mitigation: Classify as smoke_regression with failing assertions and related endpoint identifiers.
+    environment: development
+    requires_approval: false
+    security_sensitive: false
+
+  - id: CF-002
+    title: core_functional critical integration gate verification
+    description: |
+      Execute test:critical to validate auth refresh/logout, invite lifecycle,
+      estate scoping, webhook signature, and notification retry critical paths.
+    wave: 4
+    agent: gem-devops
+    priority: high
+    status: pending
+    dependencies:
+      - FS-003
+    context_files:
+      - secure-gate-access/server/package.json: test:critical script
+      - secure-gate-access/docs/testing/integration/matrix.md: critical path definition
+      - secure-gate-access/server/tests/integration/setup.js: test DB bootstrap
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 180
+    focus_area: core_functional
+    verification:
+      - mkdir -p docs/plan/2026-04-01-server-functional-verification/artifacts/core_functional
+      - cd secure-gate-access/server && npm run test:critical > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/core_functional/02-critical.log 2>&1
+    acceptance_criteria:
+      - Critical suite log exists at artifacts/core_functional/02-critical.log.
+      - Pass/fail evidence includes failed suite names and first failure stack when applicable.
+      - DB dependency failures are explicitly separated into blocker_db vs application regression.
+    failure_modes:
+      - scenario: Critical suites fail because integration DB cannot initialize.
+        likelihood: medium
+        impact: critical
+        mitigation: Classify as blocker_db with setup failure excerpt and mark test result as blocked, not silently failed.
+      - scenario: Critical auth or estate-scoping behavior regresses.
+        likelihood: medium
+        impact: critical
+        mitigation: Classify as critical_regression and capture exact failing assertions.
+    environment: development
+    requires_approval: false
+    security_sensitive: true
+
+  - id: CF-003
+    title: core_functional unit suite verification
+    description: |
+      Execute unit suite using canonical npm script and capture output for pass/fail analysis.
+    wave: 4
+    agent: gem-devops
+    priority: medium
+    status: pending
+    dependencies:
+      - FS-003
+    context_files:
+      - secure-gate-access/server/package.json: test:unit script
+      - secure-gate-access/server/tests/unit: unit test scope
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 150
+    focus_area: core_functional
+    verification:
+      - cd secure-gate-access/server && npm run test:unit > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/core_functional/03-unit.log 2>&1
+    acceptance_criteria:
+      - Unit suite log exists at artifacts/core_functional/03-unit.log.
+      - Pass/fail evidence includes total suites/tests and first-error signature on failure.
+    failure_modes:
+      - scenario: Unit suite hits memory/time instability and aborts without deterministic result.
+        likelihood: low
+        impact: medium
+        mitigation: Classify as flaky_or_nondeterministic only if reproduced inconsistency is demonstrated; otherwise classify as unit_regression.
+    environment: development
+    requires_approval: false
+    security_sensitive: false
+
+  - id: DC-001
+    title: deep_confidence full integration suite verification
+    description: |
+      Execute full integration suite after core functional evidence is collected.
+      Capture complete output to confirm or refute broad backend confidence.
+    wave: 5
+    agent: gem-devops
+    priority: high
+    status: pending
+    dependencies:
+      - CF-001
+      - CF-002
+      - CF-003
+    context_files:
+      - secure-gate-access/server/package.json: test:integration script
+      - secure-gate-access/server/tests/integration/setup.js: integration bootstrap
+      - secure-gate-access/docs/testing/integration/guide.md: integration assumptions
+    estimated_effort: large
+    estimated_files: 1
+    estimated_lines: 260
+    focus_area: deep_confidence
+    verification:
+      - mkdir -p docs/plan/2026-04-01-server-functional-verification/artifacts/deep_confidence
+      - cd secure-gate-access/server && npm run test:integration > ../../docs/plan/2026-04-01-server-functional-verification/artifacts/deep_confidence/01-integration.log 2>&1
+    acceptance_criteria:
+      - Integration log exists at artifacts/deep_confidence/01-integration.log.
+      - Pass/fail evidence includes explicit suite counts, failure list, and setup-stage failure extraction when blocked.
+    failure_modes:
+      - scenario: Integration setup fails before tests execute due to DB/schema preconditions.
+        likelihood: medium
+        impact: critical
+        mitigation: Classify as blocker_db with setup stack trace; do not mislabel as integration regression.
+      - scenario: Broad integration regressions appear after critical suite passed.
+        likelihood: medium
+        impact: high
+        mitigation: Classify as integration_regression and capture differential against critical results.
+    environment: development
+    requires_approval: false
+    security_sensitive: true
+
+  - id: DC-002
+    title: deep_confidence pass fail evidence normalization and failure taxonomy
+    description: |
+      Normalize all collected artifacts into a single pass/fail matrix and classify each failure.
+      Required taxonomy: blocker_env, blocker_db, blocker_port, startup_failure,
+      shutdown_failure, health_contract_failure, smoke_regression,
+      critical_regression, unit_regression, integration_regression,
+      flaky_or_nondeterministic, inconclusive.
+    wave: 6
+    agent: gem-reviewer
+    priority: high
+    status: pending
+    dependencies:
+      - FS-001
+      - FS-002
+      - FS-003
+      - CF-001
+      - CF-002
+      - CF-003
+      - DC-001
+    context_files:
+      - docs/plan/2026-04-01-server-functional-verification/artifacts: collected evidence inputs
+      - docs/plan/2026-04-01-server-functional-verification/research_findings_server-functional-verification.yaml: taxonomy constraints
+      - secure-gate-access/server/package.json: expected command surface for verification matrix
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 240
+    focus_area: deep_confidence
+    verification:
+      - Build matrix artifact at docs/plan/2026-04-01-server-functional-verification/artifacts/deep_confidence/02-pass-fail-matrix.yaml
+      - Build taxonomy artifact at docs/plan/2026-04-01-server-functional-verification/artifacts/deep_confidence/02-failure-taxonomy.yaml
+      - Ensure every failed or blocked task has evidence pointer(s) to concrete artifact paths
+    acceptance_criteria:
+      - Pass/fail matrix includes each planned task with status passed|failed|blocked|inconclusive and artifact pointers.
+      - Failure taxonomy file classifies each failure exactly once with rationale and source evidence path.
+      - Blockers are separated from regressions and do not collapse into generic failure labels.
+    failure_modes:
+      - scenario: Classification merges blocker and regression causes, reducing diagnostic value.
+        likelihood: medium
+        impact: high
+        mitigation: Enforce one-primary-cause rule per failed task with secondary notes only.
+      - scenario: Missing artifact links make failures non-reproducible.
+        likelihood: low
+        impact: high
+        mitigation: Reject matrix entries without explicit artifact path references.
+    requires_review: true
+    review_depth: full
+    security_sensitive: true
+
+  - id: DC-003
+    title: deep_confidence final verification report
+    description: |
+      Produce final report summarizing confirmed functionality and failure points,
+      strictly based on evidence artifacts and taxonomy outputs.
+      Report must include what is confirmed working, what failed, what was blocked,
+      and confidence level by phase.
+    wave: 7
+    agent: gem-documentation-writer
+    priority: high
+    status: pending
+    dependencies:
+      - DC-002
+    context_files:
+      - docs/plan/2026-04-01-server-functional-verification/artifacts/deep_confidence/02-pass-fail-matrix.yaml: normalized results
+      - docs/plan/2026-04-01-server-functional-verification/artifacts/deep_confidence/02-failure-taxonomy.yaml: failure classification
+      - docs/plan/2026-04-01-server-functional-verification/artifacts: primary evidence source
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 260
+    focus_area: deep_confidence
+    verification:
+      - Write docs/plan/2026-04-01-server-functional-verification/verification-report.md
+      - Verify report includes sections: confirmed functionality, failure points, blocker impact, phase confidence, and recommended next investigation targets (no fixes)
+      - Verify each conclusion references artifact paths from prior tasks
+    acceptance_criteria:
+      - Final report exists at docs/plan/2026-04-01-server-functional-verification/verification-report.md.
+      - Report explicitly summarizes startup, stop, health, smoke, critical, unit, and integration outcomes.
+      - Report distinguishes confirmed functionality from unverified/blocked areas and lists failure points with taxonomy labels.
+    failure_modes:
+      - scenario: Report includes claims not backed by evidence artifacts.
+        likelihood: low
+        impact: high
+        mitigation: Enforce evidence-backed statements only; reject unsupported conclusions.
+      - scenario: Report omits blocker context and overstates confidence.
+        likelihood: medium
+        impact: high
+        mitigation: Include mandatory blocker impact section with per-phase confidence adjustments.
+    task_type: documentation
+    audience: developers
+    coverage_matrix:
+      - startup and stop behavior
+      - health endpoint behavior
+      - smoke suite outcomes
+      - critical suite outcomes
+      - unit suite outcomes
+      - integration suite outcomes
+      - blocker and taxonomy summary

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -eu
+
+node scripts/check-cleanup-artifacts.cjs
+node scripts/check-staged-syntax.cjs

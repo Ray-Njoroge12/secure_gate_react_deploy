@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "node .github/hooks/scripts/compile-check-pending-guard.cjs",
+        "timeout": 15
+      }
+    ]
+  }
+}

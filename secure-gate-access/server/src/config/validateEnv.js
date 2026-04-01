@@ -365,9 +365,12 @@ class EnvironmentValidator {
    * Show configuration summary
    */
   showConfigurationSummary() {
+    const effectiveEnv = process.env.NODE_ENV || 'development';
+    const defaultPort = effectiveEnv === 'development' || effectiveEnv === 'local' ? '5001' : '5000';
+
     console.log('\n📊 Current Configuration:');
-    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`   Port: ${process.env.PORT || '5000'}`);
+    console.log(`   Environment: ${effectiveEnv}`);
+    console.log(`   Port: ${process.env.PORT || defaultPort}`);
     console.log(`   Database: ${process.env.DATABASE_URL ? '✅ Connected via URL' : (process.env.PGHOST || 'localhost')}`);
     console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
     console.log(`   Client Origin: ${process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN || '❌ Missing'}`);

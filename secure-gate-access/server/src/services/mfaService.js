@@ -204,7 +204,7 @@ class MFAService {
         // Increment failed attempts
         this.incrementFailedAttempts(userId);
         
-        loggingService.logWarn('TOTP token verification failed', {
+        loggingService.logWarning('TOTP token verification failed', {
           userId,
           method: 'totp'
         });
@@ -300,7 +300,7 @@ class MFAService {
         // Increment failed attempts
         this.incrementFailedAttempts(userId);
         
-        loggingService.logWarn('Backup code verification failed', {
+        loggingService.logWarning('Backup code verification failed', {
           userId
         });
 
@@ -411,7 +411,7 @@ class MFAService {
         // Increment failed attempts
         this.incrementFailedAttempts(userId);
         
-        loggingService.logWarn('OTP verification failed', {
+        loggingService.logWarning('OTP verification failed', {
           userId,
           method
         });
@@ -677,7 +677,7 @@ class MFAService {
     
     if (newAttempts >= this.config.maxAttempts) {
       this.lockouts.set(userId, Date.now());
-      loggingService.logWarn('User locked out due to too many failed MFA attempts', {
+      loggingService.logWarning('User locked out due to too many failed MFA attempts', {
         userId,
         attempts: newAttempts
       });

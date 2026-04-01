@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "node .github/hooks/scripts/compile-check-state-manager.cjs",
+        "timeout": 20
+      }
+    ]
+  }
+}

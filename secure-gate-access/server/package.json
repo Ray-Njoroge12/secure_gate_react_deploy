@@ -45,6 +45,7 @@
     "audit:estate": "node scripts/audit-estate-assignments.js",
     "assign:estate": "node scripts/assign-estate-ids.js",
     "check:staging-parity": "node scripts/validate-staging-parity.js",
+    "report:channel-trace": "node scripts/channel-trace-report.js",
     "optimize:database": "node scripts/optimize-database.js",
     "setup:env": "node scripts/setup-env.js",
     "setup:env:generate": "node scripts/setup-env.js --generate",

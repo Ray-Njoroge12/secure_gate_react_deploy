@@ -1,0 +1,396 @@
+plan_id: 2026-04-01-channel-trace-helper
+objective: Identify where channel-attempt trace data is produced, where alerting/messaging paths expose it, and where a minimal triage helper should live.
+focus_area: server notification channel-attempt tracing and monitoring surfaces
+created_at: 2026-04-01T00:00:00Z
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - No literal `attemptTraces` symbol exists; active trace fields are `attempts` in MessagingGateway and `deliveryTrace` in PerformanceAlertingService.
+  - MessagingGateway is the canonical producer of per-channel attempt arrays and writes those arrays into structured logs for all-channel failure and fallback flows.
+  - Performance alerting builds a separate per-channel `deliveryTrace` and logs failed-recipient details; this trace is not persisted to DB history.
+  - The strongest triage data source today for channel-attempt detail is log files (`server/logs/app*.log`) where `metadata.attempts[]` is present.
+  - Existing DB persistence (`notification_metrics_events`, `notifications.delivery_metadata`, `notification_delivery_events`) captures outcomes and provider events, but not full fallback attempt sequences.
+
+research_metadata:
+  methodology: Two-pass hybrid retrieval (semantic_search + grep_search), targeted relationship discovery via symbol usages, then focused read_file inspection of producers, consumers, migrations, and runtime logs.
+  scope: Notification and performance-alerting paths in secure-gate-access/server plus relevant migrations, monitoring routes, and runtime logs.
+  confidence: high
+  coverage: 90
+
+files_analyzed:
+  - file: messagingGateway.js
+    path: secure-gate-access/server/src/services/messagingGateway.js
+    purpose: Produces channel fallback attempt traces for outbound messaging.
+    key_elements:
+      - element: MessagingGateway/send
+        type: function
+        location: secure-gate-access/server/src/services/messagingGateway.js:28
+        description: Builds `attempts[]` (channel, status, durationMs, error), chooses fallback, and returns attempts in result payload.
+      - element: MessagingGateway/attemptSend
+        type: function
+        location: secure-gate-access/server/src/services/messagingGateway.js:118
+        description: Channel-specific dispatcher used by send loop.
+      - element: logWarning("MessagingGateway: Channel attempt failed")
+        type: pattern
+        location: secure-gate-access/server/src/services/messagingGateway.js:67
+        description: Emits per-channel failure log metadata during send loop.
+      - element: logError("MessagingGateway: All channels failed")
+        type: pattern
+        location: secure-gate-access/server/src/services/messagingGateway.js:91
+        description: Emits structured failure metadata including `attempts` array.
+      - element: logInfo("MessagingGateway: Delivered via fallback channel")
+        type: pattern
+        location: secure-gate-access/server/src/services/messagingGateway.js:104
+        description: Emits fallback success metadata including `attempts` array.
+    language: javascript
+    lines: 271
+
+  - file: performanceAlertingService.js
+    path: secure-gate-access/server/src/services/performanceAlertingService.js
+    purpose: Generates and routes performance alert notifications with per-channel delivery tracing.
+    key_elements:
+      - element: PerformanceAlertingService/processAlert
+        type: function
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:132
+        description: Entry point for alert processing and escalation setup.
+      - element: PerformanceAlertingService/sendImmediateNotifications
+        type: function
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:174
+        description: Builds `deliveryTrace[]` with channel/recipient/status/duration/error values.
+      - element: deliveryTrace summary logging
+        type: pattern
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:241
+        description: Computes attempted/failed counts and logs summary with sampled failures.
+      - element: PerformanceAlertingService/getStatistics
+        type: function
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:680
+        description: Exposes aggregate alerting state consumed by health routes.
+    language: javascript
+    lines: 705
+
+  - file: healthRoutes.js
+    path: secure-gate-access/server/src/routes/healthRoutes.js
+    purpose: Exposes alerting snapshots and performance-alert APIs.
+    key_elements:
+      - element: getAlertingSnapshot
+        type: function
+        location: secure-gate-access/server/src/routes/healthRoutes.js:19
+        description: Builds route payload from `getStatistics()`, active escalations, and alertHistory.
+      - element: GET /health/alerts
+        type: function
+        location: secure-gate-access/server/src/routes/healthRoutes.js:206
+        description: Returns active/history/all alerts and statistics from in-memory alerting service state.
+    language: javascript
+    lines: 857
+
+  - file: notificationMetricsService.js
+    path: secure-gate-access/server/src/services/notificationMetricsService.js
+    purpose: Persists notification result events and computes notification/delivery failure-rate metrics.
+    key_elements:
+      - element: NotificationMetricsService/recordNotificationResult
+        type: function
+        location: secure-gate-access/server/src/services/notificationMetricsService.js:146
+        description: Records channel/provider success/failure and metadata to event stream.
+      - element: NotificationMetricsService/persistEvent
+        type: function
+        location: secure-gate-access/server/src/services/notificationMetricsService.js:121
+        description: Inserts full event payload JSON into `notification_metrics_events`.
+      - element: NotificationMetricsService/getWindowMetrics
+        type: function
+        location: secure-gate-access/server/src/services/notificationMetricsService.js:227
+        description: Aggregates events into by-channel/by-provider and delivery failure-rate summaries.
+    language: javascript
+    lines: 374
+
+  - file: notificationWebhooks.js
+    path: secure-gate-access/server/src/routes/notificationWebhooks.js
+    purpose: Persists provider webhook outcomes for outbound notifications.
+    key_elements:
+      - element: updateNotificationStatus
+        type: function
+        location: secure-gate-access/server/src/routes/notificationWebhooks.js:221
+        description: Updates `notifications.delivery_metadata` and status fields using provider callbacks.
+      - element: logDeliveryEvent
+        type: function
+        location: secure-gate-access/server/src/routes/notificationWebhooks.js:257
+        description: Inserts raw provider event payload into `notification_delivery_events`.
+    language: javascript
+    lines: 575
+
+  - file: 047_notification_metrics_events.sql
+    path: secure-gate-access/server/src/database/migrations/047_notification_metrics_events.sql
+    purpose: Defines DB persistence table for notification metrics events.
+    key_elements:
+      - element: CREATE TABLE notification_metrics_events
+        type: pattern
+        location: secure-gate-access/server/src/database/migrations/047_notification_metrics_events.sql:4
+        description: Stores event_type, event_timestamp, payload JSONB for historical metrics analysis.
+    language: sql
+    lines: 16
+
+  - file: 043_add_notification_delivery_tracking.sql
+    path: secure-gate-access/server/src/database/migrations/043_add_notification_delivery_tracking.sql
+    purpose: Adds webhook/status delivery tracking persistence.
+    key_elements:
+      - element: notifications.delivery_metadata
+        type: pattern
+        location: secure-gate-access/server/src/database/migrations/043_add_notification_delivery_tracking.sql:53
+        description: JSONB column for provider delivery metadata enrichment.
+      - element: CREATE TABLE notification_delivery_events
+        type: pattern
+        location: secure-gate-access/server/src/database/migrations/043_add_notification_delivery_tracking.sql:95
+        description: Stores provider event payloads by message_id and event_type.
+    language: sql
+    lines: 243
+
+  - file: 048_intelligent_notification_system.sql
+    path: secure-gate-access/server/src/database/migrations/048_intelligent_notification_system.sql
+    purpose: Adds broader notification analytics and channel performance tables.
+    key_elements:
+      - element: CREATE TABLE notification_channel_performance
+        type: pattern
+        location: secure-gate-access/server/src/database/migrations/048_intelligent_notification_system.sql:152
+        description: Defines aggregated per-day channel attempt/performance counters.
+      - element: CREATE TABLE notification_priority_queue
+        type: pattern
+        location: secure-gate-access/server/src/database/migrations/048_intelligent_notification_system.sql:78
+        description: Queue persistence schema with attempts/max_attempts counters.
+    language: sql
+    lines: 343
+
+  - file: app-error.log
+    path: secure-gate-access/server/logs/app-error.log
+    purpose: Runtime structured error logs used for triage.
+    key_elements:
+      - element: MessagingGateway all-channel failure record with attempts[]
+        type: pattern
+        location: secure-gate-access/server/logs/app-error.log:727
+        description: Evidence that log metadata includes full channel-attempt sequence.
+      - element: Performance alerting failure records
+        type: pattern
+        location: secure-gate-access/server/logs/app-error.log:11
+        description: Evidence that alerting logs include alertId/recipient/error metadata.
+    language: jsonl
+    lines: 728
+
+  - file: app-2026-04-01.log
+    path: secure-gate-access/server/logs/app-2026-04-01.log
+    purpose: Daily app log containing structured messaging failures.
+    key_elements:
+      - element: MessagingGateway all-channel failure with attempts[]
+        type: pattern
+        location: secure-gate-access/server/logs/app-2026-04-01.log:1318
+        description: Duplicates channel-attempt evidence in daily rotating log file.
+    language: jsonl
+    lines: 1326
+
+  - file: monitoringDashboardService.js
+    path: secure-gate-access/server/src/services/monitoringDashboardService.js
+    purpose: Monitoring aggregation service used by admin monitoring routes.
+    key_elements:
+      - element: collectNotificationMetrics
+        type: function
+        location: secure-gate-access/server/src/services/monitoringDashboardService.js:296
+        description: Pulls `notificationMetricsService.getWindowMetrics` into dashboard model.
+      - element: notification failure-rate alert checks
+        type: pattern
+        location: secure-gate-access/server/src/services/monitoringDashboardService.js:404
+        description: Generates notification-focused monitoring alerts from aggregated metrics.
+    language: javascript
+    lines: 540
+
+  - file: package.json
+    path: secure-gate-access/server/package.json
+    purpose: Defines backend script execution conventions.
+    key_elements:
+      - element: scripts namespace
+        type: pattern
+        location: secure-gate-access/server/package.json:6
+        description: Existing convention is `node scripts/*.js` for operational helper tooling.
+    language: json
+    lines: 141
+
+patterns_found:
+  - category: architecture
+    pattern: Channel fallback traces are produced in-memory and attached to logging payloads.
+    description: MessagingGateway accumulates per-channel attempts then emits structured logs on total failure or fallback success.
+    examples:
+      - file: secure-gate-access/server/src/services/messagingGateway.js
+        location: secure-gate-access/server/src/services/messagingGateway.js:35
+        snippet: const attempts = []
+      - file: secure-gate-access/server/src/services/messagingGateway.js
+        location: secure-gate-access/server/src/services/messagingGateway.js:91
+        snippet: loggingService.logError('MessagingGateway: All channels failed', null, { ..., attempts })
+      - file: secure-gate-access/server/logs/app-error.log
+        location: secure-gate-access/server/logs/app-error.log:727
+        snippet: "metadata":{"attempts":[{"channel":"whatsapp",...},{"channel":"sms",...}]}
+    prevalence: common
+
+  - category: structure
+    pattern: Performance alerting uses separate delivery tracing (`deliveryTrace`) from messaging gateway attempts.
+    description: Alert channel send flow records per-channel/per-recipient status and emits warning/error logs when failures occur.
+    examples:
+      - file: secure-gate-access/server/src/services/performanceAlertingService.js
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:176
+        snippet: const deliveryTrace = []
+      - file: secure-gate-access/server/src/services/performanceAlertingService.js
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:241
+        snippet: const attempted = deliveryTrace.filter(item => item.status !== 'skipped').length
+    prevalence: common
+
+  - category: architecture
+    pattern: DB persistence favors event/outcome storage over full fallback attempt sequences.
+    description: notification metrics and webhook tables store event payloads/status transitions, but no direct first-class schema for gateway `attempts[]` sequences.
+    examples:
+      - file: secure-gate-access/server/src/services/notificationMetricsService.js
+        location: secure-gate-access/server/src/services/notificationMetricsService.js:124
+        snippet: INSERT INTO notification_metrics_events (..., payload, ...)
+      - file: secure-gate-access/server/src/routes/notificationWebhooks.js
+        location: secure-gate-access/server/src/routes/notificationWebhooks.js:230
+        snippet: delivery_metadata = delivery_metadata || $4::jsonb
+      - file: secure-gate-access/server/src/database/migrations/048_intelligent_notification_system.sql
+        location: secure-gate-access/server/src/database/migrations/048_intelligent_notification_system.sql:152
+        snippet: CREATE TABLE IF NOT EXISTS notification_channel_performance (... total_attempts ...)
+    prevalence: common
+
+  - category: naming
+    pattern: `attemptTraces` is not an active symbol in current source.
+    description: Trace semantics are represented by `attempts` and `deliveryTrace` naming patterns.
+    examples:
+      - file: secure-gate-access/server/src/services/messagingGateway.js
+        location: secure-gate-access/server/src/services/messagingGateway.js:35
+        snippet: const attempts = []
+      - file: secure-gate-access/server/src/services/performanceAlertingService.js
+        location: secure-gate-access/server/src/services/performanceAlertingService.js:176
+        snippet: const deliveryTrace = []
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: MessagingGateway
+      responsibility: Multi-channel outbound delivery with fallback sequencing.
+      location: secure-gate-access/server/src/services/messagingGateway.js
+      relationship_to_domain: domain produces channel-attempt trace objects here
+    - component: NotificationService wrappers
+      responsibility: Higher-level invite/OTP notification APIs using MessagingGateway.
+      location: secure-gate-access/server/src/services/notificationService.js
+      relationship_to_domain: domain consumes gateway result but currently returns boolean in most wrappers
+    - component: PerformanceAlertingService
+      responsibility: Alert delivery routing, escalation, and per-channel delivery trace logging.
+      location: secure-gate-access/server/src/services/performanceAlertingService.js
+      relationship_to_domain: domain produces alert-channel attempt traces (`deliveryTrace`)
+    - component: NotificationMetricsService
+      responsibility: Event persistence and aggregation for notification outcomes.
+      location: secure-gate-access/server/src/services/notificationMetricsService.js
+      relationship_to_domain: domain stores reportable metrics and event payloads (not full fallback attempts)
+    - component: Webhook delivery routes
+      responsibility: Persist provider delivery updates/events.
+      location: secure-gate-access/server/src/routes/notificationWebhooks.js
+      relationship_to_domain: domain enriches delivery metadata after provider callbacks
+    - component: MonitoringDashboardService
+      responsibility: Pulls notification metrics into admin monitoring views.
+      location: secure-gate-access/server/src/services/monitoringDashboardService.js
+      relationship_to_domain: this uses domain outputs for operational visibility
+  interfaces_used_by_domain:
+    - interface: loggingService.logError/logWarning/logInfo
+      location: secure-gate-access/server/src/services/loggingService.js
+      usage_pattern: structured JSON metadata with correlation/request IDs
+    - interface: db.query (dbManager)
+      location: secure-gate-access/server/src/database/db.enhanced.js
+      usage_pattern: inserts payload JSON into notification metrics and delivery event tables
+  data_flow_involving_domain: MessagingGateway/PerformanceAlertingService create attempt traces -> loggingService emits structured JSON log lines; notification outcome and webhook events flow into NotificationMetricsService and notifications/delivery tables; monitoring dashboard aggregates windowed notification metrics for admin endpoints.
+  key_relationships_to_domain:
+    - from: secure-gate-access/server/src/services/notificationService.js
+      to: secure-gate-access/server/src/services/messagingGateway.js
+      relationship: calls
+    - from: secure-gate-access/server/src/services/healthCore.js
+      to: secure-gate-access/server/src/services/performanceAlertingService.js
+      relationship: calls
+    - from: secure-gate-access/server/src/services/monitoringDashboardService.js
+      to: secure-gate-access/server/src/services/notificationMetricsService.js
+      relationship: calls
+    - from: secure-gate-access/server/src/routes/notificationWebhooks.js
+      to: secure-gate-access/server/src/services/notificationMetricsService.js
+      relationship: calls
+
+related_technology_stack:
+  languages_used_in_domain:
+    - JavaScript (ES modules)
+    - SQL
+    - JSONL logs
+  frameworks_used_in_domain:
+    - name: Express
+      usage_in_domain: Monitoring and webhook routes expose/collect notification and alert data.
+  libraries_used_in_domain:
+    - name: winston
+      purpose_in_domain: Structured and rotated logging via LoggingService.
+    - name: pg
+      purpose_in_domain: Event and delivery metadata persistence through dbManager.
+    - name: redis
+      purpose_in_domain: Optional short-term storage for notification metric events.
+  external_apis_used_in_domain:
+    - name: Mailgun and WhatsApp webhook providers
+      integration_point: secure-gate-access/server/src/routes/notificationWebhooks.js and secure-gate-access/server/src/routes/whatsappRoutes.js
+
+related_conventions:
+  naming_patterns_in_domain: Channel fallback traces use `attempts` (messaging) and `deliveryTrace` (performance alerting); metric events use `notification_result` and `delivery_event` type names.
+  structure_of_domain: Producer services in `src/services`, route-level persistence in `src/routes`, long-term schema in migration SQL, and operational logs in `server/logs`.
+  error_handling_in_domain: Services log structured failures via loggingService; route handlers wrap with async handlers and explicit 4xx/5xx response helpers.
+  testing_in_domain: Unit tests exercise performance alerting behavior and generate reproducible alert log entries in test runs.
+  documentation_in_domain: No dedicated channel-trace helper documentation currently found under docs/plan for this plan id.
+
+related_dependencies:
+  internal:
+    - component: secure-gate-access/server/src/services/loggingService.js
+      relationship_to_domain: Receives and formats attempt trace metadata into persistent logs.
+      direction: outbound
+    - component: secure-gate-access/server/src/services/notificationMetricsService.js
+      relationship_to_domain: Receives notification result events from messaging and provider flows.
+      direction: outbound
+    - component: secure-gate-access/server/src/database/db.enhanced.js
+      relationship_to_domain: Persists metrics event payloads and delivery status updates.
+      direction: outbound
+    - component: secure-gate-access/server/src/services/monitoringDashboardService.js
+      relationship_to_domain: Consumes notification metrics outputs for admin dashboards.
+      direction: inbound
+  external:
+    - name: winston
+      purpose_for_domain: Structured JSON logs with metadata payloads for triage extraction.
+    - name: pg
+      purpose_for_domain: SQL persistence for notification metrics and delivery event tables.
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: Recipient/contact data in trace metadata
+      location: secure-gate-access/server/src/services/messagingGateway.js:36
+      concern: Logs can include phone/email recipient identifiers if not masked at call site.
+    - area: Metrics metadata persistence
+      location: secure-gate-access/server/src/services/notificationMetricsService.js:26
+      concern: Service sanitizes likely PII keys, but helper scripts must still avoid re-exposing raw payloads unnecessarily.
+  authentication_patterns_in_domain: Monitoring/health alert endpoints require authenticated admin policies (adminOnly).
+  authorization_patterns_in_domain: `/health/alerts` and `/api/monitoring/*` route stacks enforce role policy middleware.
+  data_validation_in_domain: Webhook routes validate signatures and schema before writing delivery metadata/events.
+
+testing_patterns:
+  framework: Jest
+  coverage_areas:
+    - Performance alert processing and notification channel failure behavior
+    - Notification webhook event/status handling
+  test_organization: Unit tests under secure-gate-access/server/tests/unit and route/integration tests under secure-gate-access/server/tests/integration.
+  mock_patterns:
+    - Mocked email sender failures generate structured alerting error logs used in current evidence.
+
+open_questions:
+  - question: Should helper output normalize both `attempts` and `deliveryTrace` under one key (e.g., `attemptTraces`)?
+    context: Current codebase uses two active names; no literal `attemptTraces` field exists.
+  - question: Should channel-attempt traces be persisted in DB as first-class records or remain log-derived?
+    context: Logs contain full fallback sequence; DB currently stores outcomes/events but not complete attempt chain.
+
+gaps:
+  - area: First-class DB persistence of fallback attempt sequences
+    description: No active table currently stores MessagingGateway `attempts[]` as a dedicated normalized structure for querying.
+    impact: Report helper must parse logs for full channel-attempt timelines.
+  - area: Existing helper tooling for this exact triage use case
+    description: No pre-existing `channel trace` helper script or plan artifact was found under docs/plan/2026-04-01-channel-trace-helper.
+    impact: A new helper script is required to automate extraction and summarization.

@@ -591,11 +591,22 @@ class HealthCore {
     async checkApplicationHealth() {
         const startTime = Date.now();
         try {
-            const appMetrics = await performanceMonitoringService.getApplicationMetrics();
+            const appMetrics = await performanceMonitoringService.collectApplicationMetrics();
+            const averageResponseTime = appMetrics?.responseTime?.current || 0;
+            const errorRate = appMetrics?.errorRate || 0;
             let status = 'healthy', message = 'Application is healthy';
-            if (appMetrics?.api?.averageResponseTime > this._alertThresholds.api.responseTime) { status = 'degraded'; message = `API response time high: ${appMetrics.api.averageResponseTime}ms`; }
-            if (appMetrics?.api?.errorRate > this._alertThresholds.api.errorRate) { status = 'degraded'; message = `API error rate high: ${Math.round(appMetrics.api.errorRate * 100)}%`; }
-            return { status, responseTime: Date.now() - startTime, message, details: appMetrics };
+            if (averageResponseTime > this._alertThresholds.api.responseTime) { status = 'degraded'; message = `API response time high: ${averageResponseTime}ms`; }
+            if (errorRate > this._alertThresholds.api.errorRate) { status = 'degraded'; message = `API error rate high: ${Math.round(errorRate * 100)}%`; }
+            return {
+                status,
+                responseTime: Date.now() - startTime,
+                message,
+                details: {
+                    ...appMetrics,
+                    averageResponseTime,
+                    errorRate
+                }
+            };
         } catch (err) {
             return { status: 'unhealthy', responseTime: Date.now() - startTime, message: err.message, error: err.message };
         }
@@ -637,7 +648,15 @@ class HealthCore {
         this._alertThresholds.api.responseTime = 5000;
         this._alertThresholds.system.cpuUsage = 0.95;
         loggingService.logInfo('Deployment mode enabled');
-        await performanceAlertingService.sendAlert({ type: 'deployment_mode', severity: 'info', message: 'System entering deployment mode', timestamp: new Date().toISOString() });
+        await performanceAlertingService.processAlert({
+            id: `deployment_mode_${Date.now()}`,
+            type: 'deployment_mode',
+            severity: 'info',
+            message: 'System entering deployment mode',
+            timestamp: Date.now(),
+            acknowledged: false,
+            resolved: false
+        });
     }
 
     async disableDeploymentMode() {
@@ -645,7 +664,15 @@ class HealthCore {
         this._alertThresholds.api.responseTime = 2000;
         this._alertThresholds.system.cpuUsage = 0.8;
         loggingService.logInfo('Deployment mode disabled');
-        await performanceAlertingService.sendAlert({ type: 'deployment_complete', severity: 'info', message: 'Deployment completed successfully', timestamp: new Date().toISOString() });
+        await performanceAlertingService.processAlert({
+            id: `deployment_complete_${Date.now()}`,
+            type: 'deployment_complete',
+            severity: 'info',
+            message: 'Deployment completed successfully',
+            timestamp: Date.now(),
+            acknowledged: false,
+            resolved: false
+        });
     }
 
     async initiateGracefulShutdown() {
@@ -735,7 +762,18 @@ class HealthCore {
         if (b.failureCount >= b.failureThreshold) {
             b.state = 'OPEN';
             loggingService.logError(`Circuit breaker for ${component} opened`);
-            performanceAlertingService.sendAlert({ type: 'circuit_breaker_open', severity: 'warning', component, message: `Circuit breaker opened for ${component}`, timestamp: new Date().toISOString() });
+            void performanceAlertingService.processAlert({
+                id: `circuit_breaker_open_${component}_${Date.now()}`,
+                type: 'circuit_breaker_open',
+                severity: 'warning',
+                component,
+                message: `Circuit breaker opened for ${component}`,
+                timestamp: Date.now(),
+                acknowledged: false,
+                resolved: false
+            }).catch((error) => {
+                loggingService.logError('Failed to process circuit breaker alert', error, { component });
+            });
         }
     }
 
@@ -764,7 +802,15 @@ class HealthCore {
         const status = { currentLoad: load, maxCapacity: 100, utilizationPercentage: load, status: load > 90 ? 'critical' : load > 80 ? 'warning' : 'normal', scalingRecommended: load > this._capacityMetrics.scalingThreshold, metrics: { cpu: m.cpu.usage * 100, memory: m.memory.usage * 100 } };
         if (status.scalingRecommended && !this._capacityMetrics.lastScalingAction) {
             this._capacityMetrics.lastScalingAction = new Date();
-            await performanceAlertingService.sendAlert({ type: 'scaling_recommended', severity: 'warning', message: `Capacity at ${load}% — scaling recommended`, timestamp: new Date().toISOString() });
+            await performanceAlertingService.processAlert({
+                id: `scaling_recommended_${Date.now()}`,
+                type: 'scaling_recommended',
+                severity: 'warning',
+                message: `Capacity at ${load}% - scaling recommended`,
+                timestamp: Date.now(),
+                acknowledged: false,
+                resolved: false
+            });
         }
         return status;
     }
@@ -821,7 +867,16 @@ class HealthCore {
     async _processAlerts(alerts) {
         for (const a of alerts) {
             try {
-                await performanceAlertingService.sendAlert({ type: 'health_check', severity: a.severity, component: a.component, message: a.message, timestamp: new Date().toISOString() });
+                await performanceAlertingService.processAlert({
+                    id: `health_check_${a.component || 'unknown'}_${Date.now()}`,
+                    type: 'health_check',
+                    severity: a.severity,
+                    component: a.component,
+                    message: a.message,
+                    timestamp: Date.now(),
+                    acknowledged: false,
+                    resolved: false
+                });
                 loggingService.logSecurity('warn', 'Health alert triggered', { component: a.component, severity: a.severity, message: a.message });
             } catch (err) {
                 loggingService.logError('Failed to process health alert', err, { alert: a });

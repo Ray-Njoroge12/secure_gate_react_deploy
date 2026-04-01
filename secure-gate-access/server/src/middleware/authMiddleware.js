@@ -99,13 +99,30 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
     }
 
+    const runAuthUserLookup = async (whereClause, params) => {
+      const selectWithCompany = `SELECT id, email, username, role, estate_id, company_id, mfa_enabled
+         FROM users
+         WHERE ${whereClause}`;
+      try {
+        // Avoid noisy retry loops for schema-level errors (e.g., missing company_id in legacy DBs).
+        return await dbManager.query(selectWithCompany, params, { retries: 0 });
+      } catch (error) {
+        // Some schemas (especially test/legacy DBs) may not include company_id.
+        if (error?.code === '42703' && String(error.message || '').includes('company_id')) {
+          const selectWithoutCompany = `SELECT id, email, username, role, estate_id, mfa_enabled
+             FROM users
+             WHERE ${whereClause}`;
+          return dbManager.query(selectWithoutCompany, params, { retries: 0 });
+        }
+        throw error;
+      }
+    };
+
     // Look up user in database to get full user info
     let userQuery;
     if (typeof userIdentifier === 'string' && userIdentifier.includes('@')) {
-      userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id, company_id, mfa_enabled
-         FROM users
-         WHERE LOWER(email) = LOWER($1)
+      userQuery = await runAuthUserLookup(
+        `LOWER(email) = LOWER($1)
            AND estate_id IS NOT DISTINCT FROM $2`,
         [userIdentifier, payload.estate_id ?? null]
       );
@@ -122,10 +139,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
         });
         throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
       }
-      userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id, company_id, mfa_enabled
-         FROM users
-         WHERE id = $1
+      userQuery = await runAuthUserLookup(
+        `id = $1
            AND estate_id IS NOT DISTINCT FROM $2`,
         [userId, payload.estate_id ?? null]
       );
@@ -154,7 +169,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       username: dbUser.username,
       role: dbUser.role,
       estate_id: dbUser.estate_id ?? payload.estate_id ?? null,
-      company_id: dbUser.company_id ?? null,
+      company_id: dbUser.company_id ?? payload.company_id ?? payload.companyId ?? null,
       mfa_enabled: dbUser.mfa_enabled ?? false
     });
 

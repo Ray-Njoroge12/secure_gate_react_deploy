@@ -90,8 +90,40 @@ class PerformanceAlertingService extends EventEmitter {
     loggingService.logInfo('[PERFORMANCE ALERTS] Service initialized', {
       channels: this.alertChannels,
       escalationConfig: Object.keys(this.escalationConfig),
-      rateLimiting: this.rateLimiting.enabled
+      rateLimiting: this.rateLimiting.enabled,
+      emailSenderAvailable: Boolean(this.resolveEmailSender())
     });
+  }
+
+  /**
+   * Resolve the best available email sender function for alerts.
+   * Supports both send(to, subject, html, text) and sendEmail({...}) contracts.
+   */
+  resolveEmailSender() {
+    if (typeof emailService.send === 'function') {
+      return async (to, subject, htmlContent, textContent, _severity) => emailService.send(
+        to,
+        subject,
+        htmlContent,
+        textContent
+      );
+    }
+
+    if (typeof emailService.sendEmail === 'function') {
+      return async (to, subject, htmlContent, textContent, severity) => emailService.sendEmail({
+        to,
+        subject,
+        text: textContent,
+        html: htmlContent,
+        priority: severity === 'critical' ? 'high' : 'normal'
+      });
+    }
+
+    return null;
+  }
+
+  getRecipientLabel(recipient = {}) {
+    return recipient.address || recipient.number || recipient.url || 'unknown-recipient';
   }
 
   /**
@@ -141,24 +173,82 @@ class PerformanceAlertingService extends EventEmitter {
    */
   async sendImmediateNotifications(alert, channels) {
     const recipients = this.recipients[alert.severity] || this.recipients.info;
+    const deliveryTrace = [];
     
     for (const channel of channels) {
       if (!this.alertChannels[channel]) {
+        deliveryTrace.push({ channel, status: 'skipped', reason: 'channel_disabled' });
         continue; // Channel disabled
       }
       
       const channelRecipients = recipients.filter(r => r.type === channel);
+
+      if (channelRecipients.length === 0) {
+        deliveryTrace.push({ channel, status: 'skipped', reason: 'no_recipients' });
+      }
       
       for (const recipient of channelRecipients) {
+        const startedAt = Date.now();
+        const recipientLabel = this.getRecipientLabel(recipient);
+
         try {
-          await this.sendNotification(alert, channel, recipient);
+          const result = await this.sendNotification(alert, channel, recipient);
+          const durationMs = Date.now() - startedAt;
+
+          if (result?.success === false) {
+            deliveryTrace.push({
+              channel,
+              recipient: recipientLabel,
+              status: 'failed',
+              durationMs,
+              error: result.error || 'channel_result_unsuccessful'
+            });
+
+            loggingService.logError(`[PERFORMANCE ALERTS] Failed to send ${channel} notification`, null, {
+              alertId: alert.id,
+              recipient: recipientLabel,
+              reason: result.error || 'channel_result_unsuccessful',
+              durationMs
+            });
+            continue;
+          }
+
+          deliveryTrace.push({
+            channel,
+            recipient: recipientLabel,
+            status: 'sent',
+            durationMs
+          });
         } catch (error) {
+          const durationMs = Date.now() - startedAt;
+          deliveryTrace.push({
+            channel,
+            recipient: recipientLabel,
+            status: 'failed',
+            durationMs,
+            error: error.message
+          });
+
           loggingService.logError(`[PERFORMANCE ALERTS] Failed to send ${channel} notification`, error, {
             alertId: alert.id,
-            recipient: recipient.address || recipient.number || recipient.url
+            recipient: recipientLabel,
+            durationMs
           });
         }
       }
+    }
+
+    const attempted = deliveryTrace.filter(item => item.status !== 'skipped').length;
+    const failed = deliveryTrace.filter(item => item.status === 'failed');
+
+    if (failed.length > 0) {
+      loggingService.logWarning('[PERFORMANCE ALERTS] Immediate notification summary', {
+        alertId: alert.id,
+        attempted,
+        failed: failed.length,
+        channels,
+        failures: failed.slice(0, 5)
+      });
     }
   }
 
@@ -171,26 +261,23 @@ class PerformanceAlertingService extends EventEmitter {
     
     switch (channel) {
       case 'email':
-        await this.sendEmailNotification(alert, recipient, subject, message);
-        break;
+        return this.sendEmailNotification(alert, recipient, subject, message);
         
       case 'sms':
-        await this.sendSMSNotification(alert, recipient, message);
-        break;
+        return this.sendSMSNotification(alert, recipient, message);
         
       case 'webhook':
-        await this.sendWebhookNotification(alert, recipient);
-        break;
+        return this.sendWebhookNotification(alert, recipient);
         
       case 'slack':
-        await this.sendSlackNotification(alert, recipient, message);
-        break;
+        return this.sendSlackNotification(alert, recipient, message);
         
       default:
         loggingService.logWarning('[PERFORMANCE ALERTS] Unknown notification channel', {
           channel,
           alertId: alert.id
         });
+        return { success: false, error: `unknown_channel:${channel}` };
     }
   }
 
@@ -198,21 +285,31 @@ class PerformanceAlertingService extends EventEmitter {
    * Send email notification
    */
   async sendEmailNotification(alert, recipient, subject, message) {
+    const sendEmail = this.resolveEmailSender();
+    if (!sendEmail) {
+      return {
+        success: false,
+        error: 'email_sender_unavailable'
+      };
+    }
+
     const htmlContent = this.generateEmailHTML(alert);
-    
-    await emailService.sendEmail({
-      to: recipient.address,
+
+    await sendEmail(
+      recipient.address,
       subject,
-      text: message,
-      html: htmlContent,
-      priority: alert.severity === 'critical' ? 'high' : 'normal'
-    });
+      htmlContent,
+      message,
+      alert.severity
+    );
     
     loggingService.logInfo('[PERFORMANCE ALERTS] Email notification sent', {
       alertId: alert.id,
       recipient: recipient.address,
       severity: alert.severity
     });
+
+    return { success: true };
   }
 
   /**
@@ -230,13 +327,14 @@ class PerformanceAlertingService extends EventEmitter {
     
     // In a real implementation:
     // await smsService.sendSMS(recipient.number, message);
+    return { success: true };
   }
 
   /**
    * Send webhook notification
    */
   async sendWebhookNotification(alert, recipient) {
-    if (!recipient.url) return;
+    if (!recipient.url) return { success: false, error: 'missing_webhook_url' };
     
     const payload = {
       alert: {
@@ -252,7 +350,11 @@ class PerformanceAlertingService extends EventEmitter {
       timestamp: Date.now()
     };
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
+
       const response = await fetch(recipient.url, {
         method: 'POST',
         headers: {
@@ -260,7 +362,7 @@ class PerformanceAlertingService extends EventEmitter {
           'User-Agent': 'SecureGate-PerformanceMonitor/1.0'
         },
         body: JSON.stringify(payload),
-        timeout: 10000 // 10 second timeout
+        signal: controller.signal
       });
       
       if (!response.ok) {
@@ -272,12 +374,25 @@ class PerformanceAlertingService extends EventEmitter {
         url: recipient.url,
         status: response.status
       });
+
+      return { success: true };
       
     } catch (error) {
-      loggingService.logError('[PERFORMANCE ALERTS] Webhook notification failed', error, {
+      const normalizedError = error?.name === 'AbortError'
+        ? new Error('Webhook request timed out after 10000ms')
+        : error;
+
+      loggingService.logError('[PERFORMANCE ALERTS] Webhook notification failed', normalizedError, {
         alertId: alert.id,
         url: recipient.url
       });
+
+      return {
+        success: false,
+        error: normalizedError?.message || 'webhook_send_failed'
+      };
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -311,6 +426,7 @@ class PerformanceAlertingService extends EventEmitter {
     
     // In a real implementation:
     // await slackService.sendMessage(recipient.url, slackMessage);
+    return { success: true };
   }
 
   /**

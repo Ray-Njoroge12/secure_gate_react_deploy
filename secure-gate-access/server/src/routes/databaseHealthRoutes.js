@@ -29,13 +29,19 @@ router.get('/health', asyncHandler(async (req, res) => {
   } catch (error) {
     const responseTime = Date.now() - startTime;
 
-    ResponseUtil.success(res, {
-      status: 'unhealthy',
-      database: 'disconnected',
-      error: error.message,
-      responseTime: `${responseTime}ms`,
-      timestamp: new Date().toISOString()
-    }, 'Database health check failed', 503);
+    ResponseUtil.error(
+      res,
+      'Database health check failed',
+      'DATABASE_HEALTH_FAILED',
+      503,
+      {
+        status: 'unhealthy',
+        database: 'disconnected',
+        error: error.message,
+        responseTime: `${responseTime}ms`,
+        timestamp: new Date().toISOString()
+      }
+    );
   }
 }));
 
@@ -46,9 +52,19 @@ router.get('/health/detailed',
   authenticateToken,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const healthSummary = dbHealthService.getHealthSummary();
+    const [overall, metrics, database, pool] = await Promise.all([
+      Promise.resolve(dbHealthService.getHealthStatus()),
+      Promise.resolve(dbHealthService.getHealthMetrics()),
+      dbHealthService.checkDatabaseHealth(),
+      dbHealthService.getConnectionPoolStats()
+    ]);
 
-    ResponseUtil.success(res, healthSummary, 'Detailed database health status retrieved');
+    ResponseUtil.success(res, {
+      overall,
+      metrics,
+      database,
+      pool
+    }, 'Detailed database health status retrieved');
   })
 );
 
@@ -59,9 +75,15 @@ router.get('/health/report',
   authenticateToken,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const healthReport = dbHealthService.getHealthReport();
+    const [overall, healthReport] = await Promise.all([
+      Promise.resolve(dbHealthService.getHealthStatus()),
+      dbHealthService.getDatabaseHealthReport()
+    ]);
 
-    ResponseUtil.success(res, healthReport, 'Complete database health report generated');
+    ResponseUtil.success(res, {
+      overall,
+      report: healthReport
+    }, 'Complete database health report generated');
   })
 );
 
@@ -85,11 +107,12 @@ router.get('/alerts',
   authenticateToken,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const healthSummary = dbHealthService.getHealthSummary();
+    const healthSummary = dbHealthService.getHealthStatus();
+    const databaseAlerts = (healthSummary.lastCheck?.alerts || []).filter((alert) => alert.component === 'database');
 
     ResponseUtil.success(res, {
-      alerts: healthSummary.activeAlerts,
-      count: healthSummary.alertCount,
+      alerts: databaseAlerts,
+      count: databaseAlerts.length,
       timestamp: new Date().toISOString()
     }, 'Database alerts retrieved');
   })
@@ -102,12 +125,13 @@ router.post('/health/check',
   authenticateToken,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const healthCheck = await dbHealthService.runHealthCheck();
+    const healthCheck = await dbHealthService.performHealthCheck();
+    const isHealthy = healthCheck.status !== 'unhealthy';
 
-    if (healthCheck.success) {
+    if (isHealthy) {
       ResponseUtil.success(res, healthCheck, 'Manual health check completed successfully');
     } else {
-      ResponseUtil.success(res, healthCheck, 'Manual health check failed', 503);
+      ResponseUtil.error(res, 'Manual health check failed', 'DATABASE_HEALTH_FAILED', 503, healthCheck);
     }
   })
 );
@@ -119,12 +143,20 @@ router.delete('/alerts',
   authenticateToken,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    dbHealthService.clearAllAlerts();
+    const healthSummary = dbHealthService.getHealthStatus();
+    const existingAlerts = healthSummary.lastCheck?.alerts || [];
+    const remainingAlerts = existingAlerts.filter((alert) => alert.component !== 'database');
+    const clearedCount = existingAlerts.length - remainingAlerts.length;
+
+    if (healthSummary.lastCheck?.alerts) {
+      healthSummary.lastCheck.alerts = remainingAlerts;
+    }
 
     ResponseUtil.success(res, {
       cleared: true,
+      clearedCount,
       timestamp: new Date().toISOString()
-    }, 'All database alerts cleared');
+    }, 'Database alerts cleared from current health snapshot');
   })
 );
 
