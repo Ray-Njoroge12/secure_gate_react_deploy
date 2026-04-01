@@ -8,7 +8,7 @@
  * 
  * Configuration:
  * - Development: .env file (gitignored, contains secrets)
- * - Production: Environment variables set via Render dashboard
+ * - Production: Environment variables set via AWS ECS / Secrets Manager
  * - Template: .env.example (committed, documentation only)
  */
 

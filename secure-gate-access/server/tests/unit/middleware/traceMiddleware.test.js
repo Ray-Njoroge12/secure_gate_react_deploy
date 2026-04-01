@@ -11,6 +11,10 @@ const mockTracer = {
 
 jest.unstable_mockModule('dd-trace', () => ({ default: mockTracer }));
 
+// Mock utils/tracing.js explicitly: it carries module-level singleton state
+// (_tracerInitialized, _tracer) that persists across test files in the same
+// Jest worker. Without this mock, the real dd-trace import could leak into
+// later tests if tracing.js is imported elsewhere in the suite.
 jest.unstable_mockModule('../../../src/utils/tracing.js', () => ({
   getTracer: jest.fn().mockResolvedValue(mockTracer),
   startSpan: jest.fn(),
