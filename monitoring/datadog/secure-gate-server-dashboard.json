@@ -1,0 +1,63 @@
+{
+  "title": "Secure Gate - APM Overview",
+  "description": "APM overview for `secure-gate-server`: latency percentiles, errors, and top resources.",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "p50:trace.span.duration{service:secure-gate-server}.rollup(p50, 60)",
+            "display_type": "line",
+            "style": { "palette": "dog_classic", "line_type": "solid", "line_width": "normal" },
+            "name": "p50 latency (ms)"
+          },
+          {
+            "q": "p95:trace.span.duration{service:secure-gate-server}.rollup(p95, 60)",
+            "display_type": "line",
+            "style": { "palette": "warm", "line_type": "solid", "line_width": "normal" },
+            "name": "p95 latency (ms)"
+          }
+        ],
+        "title": "Latency (p50 / p95)"
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.error.count{service:secure-gate-server}.rollup(sum, 60)",
+            "display_type": "bars",
+            "style": { "palette": "purple", "line_type": "solid", "line_width": "normal" },
+            "name": "errors/min"
+          }
+        ],
+        "title": "Error Count"
+      }
+    },
+    {
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(avg:trace.span.duration{service:secure-gate-server}, 10, 'resource_name')",
+            "size": "medium"
+          }
+        ],
+        "title": "Top APM Resources by Avg Duration"
+      }
+    },
+    {
+      "definition": {
+        "type": "apm_resource",
+        "service": "secure-gate-server",
+        "title": "APM Service Summary",
+        "resource": ""
+      }
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": []
+}
