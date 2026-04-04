@@ -94,6 +94,17 @@ Thumbs.db
 cleanup-analysis-*/
 cleanup-log.json
 
+# Generated remediation artifacts (docs/plan)
+docs/plan/**/research_findings_*.yaml
+docs/plan/**/logs/*.yaml
+
+# Playwright generated artifacts
+playwright-report/
+test-results/
+secure-gate-access/client/playwright-report/
+secure-gate-access/client/playwright-results*.json
+secure-gate-access/client/test-results/
+
 # Archive directories (created during cleanup)
 docs/archive/
 

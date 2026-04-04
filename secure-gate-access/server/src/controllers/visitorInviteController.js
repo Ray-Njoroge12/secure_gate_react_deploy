@@ -223,9 +223,14 @@ export const createVisitor = async (req, res) => {
     const resident = residentResult.rows[0];
     const residentId = resident.id;
 
-    // Determine initial status
-    const initialStatus = requestedStatus === 'pending_confirmation'
-      ? PASS_STATUS.PENDING_CONFIRMATION
+    // Determine initial status from canonical PASS_STATUS values.
+    const normalizedRequestedStatus = String(requestedStatus || '').toLowerCase();
+    const allowedInitialStatuses = new Set([
+      PASS_STATUS.PENDING,
+      PASS_STATUS.PENDING_CONFIRMATION
+    ]);
+    const initialStatus = allowedInitialStatuses.has(normalizedRequestedStatus)
+      ? normalizedRequestedStatus
       : PASS_STATUS.PENDING_CONFIRMATION;
 
     // Generate both invite_code and visitor_token for E2 workflow

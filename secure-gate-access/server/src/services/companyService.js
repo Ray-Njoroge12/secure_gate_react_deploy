@@ -33,7 +33,7 @@ class CompanyService {
     );
     await dbManager.query(
       `UPDATE users SET company_id = $1, updated_at = NOW() WHERE id = $2`,
-      [userId, companyId]
+      [companyId, userId]
     );
   }
 

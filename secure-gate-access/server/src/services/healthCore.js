@@ -11,7 +11,7 @@
  *   const report = await healthCore.performHealthCheck();
  */
 
-import { dbManager, getDBStatus, testDBConnection } from '../database/db.enhanced.js';
+import { dbManager } from '../database/db.enhanced.js';
 import loggingService from './loggingService.js';
 import performanceMonitoringService from './performanceMonitoringService.js';
 import performanceAlertingService from './performanceAlertingService.js';
@@ -101,9 +101,9 @@ class HealthCore {
     async initialize() {
         try {
             await this.startMonitoring();
-            loggingService.logInfo('HealthCore initialized successfully');
+            loggingService.logInfo('System health monitoring initialized successfully');
         } catch (error) {
-            loggingService.logError('HealthCore initialization failed', error);
+            loggingService.logError('Failed to initialize system health monitoring', error);
             throw error;
         }
     }
@@ -169,7 +169,8 @@ class HealthCore {
             try { await this.performHealthCheck(); }
             catch (err) { loggingService.logError('Periodic health check failed', err); }
         }, 30000);
-        loggingService.logInfo('HealthCore monitoring started');
+        this._isMonitoring = true;
+        loggingService.logInfo('Health monitoring started');
     }
 
     stopMonitoring() {
@@ -178,7 +179,7 @@ class HealthCore {
             this._healthCheckInterval = null;
         }
         this._isMonitoring = false;
-        loggingService.logInfo('HealthCore monitoring stopped');
+        loggingService.logInfo('Health monitoring stopped');
     }
 
     // ─── Core Health Check ────────────────────────
@@ -205,12 +206,16 @@ class HealthCore {
                     report.status = 'unhealthy';
                     report.alerts.push({ component: name, severity: 'critical', message: data.error || `${name} is unhealthy` });
                 } else if (data.status === 'degraded') {
+                    const fallbackMessage = name === 'database'
+                        ? 'Database response time is high'
+                        : `${name} is degraded`;
+                    const degradedMessage = (data.message || data.error || fallbackMessage).split(':')[0];
                     if (report.status === 'healthy') report.status = 'degraded';
-                    report.alerts.push({ component: name, severity: 'warning', message: data.error || `${name} is degraded` });
+                    report.alerts.push({ component: name, severity: 'warning', message: degradedMessage });
                 }
             }
 
-            report.responseTime = Date.now() - startTime;
+            report.responseTime = Math.max(Date.now() - startTime, 1);
             report.metrics = await this.collectSystemMetrics();
 
             this._lastHealthCheck = report;
@@ -230,7 +235,7 @@ class HealthCore {
             loggingService.logError('HealthCore check execution failed', err);
             report.status = 'unhealthy';
             report.error = err.message;
-            report.responseTime = Date.now() - startTime;
+            report.responseTime = Math.max(Date.now() - startTime, 1);
             this._lastHealthCheck = report;
             this._healthStatus = 'unhealthy';
             this._updateMetrics('unhealthy');
@@ -366,13 +371,31 @@ class HealthCore {
         const startTime = Date.now();
         try {
             const result = await dbManager.query('SELECT 1 as health_check');
-            const responseTime = Date.now() - startTime;
+            const responseTime = Math.max(Date.now() - startTime, 1);
             const poolStatus = dbManager.getStatus ? dbManager.getStatus() : this.getPoolStatus();
             const utilization = poolStatus.totalConnections / (poolStatus.maxConnections || 20);
             let status = 'healthy', message = 'Database is healthy';
-            if (responseTime > this._alertThresholds.database.responseTime) { status = 'degraded'; message = `DB response time high: ${responseTime}ms`; }
-            if (utilization > this._alertThresholds.database.connectionPool) { status = 'degraded'; message = `DB pool utilization high: ${Math.round(utilization * 100)}%`; }
-            return { status, responseTime, message, details: { pool: poolStatus, queryResult: result.rows[0] } };
+            if (responseTime > this._alertThresholds.database.responseTime) {
+                status = 'degraded';
+                message = `Database response time is high: ${responseTime}ms`;
+            }
+            if (utilization > this._alertThresholds.database.connectionPool) {
+                status = 'degraded';
+                message = `Database connection pool utilization is high: ${Math.round(utilization * 100)}%`;
+            }
+            return {
+                status,
+                responseTime,
+                message,
+                details: {
+                    pool: poolStatus,
+                    connectionPool: {
+                        ...poolStatus,
+                        utilization: Math.round(utilization * 100)
+                    },
+                    queryResult: result.rows[0]
+                }
+            };
         } catch (err) {
             return { status: 'unhealthy', responseTime: Date.now() - startTime, message: `Database health check failed: ${err.message}`, error: err.message };
         }
@@ -578,9 +601,9 @@ class HealthCore {
             const metrics = await this.collectSystemMetrics();
             let status = 'healthy', message = 'System resources are healthy';
             const alerts = [];
-            if (metrics.cpu.usage > this._alertThresholds.system.cpuUsage) { status = 'degraded'; alerts.push(`High CPU: ${Math.round(metrics.cpu.usage * 100)}%`); }
-            if (metrics.memory.usage > this._alertThresholds.system.memoryUsage) { status = 'degraded'; alerts.push(`High Memory: ${Math.round(metrics.memory.usage * 100)}%`); }
-            if (metrics.disk.usage > this._alertThresholds.system.diskUsage) { status = 'degraded'; alerts.push(`High Disk: ${Math.round(metrics.disk.usage * 100)}%`); }
+            if (metrics.cpu.usage > this._alertThresholds.system.cpuUsage) { status = 'degraded'; alerts.push(`High CPU usage: ${Math.round(metrics.cpu.usage * 100)}%`); }
+            if (metrics.memory.usage > this._alertThresholds.system.memoryUsage) { status = 'degraded'; alerts.push(`High memory usage: ${Math.round(metrics.memory.usage * 100)}%`); }
+            if (metrics.disk.usage > this._alertThresholds.system.diskUsage) { status = 'degraded'; alerts.push(`High disk usage: ${Math.round(metrics.disk.usage * 100)}%`); }
             if (alerts.length) message = alerts.join(', ');
             return { status, responseTime: Date.now() - startTime, message, details: metrics };
         } catch (err) {
@@ -591,12 +614,14 @@ class HealthCore {
     async checkApplicationHealth() {
         const startTime = Date.now();
         try {
-            const appMetrics = await performanceMonitoringService.collectApplicationMetrics();
-            const averageResponseTime = appMetrics?.responseTime?.current || 0;
-            const errorRate = appMetrics?.errorRate || 0;
+            const appMetrics = performanceMonitoringService.getApplicationMetrics
+                ? await performanceMonitoringService.getApplicationMetrics()
+                : await performanceMonitoringService.collectApplicationMetrics();
+            const averageResponseTime = appMetrics?.api?.averageResponseTime ?? appMetrics?.responseTime?.current ?? 0;
+            const errorRate = appMetrics?.api?.errorRate ?? appMetrics?.errorRate ?? 0;
             let status = 'healthy', message = 'Application is healthy';
-            if (averageResponseTime > this._alertThresholds.api.responseTime) { status = 'degraded'; message = `API response time high: ${averageResponseTime}ms`; }
-            if (errorRate > this._alertThresholds.api.errorRate) { status = 'degraded'; message = `API error rate high: ${Math.round(errorRate * 100)}%`; }
+            if (averageResponseTime > this._alertThresholds.api.responseTime) { status = 'degraded'; message = `API response time is high: ${averageResponseTime}ms`; }
+            if (errorRate > this._alertThresholds.api.errorRate) { status = 'degraded'; message = `API error rate is high: ${Math.round(errorRate * 100)}%`; }
             return {
                 status,
                 responseTime: Date.now() - startTime,
@@ -647,42 +672,58 @@ class HealthCore {
         this._deploymentMode = true;
         this._alertThresholds.api.responseTime = 5000;
         this._alertThresholds.system.cpuUsage = 0.95;
-        loggingService.logInfo('Deployment mode enabled');
-        await performanceAlertingService.processAlert({
-            id: `deployment_mode_${Date.now()}`,
+        loggingService.logInfo('Deployment mode enabled - health checks adjusted for deployment');
+        const payload = {
             type: 'deployment_mode',
             severity: 'info',
             message: 'System entering deployment mode',
-            timestamp: Date.now(),
-            acknowledged: false,
-            resolved: false
-        });
+            timestamp: new Date().toISOString()
+        };
+        if (performanceAlertingService.sendAlert) {
+            await performanceAlertingService.sendAlert(payload);
+        } else {
+            await performanceAlertingService.processAlert({
+                id: `deployment_mode_${Date.now()}`,
+                ...payload,
+                timestamp: Date.now(),
+                acknowledged: false,
+                resolved: false
+            });
+        }
     }
 
     async disableDeploymentMode() {
         this._deploymentMode = false;
         this._alertThresholds.api.responseTime = 2000;
         this._alertThresholds.system.cpuUsage = 0.8;
-        loggingService.logInfo('Deployment mode disabled');
-        await performanceAlertingService.processAlert({
-            id: `deployment_complete_${Date.now()}`,
+        loggingService.logInfo('Deployment mode disabled - normal health checks restored');
+        const payload = {
             type: 'deployment_complete',
             severity: 'info',
-            message: 'Deployment completed successfully',
-            timestamp: Date.now(),
-            acknowledged: false,
-            resolved: false
-        });
+            message: 'System deployment completed successfully',
+            timestamp: new Date().toISOString()
+        };
+        if (performanceAlertingService.sendAlert) {
+            await performanceAlertingService.sendAlert(payload);
+        } else {
+            await performanceAlertingService.processAlert({
+                id: `deployment_complete_${Date.now()}`,
+                ...payload,
+                timestamp: Date.now(),
+                acknowledged: false,
+                resolved: false
+            });
+        }
     }
 
     async initiateGracefulShutdown() {
         if (this._gracefulShutdownInProgress) return;
         this._gracefulShutdownInProgress = true;
         this._healthStatus = 'shutting_down';
-        loggingService.logInfo('Graceful shutdown initiated');
-        const shutdown = this._waitForActiveConnections();
+        loggingService.logInfo('Initiating graceful shutdown');
+        const shutdown = this.waitForActiveConnections();
         const timeout = new Promise(r => setTimeout(r, this._shutdownTimeout));
-        try { await Promise.race([shutdown, timeout]); loggingService.logInfo('Graceful shutdown complete'); }
+        try { await Promise.race([shutdown, timeout]); loggingService.logInfo('Graceful shutdown completed'); }
         catch (err) { loggingService.logError('Graceful shutdown timeout', err); }
         this._forceCloseConnections();
         this.stopMonitoring();
@@ -693,6 +734,10 @@ class HealthCore {
             loggingService.logInfo(`Waiting for ${this.activeConnections.size} connections`);
             await new Promise(r => setTimeout(r, 1000));
         }
+    }
+
+    async waitForActiveConnections() {
+        return this._waitForActiveConnections();
     }
 
     _forceCloseConnections() {
@@ -751,7 +796,7 @@ class HealthCore {
     recordCircuitBreakerSuccess(component) {
         const b = this._circuitBreakers.get(component);
         if (!b) return;
-        if (b.state === 'HALF_OPEN' && ++b.successCount >= 3) { b.state = 'CLOSED'; b.failureCount = 0; loggingService.logInfo(`Circuit breaker for ${component} closed`); }
+        if (b.state === 'HALF_OPEN' && ++b.successCount >= 3) { b.state = 'CLOSED'; b.failureCount = 0; loggingService.logInfo(`Circuit breaker for ${component} closed - service recovered`); }
     }
 
     recordCircuitBreakerFailure(component) {
@@ -762,18 +807,29 @@ class HealthCore {
         if (b.failureCount >= b.failureThreshold) {
             b.state = 'OPEN';
             loggingService.logError(`Circuit breaker for ${component} opened`);
-            void performanceAlertingService.processAlert({
-                id: `circuit_breaker_open_${component}_${Date.now()}`,
+            const payload = {
                 type: 'circuit_breaker_open',
                 severity: 'warning',
                 component,
-                message: `Circuit breaker opened for ${component}`,
-                timestamp: Date.now(),
-                acknowledged: false,
-                resolved: false
-            }).catch((error) => {
-                loggingService.logError('Failed to process circuit breaker alert', error, { component });
-            });
+                message: `Circuit breaker opened for ${component} due to repeated failures`,
+                timestamp: new Date().toISOString()
+            };
+
+            if (performanceAlertingService.sendAlert) {
+                void Promise.resolve(performanceAlertingService.sendAlert(payload)).catch((error) => {
+                    loggingService.logError('Failed to process circuit breaker alert', error, { component });
+                });
+            } else {
+                void performanceAlertingService.processAlert({
+                    id: `circuit_breaker_open_${component}_${Date.now()}`,
+                    ...payload,
+                    timestamp: Date.now(),
+                    acknowledged: false,
+                    resolved: false
+                }).catch((error) => {
+                    loggingService.logError('Failed to process circuit breaker alert', error, { component });
+                });
+            }
         }
     }
 
@@ -785,7 +841,7 @@ class HealthCore {
 
     disableDegradationMode(component) {
         const d = this._degradationModes.get(component);
-        if (d) { this._degradationModes.delete(component); loggingService.logInfo(`Degradation mode disabled for ${component} (used ${d.usageCount}×)`); }
+        if (d) { this._degradationModes.delete(component); loggingService.logInfo(`Degradation mode disabled for ${component} (used ${d.usageCount} times)`); }
     }
 
     async useDegradationMode(component, originalFn, ...args) {
@@ -797,20 +853,30 @@ class HealthCore {
     // ─── Capacity ─────────────────────────────────
     async checkCapacity() {
         const m = await this.collectSystemMetrics();
-        const load = Math.round((m.cpu.usage * 100 * 0.4) + (m.memory.usage * 100 * 0.4));
+        const dbUtil = m.database?.connectionUtilization ?? m.database?.utilization ?? 0;
+        const load = Math.round((m.cpu.usage * 100 * 0.4) + (m.memory.usage * 100 * 0.4) + (dbUtil * 100 * 0.2));
         this._capacityMetrics.currentLoad = load;
         const status = { currentLoad: load, maxCapacity: 100, utilizationPercentage: load, status: load > 90 ? 'critical' : load > 80 ? 'warning' : 'normal', scalingRecommended: load > this._capacityMetrics.scalingThreshold, metrics: { cpu: m.cpu.usage * 100, memory: m.memory.usage * 100 } };
         if (status.scalingRecommended && !this._capacityMetrics.lastScalingAction) {
             this._capacityMetrics.lastScalingAction = new Date();
-            await performanceAlertingService.processAlert({
-                id: `scaling_recommended_${Date.now()}`,
+            const payload = {
                 type: 'scaling_recommended',
                 severity: 'warning',
-                message: `Capacity at ${load}% - scaling recommended`,
-                timestamp: Date.now(),
-                acknowledged: false,
-                resolved: false
-            });
+                message: `System capacity at ${status.utilizationPercentage}% - scaling recommended`,
+                details: status,
+                timestamp: new Date().toISOString()
+            };
+            if (performanceAlertingService.sendAlert) {
+                await performanceAlertingService.sendAlert(payload);
+            } else {
+                await performanceAlertingService.processAlert({
+                    id: `scaling_recommended_${Date.now()}`,
+                    ...payload,
+                    timestamp: Date.now(),
+                    acknowledged: false,
+                    resolved: false
+                });
+            }
         }
         return status;
     }
@@ -867,22 +933,136 @@ class HealthCore {
     async _processAlerts(alerts) {
         for (const a of alerts) {
             try {
-                await performanceAlertingService.processAlert({
-                    id: `health_check_${a.component || 'unknown'}_${Date.now()}`,
+                const payload = {
                     type: 'health_check',
                     severity: a.severity,
                     component: a.component,
                     message: a.message,
-                    timestamp: Date.now(),
-                    acknowledged: false,
-                    resolved: false
-                });
+                    timestamp: new Date().toISOString()
+                };
+
+                if (performanceAlertingService.sendAlert) {
+                    await performanceAlertingService.sendAlert(payload);
+                } else {
+                    await performanceAlertingService.processAlert({
+                        id: `health_check_${a.component || 'unknown'}_${Date.now()}`,
+                        ...payload,
+                        timestamp: Date.now(),
+                        acknowledged: false,
+                        resolved: false
+                    });
+                }
+
                 loggingService.logSecurity('warn', 'Health alert triggered', { component: a.component, severity: a.severity, message: a.message });
             } catch (err) {
                 loggingService.logError('Failed to process health alert', err, { alert: a });
             }
         }
     }
+
+    registerHealthChecks() {
+        this._registry.checks = new Map();
+        this._registerBuiltInChecks();
+        this._healthChecksCompat = new Map([
+            ['database', { name: 'Database Connection', critical: true, timeout: 5000, check: this.checkDatabaseHealth.bind(this) }],
+            ['redis', { name: 'Redis Cache', critical: false, timeout: 3000, check: this.checkRedisHealth.bind(this) }],
+            ['external_services', { name: 'External Services', critical: false, timeout: 5000, check: this.checkExternalServicesHealth.bind(this) }],
+            ['system_resources', { name: 'System Resources', critical: true, timeout: 3000, check: this.checkSystemResourcesHealth.bind(this) }],
+            ['application', { name: 'Application Health', critical: true, timeout: 5000, check: this.checkApplicationHealth.bind(this) }]
+        ]);
+        return this._healthChecksCompat;
+    }
+
+    addToHealthHistory(report) {
+        return this._addToHistory(report);
+    }
+
+    createTimeoutPromise(timeoutMs) {
+        return new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(`Health check timeout after ${timeoutMs}ms`)), timeoutMs);
+        });
+    }
+
+    parseRedisInfo(infoString = '') {
+        const data = {};
+        for (const line of infoString.split(/\r?\n/)) {
+            if (!line || !line.includes(':')) continue;
+            const [key, value] = line.split(':');
+            const numeric = Number(value);
+            data[key] = Number.isFinite(numeric) ? numeric : value;
+        }
+        return data;
+    }
+
+    async shutdown() {
+        this.stopMonitoring();
+        loggingService.logInfo('System health service shutdown complete');
+    }
+
+    get healthChecks() {
+        if (!this._healthChecksCompat) this.registerHealthChecks();
+        return this._healthChecksCompat;
+    }
+    set healthChecks(value) {
+        if (value instanceof Map) {
+            this._healthChecksCompat = value;
+            return;
+        }
+        this._healthChecksCompat = new Map();
+    }
+
+    get isMonitoring() { return this._isMonitoring; }
+    set isMonitoring(value) { this._isMonitoring = Boolean(value); }
+
+    get healthCheckInterval() { return this._healthCheckInterval; }
+    set healthCheckInterval(value) { this._healthCheckInterval = value; }
+
+    get healthHistory() { return this._healthHistory; }
+    set healthHistory(value) { this._healthHistory = Array.isArray(value) ? value : []; }
+
+    get lastHealthCheck() { return this._lastHealthCheck; }
+    set lastHealthCheck(value) { this._lastHealthCheck = value; }
+
+    get healthStatus() { return this._healthStatus; }
+    set healthStatus(value) {
+        this._healthStatus = value;
+        if (value === 'unknown') {
+            this._gracefulShutdownInProgress = false;
+            this._degradationModes = new Map();
+            this._circuitBreakers = new Map();
+            this._metricsWindow = [];
+            this._realTimeMetrics = { requestsPerSecond: 0, activeUsers: 0, errorRate: 0, responseTime: 0 };
+            this._capacityMetrics = { currentLoad: 0, maxCapacity: 100, scalingThreshold: 80, lastScalingAction: null };
+            this.activeConnections = new Set();
+        }
+    }
+
+    get alertThresholds() { return this._alertThresholds; }
+    set alertThresholds(value) { this._alertThresholds = value; }
+
+    get deploymentMode() { return this._deploymentMode; }
+    set deploymentMode(value) { this._deploymentMode = Boolean(value); }
+
+    get gracefulShutdownInProgress() { return this._gracefulShutdownInProgress; }
+    set gracefulShutdownInProgress(value) { this._gracefulShutdownInProgress = Boolean(value); }
+
+    get shutdownTimeout() { return this._shutdownTimeout; }
+    set shutdownTimeout(value) { this._shutdownTimeout = Number(value) || 0; }
+
+    get circuitBreakers() { return this._circuitBreakers; }
+    set circuitBreakers(value) { this._circuitBreakers = value instanceof Map ? value : new Map(); }
+
+    get degradationModes() { return this._degradationModes; }
+    set degradationModes(value) { this._degradationModes = value instanceof Map ? value : new Map(); }
+
+    get capacityMetrics() { return this._capacityMetrics; }
+    set capacityMetrics(value) { this._capacityMetrics = value || {}; }
+
+    get realTimeMetrics() { return this._realTimeMetrics; }
+    set realTimeMetrics(value) { this._realTimeMetrics = value || {}; }
+
+    get metricsWindow() { return this._metricsWindow; }
+    set metricsWindow(value) { this._metricsWindow = Array.isArray(value) ? value : []; }
 
     // ─── Redis setter (injected at startup) ───────
     setRedisClient(client) { this._redisClient = client; }

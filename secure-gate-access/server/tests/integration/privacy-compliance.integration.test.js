@@ -3,9 +3,13 @@
  * Tests GDPR/KDPA compliance, data retention, consent management, and privacy controls
  */
 
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class PrivacyComplianceTestSuite {
   constructor(baseUrl = 'http://localhost:3001', options = {}) {
@@ -779,10 +783,17 @@ class PrivacyComplianceTestSuite {
   }
 }
 
-module.exports = PrivacyComplianceTestSuite;
+export { PrivacyComplianceTestSuite };
+export default PrivacyComplianceTestSuite;
+
+describe('PrivacyComplianceTestSuite module', () => {
+  it('exports a runnable suite class', () => {
+    expect(typeof PrivacyComplianceTestSuite).toBe('function');
+  });
+});
 
 // CLI execution
-if (require.main === module) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const suite = new PrivacyComplianceTestSuite();
   suite.runAllTests().catch(console.error);
 }

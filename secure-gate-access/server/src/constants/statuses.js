@@ -6,6 +6,7 @@ export const PASS_STATUS = {
   PENDING_CONFIRMATION: 'pending_confirmation',
   CONFIRMED: 'confirmed',
   ACTIVE: 'active',
+  CHECKED_IN: 'checked_in',
   ON_PREMISE: 'on_premise',
   CHECKED_OUT: 'checked_out',
   EXPIRED: 'expired',
@@ -60,6 +61,8 @@ export const CHECK_IN_ALLOWED_STATUSES = [
   PASS_STATUS.PENDING,
   PASS_STATUS.VERIFIED,
   PASS_STATUS.OTP_SENT,
+  PASS_STATUS.CHECKED_IN,
+  PASS_STATUS.ON_PREMISE,
   PASS_STATUS.APPROVED
 ];
 

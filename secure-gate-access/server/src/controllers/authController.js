@@ -139,6 +139,14 @@ export const login = async (req, res) => {
         const cookieOptions = getCookieOptions();
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
         res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+
+        // Ensure browser clients receive a CSRF token as part of login response.
+        if (req.session) {
+            if (!req.session.csrfToken) {
+                req.session.csrfToken = randomBytes(32).toString('hex');
+            }
+            res.setHeader('X-CSRF-Token', req.session.csrfToken);
+        }
     }
 
     loggingService.info('Login successful', {

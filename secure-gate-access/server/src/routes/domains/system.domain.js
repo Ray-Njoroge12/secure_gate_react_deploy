@@ -21,5 +21,6 @@ export default [
     { prefix: '/api/cache', router: cacheRoutes(cacheMiddleware), options: { description: 'Cache management' } },
     { prefix: '/api/sse', router: sseRoutes, options: { description: 'Server-Sent Events (real-time)' } },
     { prefix: '/api/notifications', router: notificationRoutes, options: { description: 'Notification management' } },
+    { prefix: '/api/intelligent-notifications', router: notificationRoutes, options: { description: 'Notification management (legacy alias; deprecated)' } },
     { prefix: '/api/webhooks', router: notificationWebhooks, options: { description: 'Notification delivery webhooks (no auth)' } },
 ];

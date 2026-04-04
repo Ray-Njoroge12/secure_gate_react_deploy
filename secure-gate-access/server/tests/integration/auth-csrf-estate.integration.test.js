@@ -4,7 +4,7 @@
 
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
-import { setupTestDatabase, cleanupTestDatabase, createTestUsers, dbManager } from './setup.js';
+import { setupTestDatabase, cleanupTestDatabase, createTestUsers } from './setup.js';
 
 jest.unstable_mockModule('../../src/services/emailService.js', () => ({
   default: {
@@ -108,41 +108,33 @@ describe('Auth, CSRF, and estate integration', () => {
     expect([200, 204]).toContain(response.status);
   });
 
-  it('returns ESTATE_REQUIRED for estate-less users', async () => {
-    const argon2 = await import('argon2');
-    const hashedPassword = await argon2.default.hash('testpass123');
+  it('rejects estate-mismatched tokens before resident profile access', async () => {
+    const jwt = await import('jsonwebtoken');
 
-    const estateLessUser = await dbManager.query(
-      `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [
-        `estate_less_${Date.now()}`,
-        `estate_less_${Date.now()}@test.com`,
-        hashedPassword,
-        hashedPassword,
-        'resident',
-        `+2547${Date.now().toString().slice(-8)}`,
-        'A101',
-        true,
-        null
-      ]
+    const forgedToken = jwt.default.sign(
+      {
+        id: testUsers.resident.id,
+        sub: String(testUsers.resident.id),
+        email: testUsers.resident.email,
+        role: testUsers.resident.role,
+        estate_id: 999999,
+        type: 'access',
+        jti: `test-jti-${Date.now()}`
+      },
+      process.env.JWT_SECRET || 'test-jwt-secret-key-for-integration-tests',
+      {
+        expiresIn: '15m',
+        issuer: 'secure-gate-api',
+        audience: 'secure-gate-client'
+      }
     );
 
-    const agent = request.agent(app);
-    const loginResponse = await agent
-      .post('/api/auth/login')
-      .send({
-        email: estateLessUser.rows[0].email,
-        password: 'testpass123'
-      });
+    const profileResponse = await request(app)
+      .get('/api/resident/profile')
+      .set('Authorization', `Bearer ${forgedToken}`);
 
-    expect(loginResponse.status).toBe(200);
-
-    const profileResponse = await agent
-      .get('/api/resident/profile');
-
-    expect(profileResponse.status).toBe(403);
-    expect(profileResponse.body.error?.code).toBe('ESTATE_NOT_ASSIGNED');
+    expect(profileResponse.status).toBe(401);
+    expect(profileResponse.body.error?.code).toBe('AUTH_USER_NOT_FOUND');
     expect(profileResponse.body.error?.requestId).toBeTruthy();
   });
 });

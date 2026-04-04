@@ -176,13 +176,16 @@ describe('Auth Middleware', () => {
         expect(mockNext).toHaveBeenCalled();
         // For success, next is called without arguments
         expect(mockNext.mock.calls[0]).toEqual([]);
-        expect(mockReq.user).toEqual({
+        expect(mockReq.user).toMatchObject({
           id: testUser.id,
           email: testUser.email,
           username: testUser.username,
           role: testUser.role,
           estate_id: testUser.estate_id
         });
+        expect(mockReq.user.site_id).toBe(testUser.estate_id);
+        expect(mockReq.user.company_id).toBeNull();
+        expect(mockReq.user.mfa_enabled).toBe(false);
       });
 
       it('should pass error to next for expired token', async () => {
@@ -239,7 +242,8 @@ describe('Auth Middleware', () => {
 
         expect(mockQuery).toHaveBeenCalledWith(
           expect.stringContaining('SELECT'),
-          [testUser.email, testUser.estate_id]
+          [testUser.email, testUser.estate_id],
+          { retries: 0 }
         );
         expect(mockReq.user.estate_id).toBe(testUser.estate_id);
       });

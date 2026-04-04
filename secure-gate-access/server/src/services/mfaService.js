@@ -275,7 +275,15 @@ class MFAService {
         throw new Error('No backup codes found for user');
       }
 
-      const hashedCodes = JSON.parse(result.rows[0].backup_codes);
+      const rawBackupCodes = result.rows[0].backup_codes;
+      const hashedCodes = Array.isArray(rawBackupCodes)
+        ? [...rawBackupCodes]
+        : (typeof rawBackupCodes === 'string' ? JSON.parse(rawBackupCodes) : []);
+
+      if (!Array.isArray(hashedCodes)) {
+        throw new Error('Invalid backup codes format');
+      }
+
       const hashedInputCode = this.hashBackupCode(code);
 
       // Check if code matches

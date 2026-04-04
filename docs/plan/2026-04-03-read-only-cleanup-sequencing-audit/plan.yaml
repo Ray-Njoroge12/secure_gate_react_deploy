@@ -1,0 +1,429 @@
+plan_id: 2026-04-03-read-only-cleanup-sequencing-audit
+objective: Create dependency-aware cleanup sequencing plan with pre-mortem analysis for a conservative read-only audit.
+created_at: 2026-04-03T00:00:00Z
+created_by: gem-planner
+status: pending_approval
+research_confidence: medium
+
+tldr: |
+  Read-only cleanup audit is sequenced by risk and dependency:
+  - Wave 1: Lock high-risk touchpoints (auth, estate, visitor, role, websocket, test, deploy) as Keep-by-default and Investigate-only.
+  - Wave 2: Inventory low-risk candidates (generated artifacts, duplicate reports, transient logs) and classify only when provenance is certain.
+  - Wave 3: Map script/test/deploy dependency edges (npm scripts, CI workflows, imports, runbooks); unresolved edges force Investigate.
+  - Wave 4: Run pre-mortem simulation and mitigation checkpoints; stop immediately on uncertainty affecting runtime, tests, or deployability.
+  - Wave 5: Publish sequencing matrix with category-level guidance: Keep, Investigate, Delete-candidate (conservative thresholds only).
+
+open_questions:
+  - Does the audit need to preserve historical evidence required by compliance or external reporting for a fixed retention period?
+  - Should CI/workflow-referenced legacy scripts be auto-labeled Investigate even when currently failing?
+  - Is there an approved rollback evidence standard for future execution (for example, mandatory backup snapshot per delete wave)?
+
+pre_mortem:
+  overall_risk_level: high
+  critical_failure_modes:
+    - scenario: A file appears unused locally but is required by CI, deployment runbooks, or emergency scripts and gets marked for deletion.
+      likelihood: medium
+      impact: critical
+      mitigation: Treat CI/workflow/runbook references as blocking dependencies; unresolved references force Investigate and stop delete-candidate classification.
+    - scenario: Core flow touchpoint files (auth/estate/visitor/role/websocket/test/deploy) are misclassified as low risk and included in cleanup candidates.
+      likelihood: low
+      impact: critical
+      mitigation: Apply immutable high-risk denylist gate first; high-risk touchpoints are Keep or Investigate only in this audit.
+    - scenario: Generated artifacts that are actually canonical baselines (for example threshold JSONs) are mistaken for disposable outputs.
+      likelihood: medium
+      impact: high
+      mitigation: Require provenance proof (generation command plus canonical source mapping); otherwise classify as Investigate.
+    - scenario: Archive or historical docs needed for incident forensics are marked delete-candidate due to missing active imports.
+      likelihood: medium
+      impact: high
+      mitigation: Add compliance and forensics checkpoint before classification; if retention or audit obligations are unclear, mark Investigate.
+  assumptions:
+    - This task is planning-only and no filesystem cleanup actions are executed.
+    - Cleanup decisions must be conservative and uncertainty resolves to Investigate.
+    - Existing repo guardrails in .github/instructions and memory notes remain authoritative for risk handling.
+
+implementation_specification:
+  code_structure: Read-only audit plan with dependency-first gating: risk-boundary lock -> candidate inventory -> dependency graph -> category triage -> pre-mortem checkpointing -> final sequencing and decision matrix.
+  affected_areas:
+    - docs/plan/2026-04-03-read-only-cleanup-sequencing-audit/plan.yaml
+    - .github/instructions/cleanup-hygiene.instructions.md
+    - secure-gate-access/server/package.json
+  component_details:
+    - component: High-risk touchpoint gate
+      responsibility: Enforce default high-risk handling for auth, estate, visitor, role, websocket, test, and deploy touchpoints before any cleanup categorization.
+      interfaces:
+        - risk_denylist definition
+        - keep_or_investigate_only policy
+    - component: Dependency graph and coupling audit
+      responsibility: Map references across npm scripts, CI workflows, imports, docs/runbooks, and test harnesses to prevent false-unused classification.
+      interfaces:
+        - dependency_edge_matrix
+        - unresolved_edge_register
+    - component: Conservative classification engine
+      responsibility: Assign Keep, Investigate, or Delete-candidate labels using confidence thresholds and stop conditions.
+      interfaces:
+        - decision_ruleset
+        - classification_table
+    - component: Pre-mortem and mitigation checkpoints
+      responsibility: Simulate wrong-deletion scenarios and enforce stop conditions before final recommendations.
+      interfaces:
+        - failure_mode_catalog
+        - stop_condition_checklist
+    - component: Sequencing output pack
+      responsibility: Produce dependency-aware category order and decision rationale suitable for future execution planning.
+      interfaces:
+        - wave_order_matrix
+        - category_decision_register
+  dependencies:
+    - component: High-risk touchpoint gate
+      relationship: Must complete before any category can be triaged.
+    - component: Dependency graph and coupling audit
+      relationship: Consumes candidate inventory and produces blocking edges for classification.
+    - component: Conservative classification engine
+      relationship: Depends on denylist and resolved dependency edges.
+    - component: Pre-mortem and mitigation checkpoints
+      relationship: Validates classification outcomes before sequencing is finalized.
+    - component: Sequencing output pack
+      relationship: Depends on validated classifications and checkpoint outcomes.
+  integration_points:
+    - Top-level and server package script surfaces that define operational, test, and deploy dependencies
+    - CI workflow and automation script references that can invalidate deletion assumptions
+    - Existing cleanup guardrails and memory notes documenting prior pitfalls and canonical exceptions
+
+contracts:
+  - from_task: AUD-001
+    to_task: AUD-003
+    interface: High-risk denylist with immutable keep_or_investigate constraints
+    format: YAML policy block
+  - from_task: AUD-002
+    to_task: AUD-003
+    interface: Candidate category inventory with provisional risk labels
+    format: Table (category, examples, provisional risk)
+  - from_task: AUD-003
+    to_task: AUD-004
+    interface: Dependency edge matrix and unresolved edge register
+    format: Table (source, target, edge_type, confidence)
+  - from_task: AUD-004
+    to_task: AUD-005
+    interface: Initial Keep, Investigate, and Delete-candidate classifications with confidence markers
+    format: Decision table
+  - from_task: AUD-005
+    to_task: AUD-006
+    interface: Failure-mode impacts mapped to category decisions
+    format: Pre-mortem matrix
+  - from_task: AUD-006
+    to_task: AUD-007
+    interface: Checkpoint and stop-condition outcomes
+    format: Go/No-Go checklist
+  - from_task: AUD-007
+    to_task: AUD-008
+    interface: Final sequencing matrix and rationale package
+    format: Ordered wave matrix plus decision register
+
+tasks:
+  - id: AUD-001
+    title: Establish immutable high-risk boundary rules
+    description: |
+      Define the conservative risk boundary before any cleanup analysis.
+      Core flow touchpoints are high risk by default:
+      auth, estate, visitor, role, websocket, test, and deploy surfaces.
+      These categories are restricted to Keep or Investigate labels only.
+    wave: 1
+    agent: gem-reviewer
+    priority: high
+    status: pending
+    dependencies: []
+    context_files:
+      - .github/instructions/user-functionality-journeys.instructions.md: high-risk journey guardrails
+      - .github/instructions/testing-execution.instructions.md: test surface protection
+      - .github/instructions/cleanup-hygiene.instructions.md: conservative cleanup policy
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 120
+    focus_area: risk-boundary definition
+    verification:
+      - Confirm denylist explicitly includes auth, estate, visitor, role, websocket, test, deploy.
+      - Confirm denylist policy states unresolved uncertainty => Investigate.
+      - Confirm no delete-candidate path exists for denylisted categories in this audit.
+    acceptance_criteria:
+      - High-risk touchpoint policy is explicit and immutable for downstream tasks.
+      - Any candidate intersecting denylist is auto-rerouted to Investigate.
+      - Audit rules clearly separate read-only classification from execution.
+    failure_modes:
+      - scenario: A denylisted touchpoint is accidentally treated as low risk in downstream triage.
+        likelihood: low
+        impact: critical
+        mitigation: Add validation check that fails task if denylist intersection is not auto-escalated.
+    requires_review: true
+    review_depth: full
+    security_sensitive: true
+
+  - id: AUD-002
+    title: Build cleanup candidate inventory by category
+    description: |
+      Produce candidate categories without deletion actions:
+      generated artifacts, transient reports and logs, one-off scripts, archive content,
+      duplicated tests, deployment and infra legacy surfaces, and root utilities.
+      Include provisional risk and confidence per category.
+    wave: 1
+    agent: gem-researcher
+    priority: high
+    status: pending
+    dependencies: []
+    context_files:
+      - .gitignore: generated and transient artifact signals
+      - secure-gate-access/.gitignore: project-level ignore and security exclusions
+      - docs/plan/: prior cleanup planning context
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 220
+    focus_area: candidate inventory
+    verification:
+      - Ensure each category includes sample paths and a provisional risk label.
+      - Ensure categories touching denylist domains are tagged high-risk immediately.
+      - Ensure unknown provenance categories are marked Investigate pending dependency analysis.
+    acceptance_criteria:
+      - Complete category inventory exists with risk and confidence markers.
+      - Inventory does not include direct delete instructions.
+      - Categories are suitable inputs for dependency graphing.
+    failure_modes:
+      - scenario: Inventory misses hidden dependency-heavy categories, causing false confidence.
+        likelihood: medium
+        impact: high
+        mitigation: Include workflow, script, docs, and test surfaces in inventory scope and mark low-confidence areas for Investigate.
+
+  - id: AUD-003
+    title: Map dependency edges and coupling constraints
+    description: |
+      Build dependency relationships for each category:
+      npm scripts, CI workflows, module imports, test harness references,
+      deployment docs and runbooks, and operational scripts.
+      Any unresolved edge is treated as blocking uncertainty.
+    wave: 2
+    agent: gem-researcher
+    priority: high
+    status: pending
+    dependencies:
+      - AUD-001
+      - AUD-002
+    context_files:
+      - secure-gate-access/server/package.json: script-level dependencies
+      - .github/workflows/: CI references and command coupling
+      - documentation/guides/: deploy and operational dependency references
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 260
+    focus_area: dependency mapping
+    verification:
+      - Dependency edge matrix covers each inventory category.
+      - Unresolved edges are explicitly listed with owners and impact.
+      - Categories with unresolved critical edges are force-labeled Investigate.
+    acceptance_criteria:
+      - No category advances to delete-candidate without dependency evidence.
+      - Edge confidence is tracked and low confidence triggers Investigate.
+      - Coupling constraints are explicit enough to drive safe sequencing.
+    failure_modes:
+      - scenario: Indirect references in workflows and docs are missed and a candidate is incorrectly treated as independent.
+        likelihood: medium
+        impact: critical
+        mitigation: Require multi-source edge checks (scripts, workflows, and docs) before independence claims.
+
+  - id: AUD-004
+    title: Perform conservative category triage
+    description: |
+      Apply classification rules to each category:
+      Keep, Investigate, Delete-candidate.
+      Rules:
+      - denylisted and high-risk touchpoints => Keep or Investigate only
+      - unresolved uncertainty => Investigate
+      - delete-candidate requires high-confidence dependency clearance and provenance
+    wave: 3
+    agent: gem-reviewer
+    priority: high
+    status: pending
+    dependencies:
+      - AUD-003
+    context_files:
+      - docs/plan/2026-04-03-read-only-cleanup-sequencing-audit/plan.yaml: rules and contracts
+      - .github/instructions/cleanup-hygiene.instructions.md: conservative deletion guidance
+      - /memories/repo/verification-notes.md: known dependency pitfalls
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 180
+    focus_area: classification
+    verification:
+      - Validate every category decision includes rationale and confidence score.
+      - Validate unresolved uncertainty always maps to Investigate.
+      - Validate delete-candidate labels include explicit dependency clearance evidence.
+    acceptance_criteria:
+      - Classification table exists for all categories with conservative rule compliance.
+      - No high-risk touchpoint category is assigned delete-candidate.
+      - Decision rationale is sufficient for reviewer replay.
+    failure_modes:
+      - scenario: Pressure to reduce clutter drives weak-evidence delete-candidate decisions.
+        likelihood: medium
+        impact: high
+        mitigation: Enforce confidence threshold and require dual-review signoff for delete-candidate entries.
+    requires_review: true
+    review_depth: full
+    security_sensitive: true
+
+  - id: AUD-005
+    title: Run explicit pre-mortem on wrong-deletion scenarios
+    description: |
+      Simulate likely wrong-deletion paths:
+      CI breakage, auth and estate and visitor flow regressions, websocket behavior loss,
+      test surface invalidation, and deployment recoverability failures.
+      Map each scenario to category-level controls.
+    wave: 4
+    agent: gem-reviewer
+    priority: high
+    status: pending
+    dependencies:
+      - AUD-004
+    context_files:
+      - .github/instructions/user-functionality-journeys.instructions.md: journey impact constraints
+      - .github/instructions/testing-execution.instructions.md: validation and test coupling
+      - documentation/guides/DEPLOYMENT_GUIDE.md: deployment dependency implications
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 240
+    focus_area: pre-mortem validation
+    verification:
+      - Failure scenarios include likelihood, impact, and mitigation.
+      - Scenario controls map to concrete checkpoints and stop conditions.
+      - Category recommendations are adjusted where scenario risk is unacceptable.
+    acceptance_criteria:
+      - Pre-mortem matrix covers all high and medium risk categories.
+      - Mitigation controls are actionable and conservative.
+      - Stop conditions are explicit and enforceable.
+    failure_modes:
+      - scenario: Pre-mortem overlooks deploy or test coupling, resulting in unsafe sequencing.
+        likelihood: medium
+        impact: critical
+        mitigation: Include mandatory deploy and test coupling checks as hard gates.
+    requires_review: true
+    review_depth: full
+    security_sensitive: true
+
+  - id: AUD-006
+    title: Define mitigation checkpoints and hard stop conditions
+    description: |
+      Define audit checkpoint gates per wave:
+      - checkpoint A: risk boundary integrity
+      - checkpoint B: dependency certainty
+      - checkpoint C: pre-mortem control sufficiency
+      Define hard stop conditions:
+      - unresolved critical dependency
+      - denylist touchpoint in delete-candidate set
+      - missing rollback evidence standard
+      - compliance or retention ambiguity
+    wave: 4
+    agent: gem-devops
+    priority: medium
+    status: pending
+    dependencies:
+      - AUD-004
+      - AUD-005
+    context_files:
+      - .github/instructions/cleanup-hygiene.instructions.md: deletion guardrails
+      - docs/plan/2026-04-03-read-only-cleanup-sequencing-audit/plan.yaml: checkpoint integration
+      - /memories/repo/json-cleanup-notes.md: canonical artifact exceptions
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 140
+    focus_area: stop-conditions
+    verification:
+      - Checkpoint definitions are mapped to task waves.
+      - Stop conditions include trigger and required escalation action.
+      - Escalation path defaults uncertain outcomes to Investigate.
+    acceptance_criteria:
+      - A go/no-go checklist exists for each sequencing wave.
+      - Stop conditions block unsafe advancement.
+      - Escalation rules are deterministic and conservative.
+    failure_modes:
+      - scenario: Stop conditions are too vague and allow unsafe progression.
+        likelihood: medium
+        impact: high
+        mitigation: Define measurable triggers with explicit no-go outcomes.
+
+  - id: AUD-007
+    title: Produce dependency-aware sequencing matrix
+    description: |
+      Publish final category order by dependency and risk:
+      1) Keep-locked high-risk touchpoints (no delete-candidate path)
+      2) Low-risk generated and transient artifacts with proven provenance
+      3) Medium-risk script and test and deploy-adjacent categories after edge clearance
+      4) High-risk categories as Investigate backlog unless certainty improves
+      Include per-category rationale and checkpoint requirements.
+    wave: 5
+    agent: gem-documentation-writer
+    priority: medium
+    status: pending
+    dependencies:
+      - AUD-006
+    context_files:
+      - docs/plan/2026-04-03-read-only-cleanup-sequencing-audit/plan.yaml: task outputs and contracts
+      - .github/instructions/cleanup-hygiene.instructions.md: conservative alignment
+      - /memories/repo/verification-notes.md: failure precedents
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 160
+    focus_area: sequencing output
+    verification:
+      - Sequencing order reflects dependency and risk gates.
+      - Every category includes Keep or Investigate or Delete-candidate status and reason.
+      - Matrix explicitly marks core touchpoint categories as high-risk by default.
+    acceptance_criteria:
+      - Final matrix is actionable for future execution planning.
+      - Conservative rules are consistently applied across categories.
+      - Any uncertainty is visibly routed to Investigate.
+    failure_modes:
+      - scenario: Matrix ordering ignores dependency blockers and suggests unsafe early cleanup.
+        likelihood: low
+        impact: high
+        mitigation: Require dependency-clearance evidence field for each ordered category.
+    task_type: documentation
+    audience: developers
+    coverage_matrix:
+      - category risk tier
+      - dependency blockers
+      - classification outcome
+      - checkpoint and stop-condition mapping
+
+  - id: AUD-008
+    title: Independent conservative review and approval packet
+    description: |
+      Execute final review for false-positive deletion risk, policy compliance,
+      and unresolved uncertainty handling. Produce approval packet with:
+      accepted guidance, deferred Investigate items, and explicit no-go categories.
+    wave: 6
+    agent: gem-reviewer
+    priority: high
+    status: pending
+    dependencies:
+      - AUD-007
+    context_files:
+      - docs/plan/2026-04-03-read-only-cleanup-sequencing-audit/plan.yaml: complete audit outputs
+      - .github/instructions/user-functionality-journeys.instructions.md: high-risk flow constraints
+      - .github/instructions/testing-execution.instructions.md: test and deploy safety checks
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 130
+    focus_area: final quality gate
+    verification:
+      - Review confirms no denylist violation in delete-candidate guidance.
+      - Review confirms uncertainty handling is Investigate everywhere.
+      - Approval packet includes explicit defer and no-go decisions.
+    acceptance_criteria:
+      - Final audit guidance is conservative and dependency-aware.
+      - High-risk touchpoints remain protected by default.
+      - No unresolved critical risk remains unlabeled.
+    failure_modes:
+      - scenario: Review misses a hidden high-risk touchpoint and approves unsafe guidance.
+        likelihood: low
+        impact: critical
+        mitigation: Use denylist cross-check as mandatory review checklist item.
+    requires_review: true
+    review_depth: full
+    security_sensitive: true

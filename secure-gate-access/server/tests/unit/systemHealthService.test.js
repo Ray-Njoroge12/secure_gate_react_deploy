@@ -52,6 +52,7 @@ const { systemHealthService } = await import('../../src/services/systemHealthSer
 
 describe('System Health Service', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
     systemHealthService.isMonitoring = false;
     systemHealthService.healthCheckInterval = null;

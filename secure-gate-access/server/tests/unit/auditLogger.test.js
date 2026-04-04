@@ -8,6 +8,10 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
 // Mock dependencies before importing
+const mockDbManager = {
+  query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 })
+};
+
 jest.unstable_mockModule('../../src/services/loggingService.js', () => ({
   default: {
     logAudit: jest.fn().mockResolvedValue(undefined)
@@ -15,9 +19,9 @@ jest.unstable_mockModule('../../src/services/loggingService.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
-  dbManager: {
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 })
-  }
+  dbManager: mockDbManager,
+  db: mockDbManager,
+  default: mockDbManager
 }));
 
 jest.unstable_mockModule('uuid', () => ({

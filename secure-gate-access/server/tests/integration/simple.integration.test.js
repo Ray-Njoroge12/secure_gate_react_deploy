@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { getTestPool, query, closeTestPool, createTestUsers, cleanupTables } from './test-db.js';
+import { PASS_STATUS } from '../../src/constants/statuses.js';
 
 describe('Simple Integration Tests', () => {
   let testUsers;
@@ -56,7 +57,7 @@ describe('Simple Integration Tests', () => {
       const result = await query(
         `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        ['Test Visitor', '+254700123456', 'visitor@test.com', 'Testing', 'pending', testUsers.resident.id, `TEST${Date.now()}`]
+        ['Test Visitor', '+254700123456', 'visitor@test.com', 'Testing', PASS_STATUS.PENDING, testUsers.resident.id, `TEST${Date.now()}`]
       );
       expect(result.rows.length).toBe(1);
       expect(result.rows[0].name).toBe('Test Visitor');

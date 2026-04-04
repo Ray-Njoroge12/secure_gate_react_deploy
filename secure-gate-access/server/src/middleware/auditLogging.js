@@ -9,6 +9,7 @@
  */
 
 import { logAuditEvent as winstonLogAuditEvent } from '../config/logger.js';
+import logger from '../config/logger.js';
 import { dbManager } from '../database/db.enhanced.js';
 
 /**
@@ -147,6 +148,234 @@ export const attachRequestAudit = function (...args) {
   return _attachMiddleware(...args);
 };
 
+/**
+ * Legacy audit middleware factory kept for test/backward compatibility.
+ */
+export const auditLogging = (options = {}) => {
+  const {
+    logRequests = true,
+    logResponses = true,
+    logDataChanges = false,
+    excludePaths = ['/health', '/metrics', '/api/health'],
+    sensitiveFields = ['password', 'token', 'secret', 'key', 'otp']
+  } = options;
+
+  return (req, res, next) => {
+    if (excludePaths.some(path => req.originalUrl?.startsWith(path))) {
+      next();
+      return;
+    }
+
+    if (logRequests) {
+      winstonLogAuditEvent(
+        'request',
+        'api',
+        {
+          method: req.method,
+          url: req.originalUrl,
+          ip: req.ip,
+          userId: req.user?.id,
+          userRole: req.user?.role,
+          headers: sanitizeHeaders(req.headers || {}),
+          body: sanitizeDeep(req.body, sensitiveFields),
+          query: req.query,
+          params: req.params,
+          timestamp: new Date().toISOString()
+        },
+        req
+      );
+    }
+
+    const originalEnd = res.end;
+    res.end = function (...args) {
+      if (logResponses) {
+        winstonLogAuditEvent(
+          'response',
+          'api',
+          {
+            method: req.method,
+            url: req.originalUrl,
+            statusCode: res.statusCode,
+            responseTime: res.get?.('X-Response-Time'),
+            contentLength: res.get?.('Content-Length'),
+            timestamp: new Date().toISOString()
+          },
+          req
+        );
+      }
+      return originalEnd.apply(this, args);
+    };
+
+    if (logDataChanges && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      const originalJson = res.json;
+      res.json = function (payload) {
+        winstonLogAuditEvent(
+          'data_change',
+          'api',
+          {
+            method: req.method,
+            url: req.originalUrl,
+            statusCode: res.statusCode,
+            userId: req.user?.id,
+            userRole: req.user?.role,
+            timestamp: new Date().toISOString(),
+            payload: sanitizeDeep(payload, sensitiveFields)
+          },
+          req
+        );
+        return originalJson.call(this, payload);
+      };
+    }
+
+    next();
+  };
+};
+
+export const authAuditLogging = (req, res, next) => {
+  const originalJson = res.json;
+
+  res.json = function (payload = {}) {
+    const url = req.originalUrl || '';
+    const status = res.statusCode;
+
+    if (url.includes('/auth/login')) {
+      winstonLogAuditEvent('login_attempt', 'auth', {
+        success: status < 400,
+        email: req.body?.email,
+        ip: req.ip,
+        timestamp: new Date().toISOString()
+      }, req);
+    } else if (url.includes('/auth/register')) {
+      winstonLogAuditEvent('registration_attempt', 'auth', {
+        success: status < 400,
+        email: req.body?.email,
+        role: req.body?.role,
+        ip: req.ip,
+        timestamp: new Date().toISOString()
+      }, req);
+    } else if (url.includes('/auth/logout')) {
+      winstonLogAuditEvent('logout', 'auth', {
+        userId: req.user?.id,
+        ip: req.ip,
+        timestamp: new Date().toISOString()
+      }, req);
+    } else if (url.includes('/auth/refresh')) {
+      winstonLogAuditEvent('token_refresh', 'auth', {
+        success: status < 400,
+        userId: req.user?.id,
+        timestamp: new Date().toISOString()
+      }, req);
+    }
+
+    return originalJson.call(this, payload);
+  };
+
+  next();
+};
+
+export const securityAuditLogging = (req, res, next) => {
+  const originalJson = res.json;
+
+  res.json = function (payload = {}) {
+    const status = res.statusCode;
+
+    if (status === 401) {
+      winstonLogAuditEvent('unauthorized_access', 'security', {
+        url: req.originalUrl,
+        method: req.method,
+        ip: req.ip,
+        reason: payload.message || payload.error || 'Unauthorized access attempt',
+        timestamp: new Date().toISOString()
+      }, req);
+    }
+
+    if (status === 403) {
+      winstonLogAuditEvent('permission_denied', 'security', {
+        url: req.originalUrl,
+        method: req.method,
+        ip: req.ip,
+        reason: payload.message || payload.error || 'Permission denied',
+        timestamp: new Date().toISOString()
+      }, req);
+    }
+
+    if (status === 429) {
+      winstonLogAuditEvent('rate_limit_exceeded', 'security', {
+        url: req.originalUrl,
+        method: req.method,
+        ip: req.ip,
+        reason: 'Rate limit exceeded',
+        timestamp: new Date().toISOString()
+      }, req);
+    }
+
+    return originalJson.call(this, payload);
+  };
+
+  next();
+};
+
+export const dataAccessAuditLogging = (req, res, next) => {
+  const sensitivePaths = ['/admin/', '/residents/', '/visitors/'];
+  const originalJson = res.json;
+
+  res.json = function (payload = {}) {
+    if (sensitivePaths.some(path => (req.originalUrl || '').includes(path))) {
+      const data = payload?.data;
+      const recordCount = Array.isArray(data) ? data.length : 1;
+      winstonLogAuditEvent('data_access', 'data', {
+        resource: req.originalUrl,
+        method: req.method,
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        recordCount,
+        userAgent: req.get?.('User-Agent') || req.headers?.['user-agent'],
+        timestamp: new Date().toISOString()
+      }, req);
+    }
+    return originalJson.call(this, payload);
+  };
+
+  next();
+};
+
+export const configAuditLogging = (req, res, next) => {
+  const originalJson = res.json;
+
+  res.json = function (payload = {}) {
+    const url = req.originalUrl || '';
+    if (url.includes('/config/') || url.includes('/settings/')) {
+      winstonLogAuditEvent('config_change', 'system', {
+        resource: req.originalUrl,
+        method: req.method,
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        changes: sanitizeDeep(req.body, ['password', 'token', 'secret', 'key', 'otp']),
+        ip: req.ip,
+        timestamp: new Date().toISOString()
+      }, req);
+    }
+    return originalJson.call(this, payload);
+  };
+
+  next();
+};
+
+export const logAuditEventHelper = (action, resource, details = {}, req = null) => {
+  const auditData = {
+    action,
+    resource,
+    details,
+    timestamp: new Date().toISOString(),
+    ...(req?.id && { requestId: req.id }),
+    ...(req?.ip && { ip: req.ip }),
+    ...(req?.user?.id && { userId: req.user.id }),
+    ...(req?.user?.role && { userRole: req.user.role })
+  };
+
+  logger.info('Audit event', auditData);
+};
+
 
 /**
  * Sanitize body to remove sensitive fields before logging
@@ -160,7 +389,40 @@ function sanitizeBody(body, sensitiveFields) {
   return sanitized;
 }
 
+function sanitizeHeaders(headers) {
+  const sanitized = {};
+  for (const [key, value] of Object.entries(headers || {})) {
+    const lower = key.toLowerCase();
+    if (['authorization', 'cookie', 'set-cookie', 'x-api-key'].includes(lower)) {
+      sanitized[lower] = '[REDACTED]';
+    } else {
+      sanitized[lower] = value;
+    }
+  }
+  return sanitized;
+}
+
+function sanitizeDeep(value, sensitiveFields) {
+  if (!value || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(item => sanitizeDeep(item, sensitiveFields));
+  const result = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (sensitiveFields.includes(k)) {
+      result[k] = '[REDACTED]';
+    } else {
+      result[k] = sanitizeDeep(v, sensitiveFields);
+    }
+  }
+  return result;
+}
+
 export default {
+  auditLogging,
+  authAuditLogging,
+  securityAuditLogging,
+  dataAccessAuditLogging,
+  configAuditLogging,
+  logAuditEventHelper,
   unifiedAuditMiddleware,
   attachRequestAudit,
   logAuditEvent: winstonLogAuditEvent
