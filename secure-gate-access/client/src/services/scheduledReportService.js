@@ -674,4 +674,5 @@ class ScheduledReportService {
   }
 }
 
-export default new ScheduledReportService();
+const scheduledReportService = new ScheduledReportService();
+export default scheduledReportService;

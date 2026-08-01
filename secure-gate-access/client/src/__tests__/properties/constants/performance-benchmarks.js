@@ -473,12 +473,14 @@ export const PERFORMANCE_CONFIG = deepFreeze({
 });
 
 // Default export
-export default {
+const performanceBenchmarks = {
   PERFORMANCE_CONFIG,
   evaluatePerformance,
   generatePerformanceTestScenarios,
   calculateBudgetCompliance
 };
+
+export default performanceBenchmarks;
 
 if (typeof describe !== 'undefined') {
   describe('Performance Benchmarks', () => {

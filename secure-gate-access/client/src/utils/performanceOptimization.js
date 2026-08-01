@@ -281,7 +281,7 @@ export const createOptimizedRef = (initialValue) => {
 };
 
 // Export all utilities
-export default {
+const performanceOptimization = {
   withPerformanceOptimization,
   useOptimizedValue,
   useOptimizedCallback,
@@ -296,3 +296,5 @@ export default {
   createOptimizedEventHandler,
   createOptimizedRef
 };
+
+export default performanceOptimization;
