@@ -394,8 +394,10 @@ export const exportChartAsImage = async (_chartElement) => {
   return null;
 };
 
-export default {
+const exportUtils = {
   exportToPDF,
   exportToCSV,
   exportChartAsImage
 };
+
+export default exportUtils;

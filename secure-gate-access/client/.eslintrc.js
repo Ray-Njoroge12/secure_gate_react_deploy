@@ -87,6 +87,13 @@ module.exports = {
       }
     },
     {
+      // Feature-detected (if (!X.prototype.y)) polyfill shims must extend natives by design
+      files: ['**/polyfills/index.js'],
+      rules: {
+        'no-extend-native': 'off'
+      }
+    },
+    {
       // Allow raw <button> in the Button component definition itself
       files: ['**/components/ui/Button.jsx', '**/components/ui/Button.tsx'],
       rules: {

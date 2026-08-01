@@ -282,7 +282,7 @@ if (!window.sessionStorage) {
 }
 
 // Export polyfills
-export default {
+const polyfillsStatus = {
   // Check if polyfills are loaded
   isLoaded: true,
 
@@ -317,3 +317,4 @@ export default {
   }
 };
 
+export default polyfillsStatus;

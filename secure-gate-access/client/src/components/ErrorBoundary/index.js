@@ -1,11 +1,23 @@
 // Error Boundary Components
-export { default as ErrorBoundary } from './ErrorBoundary';
-export { default as NetworkErrorBoundary } from './NetworkErrorBoundary';
-export { default as AuthErrorBoundary } from './AuthErrorBoundary';
+import ErrorBoundary from './ErrorBoundary';
+import NetworkErrorBoundary from './NetworkErrorBoundary';
+import AuthErrorBoundary from './AuthErrorBoundary';
 
 // Error Context and Hooks
-export { ErrorProvider, useError, withErrorHandling } from '../../contexts/ErrorContext';
-export { useErrorHandler, useAsyncErrorHandler, useApiErrorHandler } from '../../hooks/useErrorHandler';
+import { ErrorProvider, useError, withErrorHandling } from '../../contexts/ErrorContext';
+import { useErrorHandler, useAsyncErrorHandler, useApiErrorHandler } from '../../hooks/useErrorHandler';
+
+export {
+  ErrorBoundary,
+  NetworkErrorBoundary,
+  AuthErrorBoundary,
+  ErrorProvider,
+  useError,
+  withErrorHandling,
+  useErrorHandler,
+  useAsyncErrorHandler,
+  useApiErrorHandler
+};
 
 // Error Boundary Utilities
 export const createErrorBoundary = (options = {}) => {
@@ -57,7 +69,7 @@ export const ERROR_BOUNDARY_CONFIG = {
   fallbackUI: true
 };
 
-export default {
+const errorBoundaryModule = {
   ErrorBoundary,
   NetworkErrorBoundary,
   AuthErrorBoundary,
@@ -73,6 +85,8 @@ export default {
   ERROR_SEVERITY,
   ERROR_BOUNDARY_CONFIG
 };
+
+export default errorBoundaryModule;
 
 
 

@@ -106,12 +106,14 @@ export function safeMergeConfig(base, override) {
 }
 
 // Default export
-export default {
+const immutableUtils = {
   deepFreeze,
   createImmutableConfig,
   isDeeplyFrozen,
   safeMergeConfig
 };
+
+export default immutableUtils;
 
 if (typeof describe !== 'undefined') {
   describe('Immutable Utils', () => {

@@ -690,13 +690,15 @@ export const ERROR_CONFIG = deepFreeze({
 });
 
 // Default export
-export default {
+const errorScenarios = {
   ERROR_CONFIG,
   createError,
   getRecoveryStrategy,
   simulateErrorCondition,
   validateErrorHandling
 };
+
+export default errorScenarios;
 
 if (typeof describe !== 'undefined') {
   describe('Error Scenarios', () => {

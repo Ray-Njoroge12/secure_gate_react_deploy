@@ -516,12 +516,14 @@ export const SECURITY_PATTERNS = deepFreeze({
 });
 
 // Default export
-export default {
+const securityPatterns = {
   SECURITY_PATTERNS,
   detectSecurityThreats,
   generateSecurityTestCases,
   validateSecurityConfig
 };
+
+export default securityPatterns;
 
 if (typeof describe !== 'undefined') {
   describe('Security Patterns', () => {

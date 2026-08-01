@@ -499,7 +499,7 @@ export const BUSINESS_RULES_FROZEN = Object.freeze(BUSINESS_RULES);
 export const SANITIZATION_RULES_FROZEN = Object.freeze(SANITIZATION_RULES);
 
 // Default export
-export default {
+const validationRules = {
   VALIDATION_RULES,
   VALIDATION_PATTERNS,
   BUSINESS_RULES,
@@ -508,6 +508,8 @@ export default {
   sanitizeData,
   validateBusinessRules
 };
+
+export default validationRules;
 
 if (typeof describe !== 'undefined') {
   describe('Validation Rules', () => {
