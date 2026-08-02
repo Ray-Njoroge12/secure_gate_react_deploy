@@ -7,6 +7,7 @@ import { initializeSentry } from "./config/sentry.js";
 import "./index.css";
 // PWA Service Worker Registration - Added for Task 4.4
 import { register as registerSW, unregister as unregisterSW } from "./serviceWorkerRegistration.js";
+import logger from "./utils/logger.js";
 
 // Initialize Sentry for error tracking
 initializeSentry();
@@ -83,14 +84,14 @@ const initializeApp = async () => {
 
   registerSW({
     onSuccess: (_registration) => {
-      console.log(
+      logger.info(
         process.env.NODE_ENV === "production"
           ? "PWA: Service worker registered successfully"
           : "PWA: Service worker registered in development mode"
       );
     },
     onUpdate: (_registration) => {
-      console.log(
+      logger.info(
         process.env.NODE_ENV === "production"
           ? "PWA: New content available, please refresh"
           : "PWA: Service worker updated in development mode"
