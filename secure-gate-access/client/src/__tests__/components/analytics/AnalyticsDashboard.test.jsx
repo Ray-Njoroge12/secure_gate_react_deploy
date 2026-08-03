@@ -42,7 +42,7 @@ jest.mock('recharts', () => ({
   PieChart: ({ children }) => (
     <div data-testid="pie-chart">{children}</div>
   ),
-  Pie: ({ data, dataKey, nameKey }) => (
+  Pie: ({ data: _data, dataKey, nameKey }) => (
     <div data-testid="pie" data-key={dataKey} data-name-key={nameKey} />
   ),
   Cell: () => <div data-testid="pie-cell" />,

@@ -129,7 +129,6 @@ describe('SkipLinks Component', () => {
     });
 
     test('prevents default link behavior', async () => {
-      const user = userEvent.setup();
       render(<SkipLinks />);
       
       const mainLink = screen.getByRole('link', { name: /skip to main content/i });

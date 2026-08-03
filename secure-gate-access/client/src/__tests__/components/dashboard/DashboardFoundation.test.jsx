@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { DashboardFoundation } from '../../../components/dashboard/DashboardFoundation';
 
 // Mock contexts and hooks

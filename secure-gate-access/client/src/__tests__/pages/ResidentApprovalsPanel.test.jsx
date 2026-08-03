@@ -57,7 +57,7 @@ jest.mock('../../components/ui', () => {
 // Mock Modal
 jest.mock('../../components/ui/Modal', () => ({
   __esModule: true,
-  default: ({ isOpen, onClose, children, title }) => {
+  default: ({ isOpen, onClose: _onClose, children, title }) => {
     if (!isOpen) return null;
     return (
       <div role="dialog" aria-label={title}>

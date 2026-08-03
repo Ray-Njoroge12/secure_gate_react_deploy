@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AccessibilityProvider, useAccessibilityContext } from '../../components/accessibility/AccessibilityProvider.jsx';
 
@@ -43,8 +43,6 @@ const TestComponent = ({ onSettingChange }) => {
     toggleSetting,
     announce,
     createFocusTrap,
-    checkColorContrast,
-    validateTouchTarget,
     isInitialized
   } = useAccessibilityContext();
 
@@ -466,7 +464,6 @@ describe('AccessibilityProvider', () => {
       );
 
       const firstButton = screen.getByTestId('first');
-      const secondButton = screen.getByTestId('second');
 
       // Focus first button
       firstButton.focus();

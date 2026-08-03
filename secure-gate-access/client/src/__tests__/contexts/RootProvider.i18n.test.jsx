@@ -4,7 +4,7 @@ import { useI18n, I18nProvider } from '../../i18n/index.js';
 
 // Test component that verifies useI18n doesn't throw inside I18nProvider
 const I18nConsumer = () => {
-  const { language, t } = useI18n();
+  const { language } = useI18n();
   return <span data-testid="lang">{language}</span>;
 };
 

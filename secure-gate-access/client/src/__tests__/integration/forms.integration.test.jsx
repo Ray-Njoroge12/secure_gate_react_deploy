@@ -12,7 +12,6 @@ import { ErrorProvider } from '../../contexts/ErrorContext';
 
 // Import MSW server from the globally configured instance
 import { server } from '../../mocks/server';
-import { rest } from 'msw';
 
 // Use the same base URL as the handlers
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
@@ -258,7 +257,7 @@ describe('Forms Integration Tests', () => {
       const { rest } = await import('msw');
 
       server.use(
-        rest.post(`${API_BASE_URL}/api/visitors`, (req, res, ctx) => {
+        rest.post(`${API_BASE_URL}/api/visitors`, (req, res) => {
           return res.networkError('Network request failed');
         })
       );

@@ -33,7 +33,6 @@ const mockAnalytics = {
 const mockLogin = jest.fn();
 const mockLogout = jest.fn();
 const mockRegister = jest.fn();
-const mockSetTheme = jest.fn();
 
 // Mock dependencies
 jest.mock('../../../hooks/useAccessibility', () => ({
@@ -103,22 +102,13 @@ const mockUsers = {
 };
 
 // Test wrapper component
-const TestWrapper = ({ children, user = mockUsers.resident, theme = 'light' }) => {
+const TestWrapper = ({ children, user = mockUsers.resident, theme: _theme = 'light' }) => {
   const authContextValue = {
     user,
     isAuthenticated: true,
     login: mockLogin,
     logout: mockLogout,
     register: mockRegister
-  };
-
-  const themeContextValue = {
-    theme,
-    setTheme: mockSetTheme,
-    isDark: theme === 'dark',
-    colors: {},
-    spacing: {},
-    typography: {}
   };
 
   return (

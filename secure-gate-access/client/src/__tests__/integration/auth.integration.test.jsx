@@ -171,7 +171,7 @@ describe('Authentication Integration Tests', () => {
 
     it('should handle network errors gracefully', async () => {
       server.use(
-        rest.post('*/api/auth/login', (req, res, ctx) => {
+        rest.post('*/api/auth/login', (req, res) => {
           return res.networkError('Failed to connect');
         })
       );
