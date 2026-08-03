@@ -22,7 +22,7 @@ jest.mock('../../components/accessibility/AccessibilityProvider.jsx', () => ({
 }));
 
 // Test component with focusable elements
-const TestFocusableComponent = ({ onShortcut }) => (
+const TestFocusableComponent = ({ _onShortcut }) => (
   <div data-testid="focusable-container">
     <button data-testid="button-1">Button 1</button>
     <input data-testid="input-1" placeholder="Input 1" />
@@ -255,7 +255,6 @@ describe('KeyboardNavigation', () => {
       );
 
       const button1 = screen.getByTestId('button-1');
-      const input1 = screen.getByTestId('input-1');
 
       // Focus first element
       button1.focus();

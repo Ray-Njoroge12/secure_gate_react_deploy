@@ -339,8 +339,7 @@ describe('IntelligentSearch Component', () => {
 
   test('handles empty query gracefully', async () => {
     renderIntelligentSearch();
-    const searchInput = screen.getByPlaceholderText('Search visitors, users, incidents...');
-    
+
     await act(async () => {
       await userEvent.keyboard('{Enter}');
     });

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AlternativeInputMethods, useAlternativeInputMethods } from '../../components/accessibility/AlternativeInputMethods.jsx';
 import { AccessibilityProvider } from '../../components/accessibility/AccessibilityProvider.jsx';
@@ -54,11 +54,7 @@ const TestHookComponent = () => {
 };
 
 describe('AlternativeInputMethods', () => {
-  let mockAnnounce;
-
   beforeEach(() => {
-    mockAnnounce = jest.fn();
-    
     // Reset mocks
     mockGetUserMedia.mockReset();
     jest.clearAllMocks();

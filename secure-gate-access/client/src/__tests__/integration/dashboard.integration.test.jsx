@@ -12,7 +12,6 @@ import { ErrorProvider } from '../../contexts/ErrorContext';
 
 // Import MSW server from the globally configured instance
 import { server } from '../../mocks/server';
-import { rest } from 'msw';
 
 // Use the same base URL as the handlers
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
@@ -252,8 +251,6 @@ describe('Dashboard Integration Tests', () => {
         expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
       });
 
-      const initialCount = screen.queryAllByTestId(/visitor-/).length;
-
       const checkInButtons = screen.queryAllByRole('button', { name: /check in/i });
 
       if (checkInButtons.length > 0) {
@@ -340,7 +337,7 @@ describe('Dashboard Integration Tests', () => {
       const { rest } = await import('msw');
 
       server.use(
-        rest.get(`${API_BASE_URL}/api/dashboard/stats`, (req, res, ctx) => {
+        rest.get(`${API_BASE_URL}/api/dashboard/stats`, (req, res) => {
           return res.networkError('Network request failed');
         })
       );

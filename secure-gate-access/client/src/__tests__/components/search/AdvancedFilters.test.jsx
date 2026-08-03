@@ -4,10 +4,9 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AdvancedFilters from '../../../components/search/AdvancedFilters';
-import { FilterBuilder } from '../../../services/searchService';
 
 describe('AdvancedFilters Component', () => {
   const mockOnFiltersChange = jest.fn();

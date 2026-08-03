@@ -28,7 +28,7 @@ const TestWrapper = ({ children, settings = {} }) => (
 
 // Test component that uses the hook
 const TestHookComponent = () => {
-  const { createTimeout, isExtendedTimeoutsEnabled, setTimeoutManagerRef } = useTimeoutManager();
+  const { createTimeout, isExtendedTimeoutsEnabled } = useTimeoutManager();
   const [timeoutId, setTimeoutId] = React.useState(null);
   const [timeoutExecuted, setTimeoutExecuted] = React.useState(false);
 
@@ -54,10 +54,7 @@ const TestHookComponent = () => {
 };
 
 describe('TimeoutManager', () => {
-  let mockAnnounce;
-
   beforeEach(() => {
-    mockAnnounce = jest.fn();
     jest.clearAllMocks();
     
     // Mock timers
@@ -100,8 +97,6 @@ describe('TimeoutManager', () => {
     });
 
     test('should show extension level options when extended timeouts are enabled', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-
       render(
         <TestWrapper>
           <TimeoutManager enabled={true} />

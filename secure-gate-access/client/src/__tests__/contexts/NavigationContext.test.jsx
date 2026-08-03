@@ -5,7 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { render, screen, act, renderHook, waitFor } from '@testing-library/react';
-import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { NavigationProvider, useNavigation, useBreadcrumbs, useNavigationHistory } from '../../contexts/NavigationContext';
 import { generateBreadcrumbs } from '../../utils/navigationFlow';
 
@@ -15,7 +15,7 @@ jest.mock('../../utils/navigationFlow', () => ({
 }));
 
 // Test helper component to consume context
-const TestComponent = ({ role }) => {
+const TestComponent = ({ role: _role }) => {
     const { setPageTitle, getNavigationAnalytics } = useNavigation();
     const { breadcrumbs } = useBreadcrumbs();
     const { navigationHistory } = useNavigationHistory();
@@ -49,7 +49,7 @@ describe('Navigation Context Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         // Restore mock implementation after clearing
-        generateBreadcrumbs.mockImplementation((path, role) => [
+        generateBreadcrumbs.mockImplementation((path, _role) => [
             { label: 'Home', path: '/dashboard' },
             { label: 'Current', path: path }
         ]);
