@@ -14,7 +14,6 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from './Icon.jsx';
 import { generateBreadcrumbs } from '../../utils/navigationFlow';
-import { componentTokens } from '../../design-system';
 
 const EnhancedBreadcrumbs = ({ 
   breadcrumbs = null, 
@@ -31,7 +30,7 @@ const EnhancedBreadcrumbs = ({
   const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [, setFocusedIndex] = useState(-1);
 
   // Generate breadcrumbs if not provided
   const currentBreadcrumbs = useMemo(() => {
@@ -171,7 +170,7 @@ const EnhancedBreadcrumbs = ({
   }, [currentBreadcrumbs, maxItems, collapsible, isCollapsed]);
 
   // Calculate progress if enabled (must be before early returns)
-  const progress = useMemo(() => {
+  useMemo(() => {
     if (!showProgress || !currentBreadcrumbs.length) return null;
     const currentIndex = currentBreadcrumbs.findIndex(crumb => crumb.isCurrent);
     return currentIndex >= 0 ? ((currentIndex + 1) / currentBreadcrumbs.length) * 100 : 0;

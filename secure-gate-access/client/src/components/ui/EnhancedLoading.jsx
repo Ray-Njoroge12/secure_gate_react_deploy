@@ -11,7 +11,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
-import { useLoadingStates, LOADING_TYPES, LOADING_PRIORITIES } from '../../hooks/useLoadingStates';
+import { LOADING_TYPES } from '../../hooks/useLoadingStates';
 
 // Loading animation variants
 const LoadingSpinner = ({ size = 'md', className = '' }) => {
@@ -137,7 +137,6 @@ const LoadingWave = ({ size = 'md', className = '' }) => {
 const EnhancedLoading = ({
   // Loading state props
   type = LOADING_TYPES.INITIAL,
-  priority = LOADING_PRIORITIES.NORMAL,
   message = null,
   progress = null,
   showProgress = false,

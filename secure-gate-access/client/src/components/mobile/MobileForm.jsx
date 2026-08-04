@@ -180,7 +180,6 @@ const MobileFormSelect = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef(null);
-  const responsive = useEnhancedResponsive();
 
   const handleOptionSelect = useCallback((optionValue) => {
     onChange?.(optionValue);

@@ -9,7 +9,7 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
 import { Alert, AlertDescription } from '../ui/Alert';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Icon from '../ui/Icon';
 import { COLORS } from '../../utils/designTokens';
 import { systemHealthService } from '../../services/systemHealthService';
@@ -20,7 +20,7 @@ const SystemHealthDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+  const [refreshInterval] = useState(30000); // 30 seconds
   const [historicalData, setHistoricalData] = useState([]);
 
   // Fetch health data
@@ -74,7 +74,7 @@ const SystemHealthDashboard = () => {
   };
 
   // Component status card
-  const ComponentStatusCard = ({ component, data }) => {
+  const ComponentStatusCard = ({ data }) => {
     const statusDisplay = getStatusDisplay(data.status);
 
     return (

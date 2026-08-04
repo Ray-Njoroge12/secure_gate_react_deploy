@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { sanitizeContent } from '../../utils/sanitize';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeEngine';
 import { GradientButton } from '../ui/GradientButton';
 
 /**
@@ -36,7 +35,6 @@ const TutorialSystem = ({
   options = {}
 }) => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(new Set());
@@ -44,7 +42,6 @@ const TutorialSystem = ({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const overlayRef = useRef(null);
   const tooltipRef = useRef(null);
-  const focusTrapRef = useRef(null);
   const positionTimerRef = useRef(null);
 
   // Default options
@@ -124,7 +121,6 @@ const TutorialSystem = ({
         // Choose best position based on available space
         const spaceTop = targetRect.top;
         const spaceBottom = viewport.height - targetRect.bottom;
-        const spaceLeft = targetRect.left;
         const spaceRight = viewport.width - targetRect.right;
 
         if (spaceBottom >= tooltipRect.height + offset) {
@@ -212,7 +208,7 @@ const TutorialSystem = ({
     setCurrentStep(stepIndex);
     
     const step = steps[stepIndex];
-    const target = highlightTarget(step);
+    highlightTarget(step);
 
     // Track step view
     if (typeof window !== 'undefined' && window.analytics) {

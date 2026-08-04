@@ -5,7 +5,7 @@
  * with touch-optimized interactions and responsive behavior
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useEnhancedResponsive } from '../../hooks/useEnhancedResponsive.js';
 import GestureHandler from './GestureHandler.jsx';
 import Button from '../ui/Button';

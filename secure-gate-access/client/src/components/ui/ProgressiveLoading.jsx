@@ -12,8 +12,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import logger from 'utils/logger';
 
-import { useLoadingStates, LOADING_TYPES } from '../../hooks/useLoadingStates';
-
 import AdvancedSkeleton from './AdvancedSkeleton';
 
 // Loading phases for progressive loading
@@ -76,7 +74,6 @@ export const useProgressiveLoading = (options = {}) => {
   const [error, setError] = useState(null);
 
   const phaseTimeouts = useRef({});
-  const phaseCallbacks = useRef({});
 
   // Advance to next phase
   const advancePhase = useCallback((phase, data = {}) => {
@@ -161,11 +158,8 @@ const ProgressiveLoading = ({
   const {
     currentPhase,
     completedPhases,
-    phaseData,
     isLoading,
     error,
-    completePhase,
-    setPhaseError,
   } = useProgressiveLoading({
     phases,
     onPhaseComplete,

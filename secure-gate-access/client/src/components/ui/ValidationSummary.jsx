@@ -11,8 +11,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import Icon from './Icon';
-import { Button, Card, Badge, Progress } from './index';
-import { componentTokens } from '../../design-system';
+import { Button, Card } from './index';
 
 const ValidationSummary = ({
   // Validation data
@@ -24,7 +23,6 @@ const ValidationSummary = ({
   touched = {},
   
   // Display options
-  showProgress = true,
   showFieldDetails = true,
   showSummary = true,
   showRefreshButton = false,
@@ -40,9 +38,6 @@ const ValidationSummary = ({
   onRefresh,
   onFieldClick,
   onDismiss,
-  
-  // Accessibility
-  ariaLabel = 'Validation summary',
   
   // Other props
   ...props
@@ -113,13 +108,6 @@ const ValidationSummary = ({
       onDismiss(fieldName);
     }
   }, [onDismiss]);
-
-  // Handle refresh
-  const handleRefresh = useCallback(() => {
-    if (onRefresh) {
-      onRefresh();
-    }
-  }, [onRefresh]);
 
   // Get size-specific styles
   const getSizeStyles = useCallback(() => {

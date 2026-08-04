@@ -11,17 +11,6 @@ import './TimeoutManager.css';
 import Button from '../ui/Button';
 
 /**
- * Default timeout configurations
- */
-const DEFAULT_TIMEOUTS = {
-  session: 30 * 60 * 1000, // 30 minutes
-  form: 10 * 60 * 1000,    // 10 minutes
-  interaction: 30 * 1000,   // 30 seconds
-  notification: 10 * 1000,  // 10 seconds
-  modal: 60 * 1000         // 1 minute
-};
-
-/**
  * Extended timeout multipliers for accessibility
  */
 const TIMEOUT_EXTENSIONS = {
@@ -47,84 +36,6 @@ export const TimeoutManager = ({
   
   const timeoutRefs = useRef(new Map());
   const warningRefs = useRef(new Map());
-
-  // Calculate extended timeout duration
-  const getExtendedTimeout = useCallback((baseTimeout, type = 'interaction') => {
-    if (!settings.extendedTimeouts) {
-      return baseTimeout;
-    }
-
-    const multiplier = TIMEOUT_EXTENSIONS[extensionLevel] || 1;
-    
-    // Unlimited timeouts
-    if (multiplier === 0) {
-      return null; // No timeout
-    }
-
-    return baseTimeout * multiplier;
-  }, [settings.extendedTimeouts, extensionLevel]);
-
-  // Create timeout with accessibility extensions
-  const createTimeout = useCallback((
-    callback, 
-    duration, 
-    options = {}
-  ) => {
-    const {
-      type = 'interaction',
-      warningTime = 0.2, // Show warning at 20% remaining
-      allowExtension = true,
-      description = 'Operation timeout',
-      id = `timeout-${Date.now()}`
-    } = options;
-
-    // Get extended duration
-    const extendedDuration = getExtendedTimeout(duration, type);
-    
-    // No timeout if unlimited
-    if (extendedDuration === null) {
-      return { id, cancel: () => {}, extend: () => {} };
-    }
-
-    const timeoutData = {
-      id,
-      type,
-      description,
-      originalDuration: duration,
-      extendedDuration,
-      startTime: Date.now(),
-      callback,
-      allowExtension,
-      warningTime: extendedDuration * warningTime,
-      isWarningShown: false,
-      extensionCount: 0
-    };
-
-    // Set warning timeout
-    if (allowExtension && timeoutData.warningTime > 0) {
-      const warningTimeout = setTimeout(() => {
-        showTimeoutWarning(timeoutData);
-      }, extendedDuration - timeoutData.warningTime);
-      
-      warningRefs.current.set(id, warningTimeout);
-    }
-
-    // Set main timeout
-    const mainTimeout = setTimeout(() => {
-      executeTimeout(timeoutData);
-    }, extendedDuration);
-
-    timeoutRefs.current.set(id, mainTimeout);
-    setActiveTimeouts(prev => new Map(prev.set(id, timeoutData)));
-
-    // Return control object
-    return {
-      id,
-      cancel: () => cancelTimeout(id),
-      extend: (additionalTime) => extendTimeout(id, additionalTime),
-      getRemainingTime: () => getRemainingTime(id)
-    };
-  }, [getExtendedTimeout, settings.extendedTimeouts]);
 
   // Show timeout warning dialog
   const showTimeoutWarning = useCallback((timeoutData) => {

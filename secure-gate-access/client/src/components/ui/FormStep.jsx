@@ -9,12 +9,11 @@
  * - Accessibility compliance
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import Icon from './Icon';
-import { Card, Button, Badge, Tooltip } from './index';
+import { Button, Badge, Tooltip } from './index';
 import ValidatedInput from './ValidatedInput';
 import { useFormValidation } from '../../hooks/useFormValidation';
-import { componentTokens } from '../../design-system';
 
 const FormStep = ({
   // Step configuration
@@ -49,7 +48,6 @@ const FormStep = ({
   allowSkip = false,
   
   // Styling
-  variant = 'default', // default, card, minimal
   size = 'md', // sm, md, lg
   className = '',
   
@@ -64,7 +62,7 @@ const FormStep = ({
   children
 }) => {
   const [focusedField, setFocusedField] = useState(null);
-  const [fieldStates, setFieldStates] = useState({});
+  const [, setFieldStates] = useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   const { validateField, validateAllFields, getFieldError } = useFormValidation();
@@ -185,7 +183,7 @@ const FormStep = ({
   }, []);
 
   // Render field
-  const renderField = useCallback((field, groupIndex = null) => {
+  const renderField = useCallback((field, _groupIndex = null) => {
     const fieldId = field.id;
     const value = data[fieldId] || '';
     const error = getFieldError(fieldId);
@@ -272,7 +270,7 @@ const FormStep = ({
         )}
         
         <div className={getLayoutStyles()}>
-          {group.fields?.map((field, fieldIndex) => 
+          {group.fields?.map((field, _fieldIndex) => 
             renderField(field, groupIndex)
           )}
         </div>
@@ -281,7 +279,6 @@ const FormStep = ({
   }, [showAdvanced, getSizeStyles, getLayoutStyles, renderField]);
 
   const sizeStyles = getSizeStyles();
-  const layoutStyles = getLayoutStyles();
   const spacingStyles = getSpacingStyles();
 
   return (

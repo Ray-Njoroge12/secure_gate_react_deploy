@@ -38,7 +38,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { tab: routeTab } = useParams();
-  const { logout } = useAuth();
+  useAuth();
   const role = useCurrentRole();
   const { t } = useI18n();
   const selectedSiteId = searchParams.get('siteId');
@@ -56,9 +56,9 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const [retryingJobId, setRetryingJobId] = useState(null);
 
   // Health metrics state
-  const [healthDetails, setHealthDetails] = useState(null);
-  const [healthLoading, setHealthLoading] = useState(false);
-  const [healthError, setHealthError] = useState(null);
+  const [, setHealthDetails] = useState(null);
+  const [, setHealthLoading] = useState(false);
+  const [, setHealthError] = useState(null);
 
   // Estate Context State
   const [currentEstate, setCurrentEstate] = useState(null);
@@ -260,11 +260,6 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     return () => { cancelled = true; clearInterval(id); };
   }, [currentEstate?.id]);
 
-  const onLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
   const queueHeaders = ["Failed At", "Type", "Recipient", "Error", "Actions"];
   const queueRows = queueFailures.map(item => [
     item.failedAt ? new Date(item.failedAt).toLocaleString() : "-",
@@ -294,15 +289,6 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       {retryingJobId === item.id ? t('dashboard.admin.retrying') : t('dashboard.admin.retry')}
     </Button>
   ]);
-
-  const healthStatusColor = (status) => {
-    if (status === 'healthy') return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20';
-    if (status === 'degraded' || status === 'warning') return 'text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20';
-    if (status === 'unhealthy' || status === 'error') return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20';
-    return 'text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900';
-  };
-
-  const healthComponents = Object.entries(healthDetails?.components || {});
 
   return (
     <div className="admin-dashboard-container" data-tour="admin-dashboard">

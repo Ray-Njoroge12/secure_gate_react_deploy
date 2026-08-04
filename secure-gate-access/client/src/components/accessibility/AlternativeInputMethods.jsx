@@ -19,14 +19,12 @@ export const AlternativeInputMethods = ({
   enabled = true,
   onInputMethodChange
 }) => {
-  const { settings, updateSetting, announce } = useAccessibilityContext();
+  const { settings, announce } = useAccessibilityContext();
   const [activeMethod, setActiveMethod] = useState('standard');
   const [dwellTime, setDwellTime] = useState(1000); // milliseconds
   const [isCalibrating, setIsCalibrating] = useState(false);
   
   const dwellTimerRef = useRef(null);
-  const eyeTrackingRef = useRef(null);
-  const switchInputRef = useRef(null);
 
   // Input method configurations
   const inputMethods = {
@@ -132,7 +130,6 @@ export const AlternativeInputMethods = ({
   // Setup dwell clicking
   const setupDwellClicking = useCallback(() => {
     let currentTarget = null;
-    let dwellStartTime = null;
 
     const handleMouseEnter = (event) => {
       const target = event.target;
@@ -141,7 +138,6 @@ export const AlternativeInputMethods = ({
       if (!isInteractiveElement(target)) return;
 
       currentTarget = target;
-      dwellStartTime = Date.now();
       
       // Add visual indicator
       target.classList.add('dwell-target');
@@ -165,7 +161,6 @@ export const AlternativeInputMethods = ({
       
       event.target.classList.remove('dwell-target', 'dwell-progress');
       currentTarget = null;
-      dwellStartTime = null;
     };
 
     // Add event listeners to all interactive elements

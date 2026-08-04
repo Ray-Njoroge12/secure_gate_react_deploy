@@ -3,7 +3,7 @@
  * Allows users to create custom reports with flexible field selection and formatting
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import exportService from '../../services/exportService';
 import './ReportBuilder.css';
@@ -11,7 +11,6 @@ import Button from '../ui/Button';
 
 const ReportBuilder = ({ 
   availableFields = [], 
-  dataSource, 
   onReportGenerated,
   className = '' 
 }) => {
@@ -27,7 +26,6 @@ const ReportBuilder = ({
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewData, setPreviewData] = useState(null);
-  const dragCounter = useRef(0);
 
   // Handle drag and drop for field selection
   const handleDragEnd = useCallback((result) => {

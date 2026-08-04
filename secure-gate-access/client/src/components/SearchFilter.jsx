@@ -11,7 +11,6 @@ const SearchFilter = ({
   onFilter,
   placeholder = "Search...",
   className = "",
-  showAdvanced = false,
   enableSorting = true,
   enablePagination = true,
   pageSize = 10

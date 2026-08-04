@@ -810,7 +810,7 @@ const AvailabilityView = ({ availability, selectedDate, isLoading, onDateChange 
   );
 };
 
-const UserAvailabilityCard = ({ user, date }) => {
+const UserAvailabilityCard = ({ user }) => {
   const getAvailabilityStatus = () => {
     if (user.isOnShift) return 'on-shift';
     if (user.hasEvents) return 'busy';
@@ -885,8 +885,6 @@ const UserAvailabilityCard = ({ user, date }) => {
 };
 
 const SmartSchedulingView = ({ 
-  calendars, 
-  events, 
   availability, 
   selectedDate, 
   onEventCreate, 

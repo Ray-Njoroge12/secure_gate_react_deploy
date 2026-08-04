@@ -23,17 +23,8 @@ export const ApiResult = ({
   onClose,
   showRetry = true,
   showClose = true,
-  variant = 'success',
   cardProps = {},
-  ...props
 }) => {
-  // Determine card styling based on state
-  const getCardVariant = () => {
-    if (error) return 'error';
-    if (result) return 'success';
-    return variant;
-  };
-
   const getCardClassName = () => {
     const baseClasses = 'mb-6';
     if (error) return `${baseClasses} border-red-700 bg-red-900/20`;

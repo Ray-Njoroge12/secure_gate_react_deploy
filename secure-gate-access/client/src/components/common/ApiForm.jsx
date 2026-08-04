@@ -28,7 +28,6 @@ export const ApiForm = memo(({
   children,
   formProps = {},
   cardProps = {},
-  submitButtonText = 'Submit',
   showSuccessToast = true,
   showErrorToast = true,
   ...props
@@ -41,14 +40,11 @@ export const ApiForm = memo(({
     validationErrors,
     updateField,
     updateFields,
-    resetForm,
     clearError,
     clearSuccess,
     handleSubmit,
     setFieldError,
-    getFieldValue,
-    hasErrors,
-    isValid
+    getFieldValue
   } = useApiForm({
     submitFn,
     initialFormData,

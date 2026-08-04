@@ -4,7 +4,6 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { FloatingLabelInput, GradientButton, GradientCard, Checkbox, Icon, Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
-import api from "../utils/apiClient";
 import { getRoleBasedRedirect } from '../utils/navigationFlow';
 import { encodeSession } from '../utils/sessionCrypto';
 

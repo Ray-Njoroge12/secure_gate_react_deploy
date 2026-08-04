@@ -1,5 +1,5 @@
 // Enhanced form component with integrated validation
-import React, { memo, useCallback, useEffect } from 'react';
+import React, { memo, useCallback } from 'react';
 import logger from 'utils/logger';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { Button, Card } from './index';
