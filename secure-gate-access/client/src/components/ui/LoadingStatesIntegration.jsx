@@ -9,10 +9,9 @@
  */
 
 import React, { createContext, useContext, useCallback, useRef } from 'react';
-import { useLoadingStates, LOADING_TYPES, LOADING_PRIORITIES } from '../../hooks/useLoadingStates';
+import { LOADING_TYPES, LOADING_PRIORITIES } from '../../hooks/useLoadingStates';
 import EnhancedLoading from './EnhancedLoading';
 import AdvancedSkeleton from './AdvancedSkeleton';
-import ProgressiveLoading from './ProgressiveLoading';
 
 // Loading context for global state management
 const LoadingContext = createContext();
@@ -338,7 +337,7 @@ const GlobalLoadingIndicator = ({
 };
 
 // Render page skeleton
-const renderPageSkeleton = (variant, loadingState) => {
+const renderPageSkeleton = (variant, _loadingState) => {
   switch (variant) {
     case 'dashboard':
       return <AdvancedSkeleton.Dashboard />;
@@ -364,7 +363,7 @@ const renderPageSkeleton = (variant, loadingState) => {
 };
 
 // Render component skeleton
-const renderComponentSkeleton = (variant, loadingState) => {
+const renderComponentSkeleton = (variant, _loadingState) => {
   switch (variant) {
     case 'card':
       return <AdvancedSkeleton.Card lines={3} showAvatar />;

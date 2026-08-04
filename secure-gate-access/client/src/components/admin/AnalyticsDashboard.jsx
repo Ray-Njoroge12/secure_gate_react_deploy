@@ -61,7 +61,6 @@ const BarChart = ({ data = [], labels = [], color = CHART_COLORS.success, height
   if (!data.length) return null;
 
   const max = Math.max(...data) || 1;
-  const barWidth = 100 / data.length;
 
   return (
     <div className="relative" style={{ height }}>

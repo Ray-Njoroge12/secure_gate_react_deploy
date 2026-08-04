@@ -9,7 +9,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
 import Icon from '../ui/Icon';
 import api from '../../utils/apiClient';
 import intelligentNotificationService from '../../services/intelligentNotificationService';

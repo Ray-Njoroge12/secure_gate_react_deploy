@@ -10,8 +10,8 @@ import { Badge } from '../ui/Badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
 import Icon from '../ui/Icon';
 import { 
-  LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart as RechartsPieChart, Pie, Cell,
   AreaChart, Area
 } from 'recharts';
 import { analyticsService } from '../../services/analyticsService';

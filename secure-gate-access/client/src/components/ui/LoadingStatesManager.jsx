@@ -9,10 +9,9 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useLoadingStates, LOADING_TYPES, LOADING_PRIORITIES } from '../../hooks/useLoadingStates';
+import { LOADING_TYPES, LOADING_PRIORITIES } from '../../hooks/useLoadingStates';
 import EnhancedLoading from './EnhancedLoading';
 import AdvancedSkeleton from './AdvancedSkeleton';
-import ProgressiveLoading from './ProgressiveLoading';
 
 // Loading context for managing global loading states
 const LoadingContext = React.createContext();
@@ -277,7 +276,7 @@ const LoadingWrapper = ({
 };
 
 // Render skeleton based on variant
-const renderSkeleton = (variant, loadingState) => {
+const renderSkeleton = (variant, _loadingState) => {
   switch (variant) {
     case 'card':
       return <AdvancedSkeleton.Card lines={3} />;

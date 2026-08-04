@@ -48,7 +48,6 @@ const FilterPanel = memo(({
   isOpen = false,
   onToggle,
   className = '',
-  ...props
 }) => {
   const [expandedSections, setExpandedSections] = useState({});
   const [savedFilters, setSavedFilters] = useState([]);
@@ -115,13 +114,6 @@ const FilterPanel = memo(({
       ...filters,
       [fieldKey]: value
     });
-  }, [filters, onFiltersChange]);
-
-  // Clear specific filter
-  const clearFilter = useCallback((fieldKey) => {
-    const newFilters = { ...filters };
-    delete newFilters[fieldKey];
-    onFiltersChange(newFilters);
   }, [filters, onFiltersChange]);
 
   // Get unique values for select filters

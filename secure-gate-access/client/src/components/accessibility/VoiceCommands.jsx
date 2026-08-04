@@ -353,7 +353,7 @@ export const VoiceCommands = ({
 export const useVoiceCommands = () => {
   const { settings } = useAccessibilityContext();
   
-  const registerCommand = useCallback((command, callback, description) => {
+  const registerCommand = useCallback((command, callback, _description) => {
     VOICE_COMMANDS[command.toLowerCase()] = callback;
   }, []);
 

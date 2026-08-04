@@ -9,7 +9,6 @@ import './AdvancedFilters.css';
 import Button from '../ui/Button';
 
 const AdvancedFilters = ({
-  filters = {},
   onChange,
   dataTypes = ['visitors', 'users', 'incidents'],
   className = ''
@@ -221,7 +220,7 @@ const AdvancedFilters = ({
   };
 
   // Render condition input based on field type
-  const renderConditionInput = (condition, field) => {
+  const renderConditionInput = (condition, _field) => {
     const fieldInfo = getFieldsForDataType('visitors')
       .concat(getFieldsForDataType('users'))
       .concat(getFieldsForDataType('incidents'))
@@ -367,7 +366,7 @@ const AdvancedFilters = ({
 
       {/* Filter Conditions */}
       <div className="filter-conditions">
-        {filterBuilder.conditions.map((condition, index) => (
+        {filterBuilder.conditions.map((condition, _index) => (
           <div key={condition.id} className="filter-condition">
             <div className="condition-row">
               {/* Field Selection */}

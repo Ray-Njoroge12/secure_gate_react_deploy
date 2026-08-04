@@ -36,11 +36,6 @@ const parseSnapPoint = (snap) => {
   return 50;
 };
 
-// Calculate snap position from percentage
-const getSnapPosition = (percentage, containerHeight) => {
-  return containerHeight * (1 - percentage / 100);
-};
-
 /**
  * Bottom Sheet Handle Component
  */
@@ -83,7 +78,6 @@ const BottomSheet = ({
   
   // Parse snap points
   const parsedSnapPoints = snapPoints.map(parseSnapPoint);
-  const defaultSnapPercent = parseSnapPoint(defaultSnap);
 
   // Check for reduced motion preference
   const prefersReducedMotion = 

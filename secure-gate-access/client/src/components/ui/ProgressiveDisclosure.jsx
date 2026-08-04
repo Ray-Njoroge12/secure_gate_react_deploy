@@ -13,8 +13,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import logger from 'utils/logger';
 import Icon from './Icon';
-import { Button, Card, Badge } from './index';
-import { componentTokens } from '../../design-system';
+import { Button, Badge } from './index';
 
 const ProgressiveDisclosure = ({
   // Core configuration
@@ -44,7 +43,6 @@ const ProgressiveDisclosure = ({
   // Event handlers
   onSectionToggle,
   onAllToggle,
-  onStateChange,
   
   // Children
   children
@@ -296,7 +294,6 @@ const ProgressiveDisclosure = ({
   const sizeStyles = getSizeStyles();
   const variantStyles = getVariantStyles();
   const allExpanded = expandedSections.size === sections.length;
-  const anyExpanded = expandedSections.size > 0;
 
   return (
     <div ref={containerRef} className={`progressive-disclosure ${variantStyles.container} ${className}`}>

@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState } from 'react';
 import Icon from './Icon';
 import { useBrowserCompatibility } from '../../contexts/BrowserCompatibilityContext';
 
@@ -28,7 +28,6 @@ const BrowserCompatibility = memo(({
   const {
     browserInfo,
     featureSupport,
-    compatibility,
     warnings,
     recommendations,
     isCompatible,

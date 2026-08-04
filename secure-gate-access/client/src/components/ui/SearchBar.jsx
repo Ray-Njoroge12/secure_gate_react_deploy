@@ -8,7 +8,6 @@
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
 import Icon from './Icon';
 import { useSearchSuggestions, useSavedSearches } from '../../hooks/useSearch';
-import { searchUtils } from '../../utils/searchUtils';
 
 /**
  * SearchBar component with autocomplete and search history
@@ -58,7 +57,6 @@ const SearchBar = memo(({
   autoFocus = false,
   ...props
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState('suggestions');
@@ -68,7 +66,7 @@ const SearchBar = memo(({
   const suggestionRefs = useRef([]);
 
   // Get suggestions and saved searches
-  const { suggestions, searchHistory, hasSuggestions } = useSearchSuggestions(data, searchFields, maxSuggestions);
+  const { suggestions, searchHistory } = useSearchSuggestions(data, searchFields, maxSuggestions);
   const { savedSearches, loadSavedSearch, deleteSavedSearch, hasSavedSearches } = useSavedSearches();
 
   // Filter search history to show only recent searches

@@ -76,7 +76,7 @@ export const KeyboardNavigation = ({
 }) => {
   const containerRef = useRef(null);
   const [currentFocusIndex, setCurrentFocusIndex] = useState(-1);
-  const [focusableElements, setFocusableElements] = useState([]);
+  const [, setFocusableElements] = useState([]);
   const [isActive, setIsActive] = useState(false);
   
   const { announce, settings } = useAccessibilityContext();
@@ -170,7 +170,7 @@ export const KeyboardNavigation = ({
   /**
    * Handle shortcut actions
    */
-  const handleShortcutAction = useCallback((action, event) => {
+  const handleShortcutAction = useCallback((action, _event) => {
     switch (action) {
       case 'skipToMain':
         skipToElement('main, [role="main"], #main-content');
@@ -411,7 +411,7 @@ export const KeyboardNavigation = ({
   /**
    * Calculate spatial distance between elements
    */
-  const calculateSpatialDistance = useCallback((rect1, rect2, direction) => {
+  const calculateSpatialDistance = useCallback((rect1, rect2, _direction) => {
     const dx = rect2.left + rect2.width / 2 - (rect1.left + rect1.width / 2);
     const dy = rect2.top + rect2.height / 2 - (rect1.top + rect1.height / 2);
     

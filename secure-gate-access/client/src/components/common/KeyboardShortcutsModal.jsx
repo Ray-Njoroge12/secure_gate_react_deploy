@@ -164,7 +164,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
     const userRole = user?.role?.toLowerCase() || 'resident';
     
     return Object.entries(shortcuts)
-      .filter(([key, category]) => {
+      .filter(([_key, category]) => {
         // Filter by role
         if (category.roles && !category.roles.includes(userRole)) {
           return false;
@@ -181,7 +181,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
         
         return true;
       })
-      .map(([key, category]) => ({
+      .map(([_key, category]) => ({
         ...category,
         items: searchTerm 
           ? category.items.filter(item => 

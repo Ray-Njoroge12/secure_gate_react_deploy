@@ -161,7 +161,7 @@ const MobileNavigation = ({
       aria-label="Mobile navigation"
     >
       <nav className={navClasses}>
-        {items.map((item, index) => {
+        {items.map((item, _index) => {
           const isActive = location.pathname === item.path;
           
           return (

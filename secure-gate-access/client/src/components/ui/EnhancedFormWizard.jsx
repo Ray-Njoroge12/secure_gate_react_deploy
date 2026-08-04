@@ -16,10 +16,9 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import logger from 'utils/logger';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
-import { Button, Card, Badge, Modal, Progress } from './index';
+import { Button, Card, Badge, Progress } from './index';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { componentTokens } from '../../design-system';
 
 const EnhancedFormWizard = ({
   // Core configuration
@@ -51,7 +50,6 @@ const EnhancedFormWizard = ({
   // Persistence options
   autoSave = true,
   autoSaveInterval = 30000, // 30 seconds
-  draftExpiry = 24 * 60 * 60 * 1000, // 24 hours
   
   // UI customization
   className = '',
@@ -63,14 +61,14 @@ const EnhancedFormWizard = ({
 }) => {
   const navigate = useNavigate();
   const { handleError, clearAllErrors } = useError();
-  const { isLoading, setLoading } = useLoading();
+  const { setLoading } = useLoading();
   
   // State management
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [completedSteps, setCompletedSteps] = useState(new Set());
   const [stepData, setStepData] = useState({});
   const [stepErrors, setStepErrors] = useState({});
-  const [stepValidation, setStepValidation] = useState({});
+  const [, setStepValidation] = useState({});
   const [isValidating, setIsValidating] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);

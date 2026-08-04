@@ -236,7 +236,7 @@ const GuestManagementStep = ({
                 {/* Feature-specific content */}
                 {feature.id === 'visitor-status' && (
                   <div className="status-demo space-y-2">
-                    {feature.content.statuses.map((status, index) => (
+                    {feature.content.statuses.map((status, _index) => (
                       <div key={status.status} className="flex items-center p-2 bg-gray-50 dark:bg-slate-900 rounded">
                         <div className={`w-3 h-3 rounded-full mr-3 bg-${status.color}-500`}></div>
                         <div className="flex-1">

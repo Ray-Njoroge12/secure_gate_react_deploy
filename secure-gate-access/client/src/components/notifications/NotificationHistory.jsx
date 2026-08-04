@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { format, parseISO, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import Icon from '../ui/Icon';
 import api from '../../utils/apiClient';
 import intelligentNotificationService from '../../services/intelligentNotificationService';
