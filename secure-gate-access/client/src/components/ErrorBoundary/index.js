@@ -1,11 +1,11 @@
-// Error Boundary Components
-import ErrorBoundary from './ErrorBoundary';
-import NetworkErrorBoundary from './NetworkErrorBoundary';
-import AuthErrorBoundary from './AuthErrorBoundary';
-
 // Error Context and Hooks
 import { ErrorProvider, useError, withErrorHandling } from '../../contexts/ErrorContext';
 import { useErrorHandler, useAsyncErrorHandler, useApiErrorHandler } from '../../hooks/useErrorHandler';
+
+// Error Boundary Components
+import AuthErrorBoundary from './AuthErrorBoundary';
+import ErrorBoundary from './ErrorBoundary';
+import NetworkErrorBoundary from './NetworkErrorBoundary';
 
 export {
   ErrorBoundary,

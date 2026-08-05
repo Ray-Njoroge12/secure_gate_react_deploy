@@ -1,5 +1,5 @@
-import apiClient from '../../utils/apiClient.js';
 import preferenceService from '../../services/preferenceService';
+import apiClient from '../../utils/apiClient.js';
 
 jest.mock('../../utils/apiClient.js', () => ({
   __esModule: true,

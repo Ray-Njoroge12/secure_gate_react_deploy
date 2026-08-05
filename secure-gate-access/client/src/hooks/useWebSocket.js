@@ -7,9 +7,9 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
+import logger from 'utils/logger';
 
 import { useAuth } from '../contexts/AuthContext';
-import logger from 'utils/logger';
 
 const stripApiSuffix = (url) => {
   if (!url || typeof url !== 'string') {

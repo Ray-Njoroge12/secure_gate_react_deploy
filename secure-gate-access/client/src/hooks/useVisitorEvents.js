@@ -7,8 +7,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-import useWebSocket from './useWebSocket';
 import { NOTIFICATION_SOUND_MP3 } from '../utils/soundAssets';
+
+import useWebSocket from './useWebSocket';
 
 /**
  * Event types for visitor notifications
